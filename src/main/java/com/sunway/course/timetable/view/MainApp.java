@@ -8,9 +8,10 @@ import com.sunway.course.timetable.CourseTimetableSchedularApplication;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-public class JavaFXApp extends Application {
+public class MainApp extends Application {
     private ConfigurableApplicationContext context;
 
     @Override
@@ -22,8 +23,9 @@ public class JavaFXApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LoginScene.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 800, 600);
-        primaryStage.setTitle("Course Timetable");
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setTitle("SunwayCTS");
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/images/sunwaycts.png")));
         primaryStage.setScene(scene);
         primaryStage.show();
     }

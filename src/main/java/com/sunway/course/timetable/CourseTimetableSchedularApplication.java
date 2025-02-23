@@ -3,7 +3,7 @@ package com.sunway.course.timetable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import com.sunway.course.timetable.view.JavaFXApp;
+import com.sunway.course.timetable.view.MainApp;
 
 import javafx.application.Application;
 
@@ -11,8 +11,9 @@ import javafx.application.Application;
 public class CourseTimetableSchedularApplication {
 
 	public static void main(String[] args) {
-		Application.launch(JavaFXApp.class, args); 
+		Application.launch(MainApp.class, args); 
 		SpringApplication.run(CourseTimetableSchedularApplication.class, args);
+
 	}
 
 }

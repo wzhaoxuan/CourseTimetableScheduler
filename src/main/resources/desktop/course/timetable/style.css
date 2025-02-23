@@ -1,0 +1,60 @@
+.background{
+    -fx-background-color: linear-gradient(from 50% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%);
+}
+
+.login-background{
+    -fx-background-color: #3D52A0;
+    -fx-background-radius: 0 10 10 0;
+    -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
+}
+
+.description, .sunway-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 54;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+}
+
+.sunway-label{
+    -fx-font-size: 45;
+}
+
+.login-user-id, .login-password{
+    -fx-background-color: transparent;
+    -fx-text-fill: black;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-border-color: white, white, white, black;
+    -fx-border-width: 0 0 1 0;
+    -fx-pref-width: 275;
+}
+
+.login-button, .sign-up-button{
+    -fx-pref-width: 265;
+    -fx-pref-height: 40;
+    -fx-background-color: #7091E6;
+    -fx-text-fill: black;
+    -fx-font-size: 20;
+    -fx-font-family: "serif";
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+}
+
+.login-button:hover, .sign-up-button:hover{
+    -fx-background-color: #5569b5;
+}
+
+.sign-up{
+    -fx-background-color: transparent;
+    -fx-text-fill: rgb(66, 65, 65);
+    -fx-font-size: 14;
+    -fx-border-color: white, white, white, rgb(66, 65, 65);
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: -0.5;
+}
+
+.sign-up:hover{
+    -fx-font-weight: bold;
+}
+
