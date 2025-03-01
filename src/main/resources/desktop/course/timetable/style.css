@@ -2,6 +2,10 @@
     -fx-background-color: linear-gradient(from 50% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%);
 }
 
+
+
+
+/* Login Page */
 .login-background{
     -fx-background-color: #3D52A0;
     -fx-background-radius: 0 10 10 0;
@@ -58,3 +62,56 @@
     -fx-font-weight: bold;
 }
 
+
+/* Main Page */
+.side-bar{
+    -fx-background-color: #3D52A0;
+    -fx-background-radius: 0 10 10 0;
+    -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
+    -fx-pref-width: 270;
+}
+
+.profile{
+    -fx-background-color: #3D52A0;
+    -fx-background-radius: 0 10 10 0;
+    -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
+}
+
+.username{
+    -fx-font-family: "serif";
+    -fx-font-size: 35;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+}
+
+.sub-heading{
+    -fx-font-family: "serif";
+    -fx-font-size: 30;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+}
+
+.vbox {
+    -fx-spacing: 30px; /* Adjust space between elements */
+    -fx-pref-width: inherit;
+}
+
+.side-bar-button{
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-family: "serif";
+    -fx-font-size: 22;
+    -fx-font-weight: bold;
+    -fx-pref-width: inherit;
+}
+
+.logout-button{
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-family: "serif";
+    -fx-font-size: 22;
+    -fx-font-weight: bold;
+    -fx-pref-width: inherit;
+}

@@ -1,5 +1,8 @@
 package com.sunway.course.timetable.controller.app;
 
+import com.sunway.course.timetable.controller.MainAppAware;
+import com.sunway.course.timetable.view.MainApp;
+
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
 import javafx.scene.control.Button;
@@ -10,7 +13,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 
-public class LoginSceneController {
+public class LoginSceneController implements MainAppAware {
 
     @FXML
     private TextField usernameField;
@@ -32,6 +35,13 @@ public class LoginSceneController {
 
     @FXML
     private ImageView logo;
+
+    private MainApp mainApp;
+
+
+    public void setMainApp(MainApp mainApp) {
+        this.mainApp = mainApp;
+    }
 
     @FXML
     private void initialize(){
@@ -60,6 +70,11 @@ public class LoginSceneController {
 
         if(username.equals("admin") && password.equals("admin123")){
             System.out.println("Login successful");
+            try {
+                mainApp.loadMainPage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
+            }
         } else {
             System.out.println("Login failed");
         }
