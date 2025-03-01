@@ -2,9 +2,10 @@ package com.sunway.course.timetable.view;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.CourseTimetableSchedularApplication;
-import com.sunway.course.timetable.config.ControllerFactory;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -12,8 +13,11 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+@Component // Spring-managed bean
+@Lazy //Prevents early initiallization before JavaFX is ready
 public class MainApp extends Application {
-    private ConfigurableApplicationContext context;
+    private static ConfigurableApplicationContext springContext;
+    private static MainApp instance; // Singleton reference
     private Stage primaryStage;
     private String title = "SunwayCTS";
     private String icon = "/images/sunwaycts.png";
@@ -21,31 +25,32 @@ public class MainApp extends Application {
     @Override
     public void init() throws Exception {
         // Start Spring Boot in the JavaFX lifecycle
-        context = new SpringApplicationBuilder(CourseTimetableSchedularApplication.class).run();
+        springContext = new SpringApplicationBuilder(CourseTimetableSchedularApplication.class).run();
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         this.primaryStage = primaryStage;
-        loadLoginPage();
+        loadLoginPage(primaryStage);
         
     }
 
-    public void loadLoginPage() throws Exception {
+    public void loadLoginPage(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LoginScene.fxml"));
-        // Use ControllerFactory for dependency injection
-        fxmlLoader.setControllerFactory(new ControllerFactory(this));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
         
         Scene scene = new Scene(fxmlLoader.load());
-        primaryStage.setTitle(title);
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        stage.setTitle(title);
+        stage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
+        stage.setScene(scene);
+        stage.show();
     }
 
     public void loadMainPage() throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/MainPageScene.fxml"));
-        fxmlLoader.setControllerFactory(new ControllerFactory(this));  // Use the factory
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);  
 
         Scene scene = new Scene(fxmlLoader.load());
         Stage stage = new Stage();
@@ -55,9 +60,23 @@ public class MainApp extends Application {
         stage.show();
     }
 
+    public static MainApp getInstance() {
+        return instance;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
     @Override
-    public void stop() throws Exception {
-        context.close(); // Ensure Spring context is closed when JavaFX stops
+    public void stop(){
+        if(springContext != null){
+            springContext.close(); // Ensure Spring context is closed when JavaFX stops
+        }
     }
 
     public static void main(String[] args) {

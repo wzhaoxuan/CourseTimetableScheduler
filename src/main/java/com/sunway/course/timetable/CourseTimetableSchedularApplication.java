@@ -11,7 +11,7 @@ import javafx.application.Application;
 public class CourseTimetableSchedularApplication {
 
 	public static void main(String[] args) {
-		Application.launch(MainApp.class, args); 
+		Application.launch(MainApp.class, args); // Launch JavaFX application
 		SpringApplication.run(CourseTimetableSchedularApplication.class, args);
 
 	}

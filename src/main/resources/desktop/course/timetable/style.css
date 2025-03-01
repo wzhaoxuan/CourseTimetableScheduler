@@ -3,8 +3,6 @@
 }
 
 
-
-
 /* Login Page */
 .login-background{
     -fx-background-color: #3D52A0;
@@ -94,24 +92,27 @@
 }
 
 .vbox {
-    -fx-spacing: 30px; /* Adjust space between elements */
+    -fx-spacing: 20px; /* Adjust space between elements */
     -fx-pref-width: inherit;
 }
 
-.side-bar-button{
+.side-bar-button, .logout-button{
     -fx-background-color: transparent;
     -fx-text-fill: white;
     -fx-font-family: "serif";
     -fx-font-size: 22;
     -fx-font-weight: bold;
     -fx-pref-width: inherit;
+    -fx-background-radius: 0 10 10 0;
+    -fx-padding: 15 0 15 0;
 }
 
-.logout-button{
-    -fx-background-color: transparent;
-    -fx-text-fill: white;
-    -fx-font-family: "serif";
-    -fx-font-size: 22;
-    -fx-font-weight: bold;
-    -fx-pref-width: inherit;
+.side-bar-button:hover{
+    -fx-background-color: #5569b5;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.logout-button:hover{
+    -fx-text-fill: #5569b5;
 }

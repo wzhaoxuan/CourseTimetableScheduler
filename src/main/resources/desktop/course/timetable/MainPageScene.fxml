@@ -15,12 +15,12 @@
             <Label fx:id="username" layoutX="135.0" layoutY="54.0" styleClass="username" stylesheets="@style.css" text="Label" />
             <VBox layoutY="183.0" prefHeight="200.0" prefWidth="287.0" styleClass="vbox" stylesheets="@style.css">
                <children>
-                  <Button fx:id="home" mnemonicParsing="false" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
+                  <Button fx:id="homeButton" mnemonicParsing="false" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
                   <Button fx:id="generateTimetable" mnemonicParsing="false" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
                   <Button fx:id="viewTimetable" mnemonicParsing="false" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
                </children>
             </VBox>
-            <Button fx:id="logOut" layoutY="640.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="283.0" styleClass="logout-button" stylesheets="@style.css" text="Button" />
+            <Button fx:id="logOutButton" layoutY="640.0" mnemonicParsing="false" onAction="#logOut" prefHeight="46.0" prefWidth="283.0" styleClass="logout-button" stylesheets="@style.css" text="Button" />
          </children>
       </Pane>
       <Label fx:id="title" layoutX="679.0" layoutY="37.0" styleClass="description" stylesheets="@style.css" text="Label" />

@@ -1,6 +1,8 @@
 package com.sunway.course.timetable.controller.app;
 
-import com.sunway.course.timetable.controller.MainAppAware;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
@@ -12,8 +14,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-
-public class LoginSceneController implements MainAppAware {
+@Component // Let Spring manage the controller
+public class LoginSceneController{
 
     @FXML
     private TextField usernameField;
@@ -36,16 +38,15 @@ public class LoginSceneController implements MainAppAware {
     @FXML
     private ImageView logo;
 
-    private MainApp mainApp;
+    private final MainApp mainApp; // Inject MainApp using constructor
 
-
-    public void setMainApp(MainApp mainApp) {
-        this.mainApp = mainApp;
+    public LoginSceneController(@Lazy MainApp mainApp) { // Prevents premature injection
+        this.mainApp = mainApp; 
     }
 
     @FXML
     private void initialize(){
-        title.setText("SunwayCTS");
+        title.setText(mainApp.getTitle());
         description.setText("Empowering smarter\nscheduling with\nAI precision");
         loginButton.setText("Login");
         signUpButton.setText("Sign Up");
@@ -54,8 +55,7 @@ public class LoginSceneController implements MainAppAware {
 
         usernameField.setPromptText("UserID");
         passwordField.setPromptText("Password");
-
-         logo.setImage(new Image(getClass().getResourceAsStream("/images/sunwaycts.png")));
+        logo.setImage(new Image(getClass().getResourceAsStream(mainApp.getIcon())));
     }
 
     private void setButtonHoverEffect(Button button) {
