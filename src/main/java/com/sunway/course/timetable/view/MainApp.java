@@ -87,6 +87,16 @@ public class MainApp extends Application {
         primaryStage.show();
     }
 
+    public void loadProgrammePage() throws Exception{
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/ProgrammeScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
     public static MainApp getInstance() {
         return instance;
     }

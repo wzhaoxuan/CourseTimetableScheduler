@@ -1,6 +1,5 @@
 package com.sunway.course.timetable.controller.app;
 
-
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.view.MainApp;
@@ -15,7 +14,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
 @Component
-public class ViewTimetableController extends BaseController {
+public class ProgrammeController  extends BaseController {
 
     @FXML
     private Label subheading;
@@ -26,7 +25,7 @@ public class ViewTimetableController extends BaseController {
     @FXML
     private Region spacer1, spacer2, spacer3;
 
-    public ViewTimetableController(MainApp mainApp) {
+    public ProgrammeController(MainApp mainApp) {
         super(mainApp);
     }
 
@@ -34,7 +33,7 @@ public class ViewTimetableController extends BaseController {
     protected void initialize() {
         super.initialize(); // Call BaseController's initialize()
 
-        subheading.setText("View Timetable");
+        subheading.setText("Programme");
 
         // Make the spacers expand
         HBox.setHgrow(spacer1, Priority.ALWAYS);
@@ -70,4 +69,5 @@ public class ViewTimetableController extends BaseController {
             System.out.println("Deselected");
         }
     }
+
 }
