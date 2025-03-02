@@ -13,9 +13,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-@Component // Let Spring manage the controller
-public class LoginSceneController{
-
+@Component
+public class SignUpSceneController {
     @FXML
     private TextField usernameField;
 
@@ -23,7 +22,7 @@ public class LoginSceneController{
     private PasswordField passwordField;
 
     @FXML
-    private Button loginButton;
+    private PasswordField confirmPasswordField;
 
     @FXML
     private Button signUpButton;
@@ -38,10 +37,8 @@ public class LoginSceneController{
     private ImageView logo;
 
     private final MainApp mainApp; // Inject MainApp using constructor
-    private String username;
-    private String password;
 
-    public LoginSceneController( MainApp mainApp) { // Prevents premature injection
+    public SignUpSceneController( MainApp mainApp) { // Prevents premature injection
         this.mainApp = mainApp; 
     }
 
@@ -49,13 +46,12 @@ public class LoginSceneController{
     private void initialize(){
         title.setText(mainApp.getTitle());
         description.setText("Empowering smarter\nscheduling with\nAI precision");
-        loginButton.setText("Login");
         signUpButton.setText("Sign Up");
-        setButtonHoverEffect(loginButton);
         setButtonHoverEffect(signUpButton);
 
         usernameField.setPromptText("UserID");
         passwordField.setPromptText("Password");
+        confirmPasswordField.setPromptText("Confirm Password");
         logo.setImage(new Image(getClass().getResourceAsStream(mainApp.getIcon())));
     }
 
@@ -65,33 +61,24 @@ public class LoginSceneController{
     }
 
     @FXML
-    private void login() {
-        username = usernameField.getText();
-        password = passwordField.getText();
+    private void signUp() {
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
 
         if(username.equals("admin") && password.equals("admin123")){
-            System.out.println("Login successful");
-            try {
-                MainApp.getInstance().loadMainPage(); // Handle exception properly
-            } catch (Exception e) {
-                e.printStackTrace(); // Print the error if something goes wrong
+            if(confirmPassword.equals(password)){
+                System.out.println("SignUp successful");
+                try {
+                    MainApp.getInstance().loadLoginPage(); // Handle exception properly
+                } catch (Exception e) {
+                    e.printStackTrace(); // Print the error if something goes wrong
+                }
+            } else {
+                System.out.println("Passwords do not match");
             }
         } else {
-            System.out.println("Login failed");
+            System.out.println("SignUp failed");
         }
-    }
-
-    @FXML
-    private void signUp() {
-        System.out.println("Sign up clicked");
-        try {
-            MainApp.getInstance().loadSignUpPage(); // Handle exception properly
-        } catch (Exception e) {
-            e.printStackTrace(); // Print the error if something goes wrong
-        }
-    }
-
-    public String getUsername() {
-        return username;
     }
 }

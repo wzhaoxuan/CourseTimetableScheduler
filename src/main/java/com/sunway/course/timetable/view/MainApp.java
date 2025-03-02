@@ -2,7 +2,6 @@ package com.sunway.course.timetable.view;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.CourseTimetableSchedularApplication;
@@ -14,7 +13,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 @Component // Spring-managed bean
-@Lazy //Prevents early initiallization before JavaFX is ready
+// @Lazy //Prevents early initiallization before JavaFX is ready
 public class MainApp extends Application {
     private static ConfigurableApplicationContext springContext;
     private static MainApp instance; // Singleton reference
@@ -26,25 +25,36 @@ public class MainApp extends Application {
     public void init() throws Exception {
         // Start Spring Boot in the JavaFX lifecycle
         springContext = new SpringApplicationBuilder(CourseTimetableSchedularApplication.class).run();
+        instance = this;
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         this.primaryStage = primaryStage;
-        loadLoginPage(primaryStage);
+        primaryStage.setTitle(title);
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
+        loadLoginPage();
         
     }
 
-    public void loadLoginPage(Stage stage) throws Exception {
+    public void loadLoginPage() throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LoginScene.fxml"));
         // Use Spring dependency injection
         fxmlLoader.setControllerFactory(springContext::getBean);
         
         Scene scene = new Scene(fxmlLoader.load());
-        stage.setTitle(title);
-        stage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
-        stage.setScene(scene);
-        stage.show();
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void loadSignUpPage() throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/SignUpScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
     public void loadMainPage() throws Exception {
@@ -53,11 +63,28 @@ public class MainApp extends Application {
         fxmlLoader.setControllerFactory(springContext::getBean);  
 
         Scene scene = new Scene(fxmlLoader.load());
-        Stage stage = new Stage();
-        stage.setTitle(title);
-        stage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
-        stage.setScene(scene);
-        stage.show();
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void loadGenerateTimetablePage() throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/GenerateTimetableScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void loadViewTimetablePage() throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/ViewTimetableScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
     public static MainApp getInstance() {

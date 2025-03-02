@@ -2,14 +2,6 @@
     -fx-background-color: linear-gradient(from 50% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%);
 }
 
-
-/* Login Page */
-.login-background{
-    -fx-background-color: #3D52A0;
-    -fx-background-radius: 0 10 10 0;
-    -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
-}
-
 .description, .sunway-label{
     -fx-font-family: "serif";
     -fx-font-size: 54;
@@ -22,14 +14,26 @@
     -fx-font-size: 45;
 }
 
-.login-user-id, .login-password{
+/* Login Page & SignUp Page*/
+.login-background, .sign-up-background{
+    -fx-background-color: #3D52A0;
+    -fx-background-radius: 0 10 10 0;
+    -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
+}
+
+.login-vbox, .sign-up-vbox{
+    -fx-spacing: 40px;
+    -fx-pref-width:275;
+}
+
+.login-user-id, .login-password, .sign-up-user-id, .sign-up-password, .sign-up-confirm-password{
     -fx-background-color: transparent;
     -fx-text-fill: black;
-    -fx-font-size: 14;
+    -fx-font-size: 18;
     -fx-font-weight: bold;
     -fx-border-color: white, white, white, black;
     -fx-border-width: 0 0 1 0;
-    -fx-pref-width: 275;
+    -fx-pref-width: inherit;
 }
 
 .login-button, .sign-up-button{
@@ -115,4 +119,101 @@
 
 .logout-button:hover{
     -fx-text-fill: #5569b5;
+}
+
+
+/* Generate Timetable Page */
+.generate-timetable-vbox{
+    -fx-spacing: 20px;
+    -fx-pref-width: 921;
+    -fx-pref-height:200;
+}
+
+.detials-hbox{
+    -fx-spacing: 30px;
+    -fx-pref-width: inherit;
+    -fx-alignment: center;
+}
+
+.venue-hbox{
+    -fx-spacing: 10px;
+}
+
+.programme-vbox, .semester-vbox, .year-vbox, .intake-vbox{
+    -fx-pref-width: 200px;
+}
+
+.programme-label, .semester-label, .year-label, .intake-label, .venue-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 20;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+}
+
+.venue-label{
+    -fx-padding: 5;
+}
+
+.programme-choice, .semester-choice, .year-choice, .intake-choice{
+    -fx-background-color: transparent;
+    -fx-text-fill: black;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-border-color: white, white, white, black;
+    -fx-border-width: 0 0 1 0;
+    -fx-pref-width: inherit;
+}
+
+/* Style the dropdown list */
+.choice-box .context-menu {
+    -fx-background-color: linear-gradient(from 60% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%); /* Background of dropdown */
+    -fx-background-radius: 10;
+}
+
+/* Style the list items inside the dropdown */
+.choice-box .menu-item {
+    -fx-text-fill: black;
+    -fx-font-size: 14px;
+    -fx-background-radius: 20;
+}
+
+/* Hover effect for dropdown items */
+.choice-box .menu-item:hover {
+    -fx-background-color: #3D52A0; /* Blue hover */
+    -fx-text-fill: white;
+}
+
+.choice-box .menu-item:focused {
+    -fx-background-color: #3D52A0; /* Blue hover */
+    -fx-text-fill: white;
+}
+
+.venue-textfield{
+    -fx-background-color: #8697C4;
+    -fx-text-fill: black;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+}
+
+/* View Timetable*/
+.view-timetable-hbox{
+    -fx-spacing: 80px;
+    -fx-pref-width: 921;
+    -fx-pref-height:40;
+    -fx-alignment: center;
+}
+
+.radio-button, .type-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 14;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+}
+
+.type-label{
+    -fx-pref-width: 70;
 }
