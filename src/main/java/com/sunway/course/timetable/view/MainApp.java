@@ -18,8 +18,8 @@ public class MainApp extends Application {
     private static ConfigurableApplicationContext springContext;
     private static MainApp instance; // Singleton reference
     private Stage primaryStage;
-    private String title = "SunwayCTS";
-    private String icon = "/images/sunwaycts.png";
+    private final String title = "SunwayCTS";
+    private final String icon = "/images/sunwaycts.png";
 
     @Override
     public void init() throws Exception {

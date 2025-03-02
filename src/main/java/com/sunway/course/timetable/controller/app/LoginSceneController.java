@@ -5,63 +5,27 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
-import javafx.scene.Cursor;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 
 @Component // Let Spring manage the controller
-public class LoginSceneController{
-
-    @FXML
-    private TextField usernameField;
-
-    @FXML
-    private PasswordField passwordField;
+public class LoginSceneController extends AuthBaseController {
 
     @FXML
     private Button loginButton;
 
-    @FXML
-    private Button signUpButton;
-
-    @FXML
-    private Label title;
-
-    @FXML 
-    private Label description;
-
-    @FXML
-    private ImageView logo;
-
-    private final MainApp mainApp; // Inject MainApp using constructor
+     // Inject MainApp using constructor
     private String username;
     private String password;
 
-    public LoginSceneController( MainApp mainApp) { // Prevents premature injection
-        this.mainApp = mainApp; 
+    public LoginSceneController(MainApp mainApp) { // Prevents premature injection
+        super(mainApp); // Call the superclass constructor
     }
 
-    @FXML
-    private void initialize(){
-        title.setText(mainApp.getTitle());
-        description.setText("Empowering smarter\nscheduling with\nAI precision");
+    @Override
+    protected void initialize(){
+        super.initialize(); // Call BaseController's initialize()
         loginButton.setText("Login");
-        signUpButton.setText("Sign Up");
         setButtonHoverEffect(loginButton);
-        setButtonHoverEffect(signUpButton);
-
-        usernameField.setPromptText("UserID");
-        passwordField.setPromptText("Password");
-        logo.setImage(new Image(getClass().getResourceAsStream(mainApp.getIcon())));
-    }
-
-    private void setButtonHoverEffect(Button button) {
-        button.setOnMouseEntered(e -> button.setCursor(Cursor.HAND));
-        button.setOnMouseExited(e -> button.setCursor(Cursor.DEFAULT));
     }
 
     @FXML
@@ -81,8 +45,8 @@ public class LoginSceneController{
         }
     }
 
-    @FXML
-    private void signUp() {
+    @Override
+    protected void signUp() {
         System.out.println("Sign up clicked");
         try {
             MainApp.getInstance().loadSignUpPage(); // Handle exception properly

@@ -24,9 +24,6 @@ public class ViewTimetableController extends BaseController {
     private RadioButton programme, module, lecture;
 
     @FXML
-    private HBox parentHBox;
-
-    @FXML
     private Region spacer1, spacer2, spacer3;
 
     public ViewTimetableController(MainApp mainApp) {
