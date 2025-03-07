@@ -1,30 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1300.0" styleClass="background" stylesheets="@style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sunway.course.timetable.controller.app.SignUpSceneController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="750.0" minWidth="1300.0" prefHeight="750.0" prefWidth="1300.0" styleClass="background" stylesheets="@style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sunway.course.timetable.controller.app.SignUpSceneController">
    <children>
-      <Pane prefHeight="750.0" prefWidth="913.0" styleClass="login-background" stylesheets="@style.css">
+      <HBox fx:id="rootHBox" prefHeight="100.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <Label fx:id="description" layoutX="201.0" layoutY="335.0" styleClass="description" stylesheets="@style.css" text="Label" />
-            <ImageView fx:id="logo" fitHeight="150.0" fitWidth="200.0" layoutX="372.0" layoutY="180.0" pickOnBounds="true" preserveRatio="true" />
+            <VBox prefHeight="700.0" prefWidth="822.0" styleClass="login-background" stylesheets="@style.css" HBox.hgrow="ALWAYS">
+               <children>
+                  <ImageView fx:id="logo" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" />
+                  <Label fx:id="description" alignment="CENTER" contentDisplay="CENTER" styleClass="description" stylesheets="@style.css" text="Label" />
+               </children>
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+               <padding>
+                  <Insets bottom="50.0" />
+               </padding>
+            </VBox>
+            <VBox fx:id="loginVbox" prefHeight="110.0" prefWidth="100.0" styleClass="login-vbox" stylesheets="@style.css" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label fx:id="title" styleClass="sunway-label" stylesheets="@style.css" text="Label" />
+                  <TextField fx:id="usernameField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-user-id" stylesheets="@style.css" />
+                  <PasswordField fx:id="passwordField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-password" stylesheets="@style.css" />
+                  <PasswordField fx:id="confirmPasswordField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-confirm-password" stylesheets="@style.css" />
+                  <Button fx:id="signUpButton" mnemonicParsing="false" onAction="#signUp" styleClass="sign-up-button" stylesheets="@style.css" text="Button">
+                     <VBox.margin>
+                        <Insets top="100.0" />
+                     </VBox.margin>
+                  </Button>
+               </children>
+            </VBox>
          </children>
-      </Pane>
-      <Button fx:id="signUpButton" layoutX="979.0" layoutY="599.0" mnemonicParsing="false" onAction="#signUp" styleClass="login-button" stylesheets="@style.css" text="Button" />
-      <Label fx:id="title" layoutX="992.0" layoutY="131.0" styleClass="sunway-label" stylesheets="@style.css" text="Label" />
-      <VBox layoutX="974.0" layoutY="252.0" prefHeight="200.0" prefWidth="275.0" styleClass="sign-up-vbox" stylesheets="@style.css">
-         <children>
-            <TextField fx:id="usernameField" prefHeight="30.0" prefWidth="225.0" styleClass="login-user-id" stylesheets="@style.css" />
-            <PasswordField fx:id="passwordField" styleClass="login-password" stylesheets="@style.css" />
-            <PasswordField fx:id="confirmPasswordField" styleClass="login-password" stylesheets="@style.css" />
-         </children>
-      </VBox>
+      </HBox>
    </children>
 </AnchorPane>

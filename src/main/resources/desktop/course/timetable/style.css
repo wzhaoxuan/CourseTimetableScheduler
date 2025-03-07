@@ -2,14 +2,6 @@
     -fx-background-color: linear-gradient(from 50% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%);
 }
 
-.description, .sunway-label{
-    -fx-font-family: "serif";
-    -fx-font-size: 54;
-    -fx-text-alignment: center;
-    -fx-font-color: black;
-    -fx-font-weight: bold;
-}
-
 .sunway-label{
     -fx-font-size: 45;
 }
@@ -19,11 +11,27 @@
     -fx-background-color: #3D52A0;
     -fx-background-radius: 0 10 10 0;
     -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
+    -fx-alignment: center;
+    -fx-pref-width: 822;
+}
+
+.description, .sunway-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 52;
+    -fx-text-alignment: center;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+}
+
+.sunway-label{
+    -fx-font-size: 45;
 }
 
 .login-vbox, .sign-up-vbox{
     -fx-spacing: 40px;
     -fx-pref-width:275;
+    -fx-padding: 10;
+    -fx-alignment: center;
 }
 
 .login-user-id, .login-password, .sign-up-user-id, .sign-up-password, .sign-up-confirm-password{
@@ -33,7 +41,7 @@
     -fx-font-weight: bold;
     -fx-border-color: white, white, white, black;
     -fx-border-width: 0 0 1 0;
-    -fx-pref-width: inherit;
+    -fx-max-width: 280px;
 }
 
 .login-button, .sign-up-button{
