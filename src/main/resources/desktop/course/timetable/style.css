@@ -78,7 +78,15 @@
     -fx-background-color: #3D52A0;
     -fx-background-radius: 0 10 10 0;
     -fx-effect: dropshadow(gaussian, #00000092, 8, 0.3, 5, 0);
-    -fx-pref-width: 270;
+    -fx-pref-width: 250;
+    -fx-spacing: 20px;
+}
+
+.profile-vbox{
+    -fx-spacing: 30px;
+    -fx-pref-width: inherit;
+    -fx-alignment: center;
+    -fx-padding: 10;
 }
 
 .profile{
@@ -95,17 +103,29 @@
     -fx-font-weight: bold;
 }
 
-.sub-heading{
+.heading, .sub-heading{
     -fx-font-family: "serif";
-    -fx-font-size: 30;
-    -fx-text-alignment: center;
+    -fx-padding: 10;
+    -fx-pref-width: inherit;
     -fx-font-color: black;
     -fx-font-weight: bold;
+    -fx-font-size: 54;
 }
 
-.vbox {
+.sub-heading{
+    -fx-padding: 0 0 0 10;
+    -fx-font-size: 30;
+    -fx-pref-width: inherit;
+}
+
+.button-vbox {
     -fx-spacing: 20px; /* Adjust space between elements */
     -fx-pref-width: inherit;
+}
+
+.content-vbox{
+    -fx-spacing: 20px;
+    -fx-pref-width: 1049;
 }
 
 .side-bar-button, .logout-button{
@@ -133,7 +153,7 @@
 /* Generate Timetable Page */
 .generate-timetable-vbox{
     -fx-spacing: 20px;
-    -fx-pref-width: 921;
+    -fx-pref-width: inherit;
     -fx-pref-height:200;
 }
 
@@ -141,10 +161,12 @@
     -fx-spacing: 30px;
     -fx-pref-width: inherit;
     -fx-alignment: center;
+    -fx-padding: 15;
 }
 
 .venue-hbox{
     -fx-spacing: 10px;
+    -fx-padding: 0 0 0 10;
 }
 
 .programme-vbox, .semester-vbox, .year-vbox, .intake-vbox{
@@ -203,6 +225,7 @@
     -fx-font-size: 14;
     -fx-font-weight: bold;
     -fx-background-radius: 10;
+    -fx-pref-height: inherit;
 }
 
 /* View Timetable*/
@@ -211,15 +234,15 @@
     -fx-pref-width: 921;
     -fx-pref-height:40;
     -fx-alignment: center;
+    -fx-padding: 0 25 0 25;
 }
 
 .radio-button, .type-label{
     -fx-font-family: "serif";
-    -fx-font-size: 14;
+    -fx-font-size: 18;
     -fx-text-alignment: center;
     -fx-font-color: black;
     -fx-font-weight: bold;
-    -fx-padding: 10;
 }
 
 .type-label{

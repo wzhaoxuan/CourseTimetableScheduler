@@ -44,14 +44,14 @@ public abstract class BaseController {
 
     @FXML
     protected void initialize() {
-        // title.setText("SCTS");
-        // homeButton.setText("Home");
-        // generateTimetable.setText("Generate Timetable");
-        // viewTimetable.setText("View Timetable");
-        // logOutButton.setText("Log Out");
+        title.setText("SCTS");
+        homeButton.setText("Home");
+        generateTimetable.setText("Generate Timetable");
+        viewTimetable.setText("View Timetable");
+        logOutButton.setText("Log Out");
 
         String uppercase_username = loginSceneController.getUsername();
-        // username.setText(uppercase_username.substring(0, 1).toUpperCase() + uppercase_username.substring(1));
+        username.setText(uppercase_username.substring(0, 1).toUpperCase() + uppercase_username.substring(1));
 
         setButtonHoverEffect(homeButton);
         setButtonHoverEffect(generateTimetable);
