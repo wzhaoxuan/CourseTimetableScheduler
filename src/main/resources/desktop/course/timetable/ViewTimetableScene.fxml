@@ -7,14 +7,13 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1300.0" styleClass="background" stylesheets="@style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sunway.course.timetable.controller.app.ViewTimetableController">
    <children>
       <HBox layoutX="6.0" layoutY="20.0" prefHeight="100.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <VBox prefHeight="759.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@style.css">
+            <VBox prefHeight="761.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@style.css">
                <children>
                   <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" styleClass="profile-vbox" stylesheets="@style.css">
                      <children>
@@ -47,16 +46,17 @@
                   <VBox prefHeight="200.0" prefWidth="1029.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
                      <children>
                         <Label fx:id="title" alignment="CENTER" styleClass="heading" stylesheets="@style.css" text="Label" />
-                        <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1056.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
+                        <HBox prefHeight="100.0" prefWidth="200.0">
+                           <children>
+                              <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1056.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
+                           </children>
+                        </HBox>
                         <HBox prefHeight="100.0" prefWidth="919.0" styleClass="view-timetable-hbox" stylesheets="@style.css">
                            <children>
-                              <Label fx:id="type" prefHeight="42.0" prefWidth="55.0" styleClass="type-label" stylesheets="@style.css" text="Label" />
-                              <Region fx:id="spacer1" />
-                              <RadioButton fx:id="lecture" mnemonicParsing="false" stylesheets="@style.css" text="RadioButton" />
-                              <Region fx:id="spacer2" />
-                              <RadioButton fx:id="module" mnemonicParsing="false" stylesheets="@style.css" text="RadioButton" />
-                              <Region fx:id="spacer3" />
-                              <RadioButton fx:id="programme" mnemonicParsing="false" stylesheets="@style.css" text="RadioButton" />
+                              <Label fx:id="type" prefHeight="54.0" prefWidth="55.0" styleClass="type-label" stylesheets="@style.css" text="Label" />
+                              <RadioButton fx:id="lecturer" mnemonicParsing="false" prefHeight="68.0" prefWidth="147.0" stylesheets="@style.css" text="RadioButton" />
+                              <RadioButton fx:id="module" mnemonicParsing="false" prefHeight="49.0" prefWidth="147.0" stylesheets="@style.css" text="RadioButton" />
+                              <RadioButton fx:id="programme" mnemonicParsing="false" prefHeight="60.0" prefWidth="147.0" stylesheets="@style.css" text="RadioButton" />
                            </children>
                         </HBox>
                      </children>

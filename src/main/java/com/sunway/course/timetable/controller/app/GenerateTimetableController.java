@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -23,6 +24,9 @@ public class GenerateTimetableController extends BaseController {
 
     @FXML
     private TextField venueField;
+
+    @FXML
+    private Button generateButton;
 
     @FXML
     private Region spacer1, spacer2, spacer3;
@@ -47,6 +51,7 @@ public class GenerateTimetableController extends BaseController {
         intake.setText("Intake:");
         semester.setText("Semester:");
         venue.setText("Venue:");
+        generateButton.setText("Generate");
 
         venueField.setPromptText("UW 2-5");
 
@@ -54,5 +59,7 @@ public class GenerateTimetableController extends BaseController {
         yearChoice.getItems().addAll("2022", "2023", "2024");
         intakeChoice.getItems().addAll("January", "April", "August");
         semesterChoice.getItems().addAll("1", "2", "3");
+
+        setButtonHoverEffect(generateButton);
     }
 }

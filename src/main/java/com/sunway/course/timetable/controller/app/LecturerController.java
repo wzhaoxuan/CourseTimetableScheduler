@@ -9,21 +9,18 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.Region;
 
 @Component
-public class ProgrammeController extends BaseController {
-
-    @FXML
-    private Label subheading, programmelabel, intake, year;
+public class LecturerController extends BaseController {
     
     @FXML
-    private RadioButton programme, module, lecturer;
-
+    private Label subheading;
+    
     @FXML
-    private Region spacer1, spacer2, spacer3;
+    private RadioButton programme, module, lecturer, full_time, part_time, teaching_assistant;
 
-    public ProgrammeController(MainApp mainApp) {
+
+    public LecturerController(MainApp mainApp) {
         super(mainApp);
     }
 
@@ -31,29 +28,30 @@ public class ProgrammeController extends BaseController {
     protected void initialize() {
         super.initialize(); // Call BaseController's initialize()
 
-        subheading.setText("View Programme");
-
-        // Make the spacers expand
-        // HBox.setHgrow(spacer1, Priority.ALWAYS);
-        // HBox.setHgrow(spacer2, Priority.ALWAYS);
-        // HBox.setHgrow(spacer3, Priority.ALWAYS);
+        subheading.setText("View Lecturer");
 
         programme.setText("Programme");
         module.setText("Module");
         lecturer.setText("Lecturer");
-        programmelabel.setText("Programme");
-        intake.setText("Intake");
-        year.setText("Year");
+        full_time.setText("FullTime");
+        part_time.setText("PartTime");
+        teaching_assistant.setText("TeachingAssistant");
 
         // Handle RadioButton Selection
         ToggleGroup toggleGroup = new ToggleGroup();
         programme.setToggleGroup(toggleGroup);
         module.setToggleGroup(toggleGroup);
         lecturer.setToggleGroup(toggleGroup);
+        full_time.setToggleGroup(toggleGroup);
+        part_time.setToggleGroup(toggleGroup);
+        teaching_assistant.setToggleGroup(toggleGroup);
 
         programme.setOnAction(this::handleRadioSelection);
         module.setOnAction(this::handleRadioSelection);
         lecturer.setOnAction(this::handleRadioSelection);
+        full_time.setOnAction(this::handleRadioSelection);
+        part_time.setOnAction(this::handleRadioSelection);
+        teaching_assistant.setOnAction(this::handleRadioSelection);
     }
 
     @FXML
@@ -72,7 +70,12 @@ public class ProgrammeController extends BaseController {
             } catch (Exception e) {
                 e.printStackTrace(); // Print the error if something goes wrong
             }
+        } else if (module.isSelected()){
+            try {
+                MainApp.getInstance().loadModulePage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
+            }
         }
     }
-
 }

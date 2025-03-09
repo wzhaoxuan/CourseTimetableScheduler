@@ -115,7 +115,6 @@
 .sub-heading{
     -fx-padding: 0 0 0 10;
     -fx-font-size: 30;
-    -fx-pref-width: inherit;
 }
 
 .button-vbox {
@@ -155,12 +154,13 @@
     -fx-spacing: 20px;
     -fx-pref-width: inherit;
     -fx-pref-height:200;
+    -fx-padding: 10;
+    -fx-alignment: center;
 }
 
 .detials-hbox{
     -fx-spacing: 30px;
     -fx-pref-width: inherit;
-    -fx-alignment: center;
     -fx-padding: 15;
 }
 
@@ -173,16 +173,19 @@
     -fx-pref-width: 200px;
 }
 
-.programme-label, .semester-label, .year-label, .intake-label, .venue-label{
+.programme-label, .semester-label, .year-label, .intake-label, .venue-label, 
+.programmelabel ,.intakelabel, .yearlabel{
     -fx-font-family: "serif";
     -fx-font-size: 20;
-    -fx-text-alignment: center;
     -fx-font-color: black;
     -fx-font-weight: bold;
+    -fx-pref-width: 200px;
+    -fx-pref-height: inherit;
 }
 
 .venue-label{
     -fx-padding: 5;
+    -fx-pref-width: 100px;
 }
 
 .programme-choice, .semester-choice, .year-choice, .intake-choice{
@@ -228,23 +231,75 @@
     -fx-pref-height: inherit;
 }
 
+.generate-button{
+    -fx-pref-width: 300;
+    -fx-pref-height: 40;
+    -fx-background-color: #7091E6;
+    -fx-text-fill: black;
+    -fx-font-size: 20;
+    -fx-font-family: "serif";
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+}
+
+.generate-button:hover{
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
 /* View Timetable*/
 .view-timetable-hbox{
-    -fx-spacing: 80px;
-    -fx-pref-width: 921;
-    -fx-pref-height:40;
-    -fx-alignment: center;
-    -fx-padding: 0 25 0 25;
+    -fx-spacing: 30px;
+    -fx-padding: 0 0 0 5;
+
 }
 
 .radio-button, .type-label{
     -fx-font-family: "serif";
-    -fx-font-size: 18;
-    -fx-text-alignment: center;
+    -fx-font-size: 20;
     -fx-font-color: black;
     -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+.radio-button{
+    -fx-pref-width: 200;
 }
 
 .type-label{
     -fx-pref-width: 70;
+}
+
+/* Programme Timetable */
+.timetable-hbox{
+    -fx-pref-width: 300px;
+}
+
+.intake-hbox, .year-hbox{
+    -fx-pref-width: 250px;
+}
+
+.intakelabel, .yearlabel{
+    -fx-pref-width: 130px;
+}
+
+.programmelabel{
+    -fx-pref-width: 230px;
+}
+.search-bar{
+    -fx-border-width: 0px 0px 0px 0px;
+    -fx-border-color: black;
+    -fx-background-color: #8697C4;
+    -fx-background-radius: 20px;
+    -fx-alignment: baseline-left;
+    -fx-text-fill: black;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+}
+
+/* Lecturer Table */
+.lecturer-hbox{
+    -fx-spacing: 50px;
+    -fx-padding: 0 0 0 5;
+    /* -fx-max-width: 1000; */
 }

@@ -16,22 +16,10 @@ public abstract class BaseController {
     protected ImageView profile;
 
     @FXML
-    protected Label username;
+    protected Label username, title;
 
     @FXML
-    protected Label title;
-
-    @FXML
-    protected Button homeButton;
-
-    @FXML
-    protected Button generateTimetable;
-
-    @FXML
-    protected Button viewTimetable;
-
-    @FXML
-    protected Button logOutButton;
+    protected Button homeButton, generateTimetable, viewTimetable, logOutButton;
 
     @Autowired
     protected LoginSceneController loginSceneController;

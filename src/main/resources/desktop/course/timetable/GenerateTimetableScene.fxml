@@ -52,7 +52,11 @@
                   <VBox prefHeight="200.0" prefWidth="1029.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
                      <children>
                         <Label fx:id="title" alignment="CENTER" styleClass="heading" stylesheets="@style.css" text="Label" />
-                        <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1056.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
+                        <HBox prefHeight="100.0" prefWidth="200.0">
+                           <children>
+                              <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1056.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
+                           </children>
+                        </HBox>
                         <HBox prefHeight="100.0" prefWidth="200.0" styleClass="detials-hbox" stylesheets="@style.css">
                            <children>
                               <VBox prefHeight="43.0" prefWidth="161.0" styleClass="programme-vbox" stylesheets="@style.css">
@@ -118,6 +122,7 @@
                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                           </columnConstraints>
                           <rowConstraints>
                             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -127,6 +132,7 @@
                               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                           </rowConstraints>
                         </GridPane>
+                        <Button fx:id="generateButton" mnemonicParsing="false" styleClass="generate-button" stylesheets="@style.css" text="Button" />
                      </children>
                   </VBox>
                </children>

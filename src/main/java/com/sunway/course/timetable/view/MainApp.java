@@ -102,6 +102,26 @@ public class MainApp extends Application {
         primaryStage.show();
     }
 
+    public void loadLecturerPage() throws Exception{
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LecturerScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void loadModulePage() throws Exception{
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/ModuleScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
     public static MainApp getInstance() {
         return instance;
     }

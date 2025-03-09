@@ -9,21 +9,16 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.Region;
 
 @Component
-public class ProgrammeController extends BaseController {
-
+public class ModuleController extends BaseController {
     @FXML
-    private Label subheading, programmelabel, intake, year;
+    private Label subheading;
     
     @FXML
     private RadioButton programme, module, lecturer;
 
-    @FXML
-    private Region spacer1, spacer2, spacer3;
-
-    public ProgrammeController(MainApp mainApp) {
+    public ModuleController(MainApp mainApp) {
         super(mainApp);
     }
 
@@ -31,19 +26,11 @@ public class ProgrammeController extends BaseController {
     protected void initialize() {
         super.initialize(); // Call BaseController's initialize()
 
-        subheading.setText("View Programme");
-
-        // Make the spacers expand
-        // HBox.setHgrow(spacer1, Priority.ALWAYS);
-        // HBox.setHgrow(spacer2, Priority.ALWAYS);
-        // HBox.setHgrow(spacer3, Priority.ALWAYS);
+        subheading.setText("View Module");
 
         programme.setText("Programme");
         module.setText("Module");
         lecturer.setText("Lecturer");
-        programmelabel.setText("Programme");
-        intake.setText("Intake");
-        year.setText("Year");
 
         // Handle RadioButton Selection
         ToggleGroup toggleGroup = new ToggleGroup();
@@ -72,7 +59,12 @@ public class ProgrammeController extends BaseController {
             } catch (Exception e) {
                 e.printStackTrace(); // Print the error if something goes wrong
             }
+        } else if (module.isSelected()){
+            try {
+                MainApp.getInstance().loadModulePage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
+            }
         }
     }
-
 }

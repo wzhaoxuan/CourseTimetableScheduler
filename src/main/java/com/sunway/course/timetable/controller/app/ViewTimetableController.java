@@ -10,8 +10,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
 @Component
@@ -21,7 +19,7 @@ public class ViewTimetableController extends BaseController {
     private Label subheading;
     
     @FXML
-    private RadioButton programme, module, lecture;
+    private RadioButton programme, module, lecturer;
 
     @FXML
     private Region spacer1, spacer2, spacer3;
@@ -37,23 +35,23 @@ public class ViewTimetableController extends BaseController {
         subheading.setText("View Timetable");
 
         // Make the spacers expand
-        HBox.setHgrow(spacer1, Priority.ALWAYS);
-        HBox.setHgrow(spacer2, Priority.ALWAYS);
-        HBox.setHgrow(spacer3, Priority.ALWAYS);
+        // HBox.setHgrow(spacer1, Priority.ALWAYS);
+        // HBox.setHgrow(spacer2, Priority.ALWAYS);
+        // HBox.setHgrow(spacer3, Priority.ALWAYS);
 
         programme.setText("Programme");
         module.setText("Module");
-        lecture.setText("Lecture");
+        lecturer.setText("Lecturer");
 
         // Handle RadioButton Selection
         ToggleGroup toggleGroup = new ToggleGroup();
         programme.setToggleGroup(toggleGroup);
         module.setToggleGroup(toggleGroup);
-        lecture.setToggleGroup(toggleGroup);
+        lecturer.setToggleGroup(toggleGroup);
 
         programme.setOnAction(this::handleRadioSelection);
         module.setOnAction(this::handleRadioSelection);
-        lecture.setOnAction(this::handleRadioSelection);
+        lecturer.setOnAction(this::handleRadioSelection);
     }
 
     @FXML
@@ -66,8 +64,18 @@ public class ViewTimetableController extends BaseController {
             } catch (Exception e) {
                 e.printStackTrace(); // Print the error if something goes wrong
             }
-        } else {
-            System.out.println("Deselected");
+        } else if (lecturer.isSelected()){
+            try {
+                MainApp.getInstance().loadLecturerPage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
+            }
+        } else if (module.isSelected()){
+            try {
+                MainApp.getInstance().loadModulePage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
+            }
         }
     }
 }
