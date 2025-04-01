@@ -1,7 +1,10 @@
 package com.sunway.course.timetable.controller.app;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.model.User;
+import com.sunway.course.timetable.service.UserService;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
@@ -14,7 +17,10 @@ public class SignUpSceneController extends AuthBaseController {
     @FXML
     private PasswordField confirmPasswordField;
 
-    public SignUpSceneController( MainApp mainApp) { // Prevents premature injection
+    @Autowired
+    private UserService userService;
+
+    public SignUpSceneController(MainApp mainApp) { // Prevents premature injection
         super(mainApp); 
     }
 
@@ -26,23 +32,32 @@ public class SignUpSceneController extends AuthBaseController {
 
     @Override
     protected void signUp() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        String confirmPassword = confirmPasswordField.getText();
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+        String confirmPassword = confirmPasswordField.getText().trim();
 
-        if(username.equals("admin") && password.equals("admin123")){
-            if(confirmPassword.equals(password)){
-                System.out.println("SignUp successful");
-                try {
-                    MainApp.getInstance().loadLoginPage(); // Handle exception properly
-                } catch (Exception e) {
-                    e.printStackTrace(); // Print the error if something goes wrong
-                }
-            } else {
-                System.out.println("Passwords do not match");
+        if(username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){
+            System.out.println("All fields are required!");
+        }
+
+        if(!password.equals(confirmPassword)){
+            System.out.println("Password does not match!");
+        }
+
+        if(userService.findByUsername(username).isPresent()){
+            System.out.println("User already exists");
+        }
+
+        if(!userService.findByUsername(username).isPresent() && password.equals(confirmPassword)){
+            User newUser = new User(username, password, false);
+            userService.addUser(newUser);
+            System.out.println("Sign Up Successfully");
+
+            try {
+                MainApp.getInstance().loadLoginPage(); // Handle exception properly
+            } catch (Exception e) {
+                e.printStackTrace(); // Print the error if something goes wrong
             }
-        } else {
-            System.out.println("SignUp failed");
         }
     }
 }

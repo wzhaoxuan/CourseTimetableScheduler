@@ -1,7 +1,9 @@
 package com.sunway.course.timetable.controller.app;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.service.UserService;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
@@ -13,10 +15,13 @@ public class LoginSceneController extends AuthBaseController {
     @FXML
     private Button loginButton;
 
-     // Inject MainApp using constructor
     private String username;
     private String password;
 
+    @Autowired
+    UserService userService; // Autowire UserService
+
+    // Inject MainApp using constructor
     public LoginSceneController(MainApp mainApp) { // Prevents premature injection
         super(mainApp); // Call the superclass constructor
     }
@@ -33,7 +38,7 @@ public class LoginSceneController extends AuthBaseController {
         username = usernameField.getText();
         password = passwordField.getText();
 
-        if(username.equals("admin") && password.equals("admin123")){
+        if(userService.validateUser(username, password)) {
             System.out.println("Login successful");
             try {
                 MainApp.getInstance().loadMainPage(); // Handle exception properly

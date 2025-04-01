@@ -33,11 +33,6 @@ public class ProgrammeController extends BaseController {
 
         subheading.setText("View Programme");
 
-        // Make the spacers expand
-        // HBox.setHgrow(spacer1, Priority.ALWAYS);
-        // HBox.setHgrow(spacer2, Priority.ALWAYS);
-        // HBox.setHgrow(spacer3, Priority.ALWAYS);
-
         programme.setText("Programme");
         module.setText("Module");
         lecturer.setText("Lecturer");

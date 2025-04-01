@@ -56,6 +56,7 @@ public abstract class AuthBaseController {
         button.setOnMouseExited(e -> button.setCursor(Cursor.DEFAULT));
     }
 
+    
     @FXML
     protected abstract void signUp();
 
