@@ -26,14 +26,14 @@ public class SignUpSceneController extends AuthBaseController {
 
     @Override
     protected void initialize(){
-        super.initialize(); // Call BaseController's initialize()
+        super.initialize(); 
         confirmPasswordField.setPromptText("Confirm Password");
     }
 
     @Override
     protected void signUp() {
-        String username = usernameField.getText().trim();
-        String password = passwordField.getText().trim();
+        username = trimUsername();
+        password = trimPassword();
         String confirmPassword = confirmPasswordField.getText().trim();
 
         if(username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){

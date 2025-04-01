@@ -14,7 +14,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
 @Component
-public class GenerateTimetableController extends BaseController {
+public class GenerateTimetableController extends ContentController {
 
     @FXML
     private Label subheading, programme, year, intake, semester, venue;

@@ -15,9 +15,6 @@ public class LoginSceneController extends AuthBaseController {
     @FXML
     private Button loginButton;
 
-    private String username;
-    private String password;
-
     @Autowired
     UserService userService; // Autowire UserService
 
@@ -35,8 +32,8 @@ public class LoginSceneController extends AuthBaseController {
 
     @FXML
     private void login() {
-        username = usernameField.getText();
-        password = passwordField.getText();
+        username = trimUsername();
+        password = trimPassword();
 
         if(userService.validateUser(username, password)) {
             System.out.println("Login successful");

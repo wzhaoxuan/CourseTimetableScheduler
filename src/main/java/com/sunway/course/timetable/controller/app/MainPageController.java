@@ -9,7 +9,7 @@ import javafx.scene.control.Label;
 
 
 @Component
-public class MainPageController extends BaseController {
+public class MainPageController extends ContentController{
 
     @FXML
     private Label subheading;
