@@ -1,7 +1,5 @@
 package com.sunway.course.timetable.controller.app;
 
-import org.springframework.stereotype.Component;
-
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.event.ActionEvent;
@@ -10,8 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
-@Component
-public class SelectionController extends ContentController {
+public abstract class SelectionController extends ContentController {
 
     @FXML
     protected Label subheading;

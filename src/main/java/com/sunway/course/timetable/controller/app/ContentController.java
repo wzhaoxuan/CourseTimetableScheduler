@@ -10,8 +10,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 
-@Component
-public class ContentController extends BaseController {
+public abstract class ContentController extends BaseController {
     @FXML
     protected ImageView profile;
 
