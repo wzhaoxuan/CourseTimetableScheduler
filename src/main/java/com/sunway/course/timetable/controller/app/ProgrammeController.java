@@ -2,6 +2,7 @@ package com.sunway.course.timetable.controller.app;
 
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.controller.base.SelectionController;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;

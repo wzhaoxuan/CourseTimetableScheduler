@@ -1,8 +1,8 @@
-package com.sunway.course.timetable.controller.app;
+package com.sunway.course.timetable.controller.base;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;

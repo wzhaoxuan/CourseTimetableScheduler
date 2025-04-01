@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.controller.app;
+package com.sunway.course.timetable.controller.base;
 
 import com.sunway.course.timetable.view.MainApp;
 
