@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.sunway.course.timetable.exception.IdNotFoundException;
 import com.sunway.course.timetable.model.User;
 import com.sunway.course.timetable.repository.UserRepository;
 
@@ -17,9 +18,13 @@ public class UserService {
     private UserRepository userRepository;
     
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
+    
     public List<User> getAllUser() {
         return userRepository.findAll();
+    }
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
     public Optional<User> findByUsername(String username) {
@@ -41,5 +46,17 @@ public class UserService {
             return encoder.matches(enteredPassword, user.getPassword());
         }
         return false;
+    }
+
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+    public User updateUser(Long id, User user) {
+        if (userRepository.existsById(id)) {
+            user.setId(id);
+            return userRepository.save(user);
+        } else {
+            throw new IdNotFoundException("User not found with id: " + id);
+        }
     }
 }
