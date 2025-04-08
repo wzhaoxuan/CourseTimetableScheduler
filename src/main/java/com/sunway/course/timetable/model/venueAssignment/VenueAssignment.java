@@ -18,13 +18,12 @@ public class VenueAssignment {
 
     @ManyToOne
     @MapsId("venueId")
-    @JoinColumn(name = "venue_id")
+    @JoinColumn(name = "venue_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Venue venue;
-
 
     @ManyToOne
     @MapsId("sessionId")
-    @JoinColumn(name = "session_id")
+    @JoinColumn(name = "session_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Session session;
 
     public VenueAssignment() {

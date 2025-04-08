@@ -22,7 +22,7 @@ public class Venue {
     private int capacity;
 
     @Column(nullable = false)
-    private String floor_type;
+    private String floorType;
 
     @Column(nullable = false)
     private String floor;
@@ -32,10 +32,10 @@ public class Venue {
         // Default constructor
     }
 
-    public Venue(String type, int capacity, String floor_type, String floor) {
+    public Venue(String type, int capacity, String floorType, String floor) {
         this.type = type;
         this.capacity = capacity;
-        this.floor_type = floor_type;
+        this.floorType = floorType;
         this.floor = floor;
     }
 
@@ -59,10 +59,10 @@ public class Venue {
         this.capacity = capacity;
     }
     public String getFloorType() {
-        return floor_type;
+        return floorType;
     }
-    public void setFloorType(String floor_type) {
-        this.floor_type = floor_type;
+    public void setFloorType(String floorType) {
+        this.floorType = floorType;
     }
     public String getFloor() {
         return floor;

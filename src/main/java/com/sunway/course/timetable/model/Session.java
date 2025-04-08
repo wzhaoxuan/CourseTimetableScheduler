@@ -19,11 +19,11 @@ public class Session {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
+    @JoinColumn(name = "student_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Student student;
 
     @ManyToOne
-    @JoinColumn(name = "lecturer_id", nullable = false)
+    @JoinColumn(name = "lecturer_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Lecturer lecturer;
 
     @Column(nullable = false)
@@ -39,20 +39,20 @@ public class Session {
     private String type;
 
     @Column(nullable = false)
-    private String group;
+    private String session_group;
 
     public Session() {
         // Default constructor
     }
 
-    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String group) {
+    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String session_group) {
         this.student = student;
         this.lecturer = lecturer;
         this.day = day;
         this.startTime = startTime;
         this.endTime = endTime;
         this.type = type;
-        this.group = group;
+        this.session_group = session_group;
     }
 
     public Long getId() {
@@ -97,10 +97,10 @@ public class Session {
     public void setType(String type) {
         this.type = type;
     }
-    public String getGroup() {
-        return group;
+    public String getsession_group() {
+        return session_group;
     }
-    public void setGroup(String group) {
-        this.group = group;
+    public void setsession_group(String session_group) {
+        this.session_group = session_group;
     }
 }

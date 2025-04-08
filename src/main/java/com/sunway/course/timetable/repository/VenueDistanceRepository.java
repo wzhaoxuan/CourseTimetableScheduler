@@ -10,8 +10,7 @@ import com.sunway.course.timetable.model.venuedistance.VenueDistanceId;
 @Repository
 public interface VenueDistanceRepository extends JpaRepository<VenueDistance, VenueDistanceId> {
     // Custom query methods can be defined here if needed
-    // For example, findByName(String name) to find venue distances by their name
-    Optional<VenueDistance> findByName(String name);
+
     Optional<VenueDistance> findById(VenueDistanceId id);
 
 }

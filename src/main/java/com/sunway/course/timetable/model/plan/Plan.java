@@ -19,7 +19,7 @@ public class Plan {
     private PlanId planId;
 
     @OneToOne
-    @JoinColumn(name = "satisfaction_id")
+    @JoinColumn(name = "satisfaction_id", referencedColumnName = "id", unique = true)
     private Satisfaction satisfaction;
 
     @MapsId("plancontentId")  // Maps the plancontentId part of the composite key (Only if PlanContent uses @EmbeddedId that includes planId)

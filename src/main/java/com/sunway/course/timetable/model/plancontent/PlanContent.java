@@ -1,7 +1,6 @@
 package com.sunway.course.timetable.model.plancontent;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.model.plan.Plan;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -19,12 +18,12 @@ public class PlanContent {
 
     @ManyToOne
     @MapsId("moduleId") // Maps moduleId from the embedded composite key
-    @JoinColumn(name = "module_id", insertable = false, updatable = false)
+    @JoinColumn(name = "module_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Module module;
 
     @ManyToOne
     @MapsId("sessionId") // Maps sessionId from the embedded composite key
-    @JoinColumn(name = "session_id", insertable = false, updatable = false)
+    @JoinColumn(name = "session_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Session session;
 
     public PlanContent() {

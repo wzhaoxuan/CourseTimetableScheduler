@@ -19,12 +19,12 @@ public class Programme {
 
     @ManyToOne
     @MapsId("studentId") // Maps studentId from the embedded composite key
-    @JoinColumn(name = "student_id", insertable = false, updatable = false)
+    @JoinColumn(name = "student_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Student student;
 
     @ManyToOne
     @MapsId("moduleId") // Maps moduleId from the embedded composite key
-    @JoinColumn(name = "module_id", insertable = false, updatable = false)
+    @JoinColumn(name = "module_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Module module;
 
     @Column(nullable = false)
