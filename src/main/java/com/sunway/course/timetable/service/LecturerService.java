@@ -14,6 +14,10 @@ public class LecturerService {
     @Autowired
     private LecturerRepository lecturerRepository;
 
+    public Optional<Lecturer> getLecturerById(Long id) {
+        return lecturerRepository.findById(id);
+    }
+
     public List<Lecturer> getAllLecturers() {
         return lecturerRepository.findAll();
     }

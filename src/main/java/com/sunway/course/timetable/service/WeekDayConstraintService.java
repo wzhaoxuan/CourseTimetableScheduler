@@ -20,6 +20,10 @@ public class WeekDayConstraintService {
         this.weekDayConstraintRepository = weekDayConstraintRepository;
     }
 
+    public Optional<WeekDayConstraint> getByLecturerId(Long lecturerId) {
+        return weekDayConstraintRepository.findByLecturer_Id(lecturerId);
+    }
+
     public List<WeekDayConstraint> getAllWeekDayConstraints() {
         return weekDayConstraintRepository.findAll();
     }
