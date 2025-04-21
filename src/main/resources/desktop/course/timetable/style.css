@@ -174,8 +174,8 @@
 }
 
 .programme-label, .semester-label, .year-label, .intake-label, .venue-label, 
-.available-label, .id-label,
-.unavailable-day-label, .programmelabel ,.intakelabel, .yearlabel{
+.available-label, .id-label,.unavailable-day-label, 
+.programmelabel ,.intakelabel, .yearlabel{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
@@ -239,6 +239,14 @@
     -fx-font-weight: bold;
     -fx-background-radius: 10;
     -fx-padding: 5;
+}
+
+.venue-button, .lecturer-button{
+    -fx-background-color: #5569b5;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand; /* hand cursor on hover */
 }
 
 .available-vbox{
@@ -318,7 +326,7 @@
     -fx-font-size: 20;
     -fx-font-color: black;
     -fx-font-weight: bold;
-    -fx-alignment: center;
+    
 }
 
 .radio-button{
@@ -327,6 +335,8 @@
 
 .type-label{
     -fx-pref-width: 70;
+    -fx-padding: 0 10 0 0;
+    -fx-alignment: center;
 }
 
 /* Programme Timetable */
@@ -345,6 +355,7 @@
 .programmelabel{
     -fx-pref-width: 230px;
 }
+
 .search-bar{
     -fx-border-width: 0px 0px 0px 0px;
     -fx-border-color: black;

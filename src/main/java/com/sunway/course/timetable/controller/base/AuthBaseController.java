@@ -39,6 +39,7 @@ public abstract class AuthBaseController extends BaseController{
         title.setText(mainApp.getTitle());
         description.setText("Empowering smarter\nscheduling with\nAI precision");
         signUpButton.setText("Sign Up");
+        signUpButton.setDefaultButton(true);
 
         usernameField.setPromptText("UserID");
         passwordField.setPromptText("Password");

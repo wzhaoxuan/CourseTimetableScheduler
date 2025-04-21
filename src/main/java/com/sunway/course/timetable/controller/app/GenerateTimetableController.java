@@ -6,6 +6,7 @@ import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
@@ -31,14 +32,14 @@ public class GenerateTimetableController extends ContentController {
     private Button generateButton, sectionButton;
 
     @FXML
-    private GridPane venueGrid;
+    private GridPane venueGrid, weekdayGrid;
 
     @FXML
     private Region spacer1, spacer2, spacer3, spacer4;
 
     private int currentRow = 0; // Track the next available row in the grid
     private int currentCol = 0; // Track the next available column in the grid
-    private final int maxColumns = 8; // Maximum number of columns in the grid
+    private final int MAXCOLUMNS = 8; // Maximum number of columns in the grid
 
     public GenerateTimetableController(MainApp mainApp) {
         super(mainApp);
@@ -80,24 +81,6 @@ public class GenerateTimetableController extends ContentController {
         setButtonHoverEffect(sectionButton);
     }
 
-    private void addVenueToGrid(String venueName){
-        if (venueName == null || venueName.isEmpty()) {
-            return; // Ignore empty venue names
-        }
-
-        Label venueLabel = new Label(venueName);
-        GridPane.setHgrow(venueLabel, Priority.ALWAYS);
-        GridPane.setVgrow(venueLabel, Priority.ALWAYS);
-
-        venueGrid.add(venueLabel, currentCol, currentRow); // Add the venue label to the grid
-        
-        currentCol++; // Increment the column for the next venue
-        if (currentCol >= maxColumns) { // If the row is full, move to the next row
-            currentCol = 0;
-            currentRow++;
-        }
-    }
-
     @FXML
     private void addSection(){
         try {
@@ -105,5 +88,74 @@ public class GenerateTimetableController extends ContentController {
         } catch (Exception e) {
             e.printStackTrace(); // Print the error if something goes wrong
         }
+    }
+
+    private void addVenueToGrid(String venueName){
+        if (venueName == null || venueName.isEmpty()) {
+            return; // Ignore empty venue names
+        }
+
+        Button venueButton = new Button(venueName);
+
+        // Let it size to content — don't set max width/height unnecessarily
+        venueButton.setMaxWidth(Region.USE_COMPUTED_SIZE); 
+        venueButton.setMaxHeight(Region.USE_COMPUTED_SIZE); 
+        venueButton.getStyleClass().add("venue-button"); 
+
+        // Add the venue label to the grid
+        venueGrid.add(venueButton, currentCol, currentRow); 
+        rearrangeGrid();
+
+        venueButton.setOnAction(e -> {
+            // Remove the button from the grid
+            venueGrid.getChildren().remove(venueButton);
+            rearrangeGrid();
+        });
+    }
+
+    public void addWeekDayConstraintToGrid(String lecturerName){
+        if (lecturerName == null || lecturerName.isEmpty()) {
+            return; // Ignore empty weekday names
+        }
+
+        Button weekDayButton = new Button(lecturerName);
+
+        // Let it size to content — don't set max width/height unnecessarily
+        weekDayButton.setMaxWidth(Region.USE_COMPUTED_SIZE); 
+        weekDayButton.setMaxHeight(Region.USE_COMPUTED_SIZE); 
+        weekDayButton.getStyleClass().add("lecturer-button"); 
+
+        // Add the weekday label to the grid
+        weekdayGrid.add(weekDayButton, currentCol, currentRow); 
+        rearrangeGrid();
+
+        weekDayButton.setOnAction(e -> {
+            // Remove the button from the grid
+            weekdayGrid.getChildren().remove(weekDayButton);
+            rearrangeGrid();
+        });
+
+        System.out.println("Added Weekday Constraint: " + lecturerName);
+    }
+
+    private void rearrangeGrid() {
+        int col = 0;
+        int row = 0;
+
+        for(int i = 0; i < venueGrid.getChildren().size(); i++){
+            Node venueIndex = venueGrid.getChildren().get(i);
+            GridPane.setColumnIndex(venueIndex, col);
+            GridPane.setRowIndex(venueIndex, row); // Set the new row index
+
+            col++;
+            if (col >= MAXCOLUMNS) { // If the row is full, move to the next row
+                col = 0;
+                row++;
+            }
+        }
+
+        // Update the current row and column for the next venue
+        currentCol = col;
+        currentRow = row;
     }
 }

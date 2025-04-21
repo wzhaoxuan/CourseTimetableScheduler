@@ -43,15 +43,19 @@ public class LecturerAvailabilityController{
     @Autowired
     private WeekDayConstraintService weekDayConstraintService; // Assuming you have a repository for saving constraints
 
-    public final MainApp mainApp;
+    @Autowired
+    private GenerateTimetableController generateTimetableController; // Assuming you have a controller for generating timetables
 
-    public LecturerAvailabilityController(MainApp mainApp) {
-        this.mainApp = mainApp;
-    }
+    @Autowired
+    private MainApp mainApp;
+
+    // public LecturerAvailabilityController(MainApp mainApp) {
+    //     this.mainApp = mainApp;
+    // }
 
     public void initialize() {
         subheading.setText("Lecturer Availability");
-        id.setText("ID");
+        id.setText("ID: ");
         unavaliableDay.setText("Unavailable Day");
         monday.setText("Monday");
         tuesday.setText("Tuesday");
@@ -88,6 +92,10 @@ public class LecturerAvailabilityController{
             saveConstraint(constraint);
     
             System.out.println("Availability saved for Lecturer ID: " + lecturerIdLong);
+
+            //Add button to weekdayGrid in GenerateTimetableController
+            generateTimetableController.addWeekDayConstraintToGrid(lecturer.getName());
+
             MainApp.getInstance().loadGenerateTimetablePage();
 
         } catch (NumberFormatException e) {
@@ -103,7 +111,7 @@ public class LecturerAvailabilityController{
         if (lecturer.isEmpty()){
             System.out.println("Lecturer not found with ID: " + id);
             return null; // Exit if the lecturer is not found
-        } 
+        }
 
         return lecturer.get(); // Return the found lecturer
     }

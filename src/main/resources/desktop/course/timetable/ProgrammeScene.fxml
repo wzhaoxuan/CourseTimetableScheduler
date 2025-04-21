@@ -65,7 +65,7 @@
                               <RadioButton fx:id="programme" mnemonicParsing="false" stylesheets="@style.css" text="RadioButton" />
                            </children>
                         </HBox>
-                        <HBox prefHeight="100.0" prefWidth="200.0" styleClass="detials-hbox" stylesheets="@style.css">
+                        <HBox prefHeight="100.0" prefWidth="200.0" styleClass="details-hbox" stylesheets="@style.css">
                            <children>
                               <HBox prefHeight="100.0" prefWidth="200.0" styleClass="timetable-hbox" stylesheets="@style.css">
                                  <children>

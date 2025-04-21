@@ -28,6 +28,7 @@ public class LoginSceneController extends AuthBaseController {
     protected void initialize(){
         super.initialize(); // Call BaseController's initialize()
         loginButton.setText("Login");
+        loginButton.setDefaultButton(true);
         setButtonHoverEffect(loginButton);
     }
 
