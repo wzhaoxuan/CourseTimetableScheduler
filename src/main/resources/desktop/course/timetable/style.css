@@ -150,7 +150,7 @@
 
 
 /* Generate Timetable Page */
-.generate-timetable-vbox{
+.generate-timetable-vbox, .available-lecturer-vbox{
     -fx-spacing: 20px;
     -fx-pref-width: inherit;
     -fx-pref-height:200;
@@ -164,7 +164,7 @@
     -fx-padding: 15;
 }
 
-.venue-hbox{
+.venue-hbox, .lecturer-id-hbox{
     -fx-spacing: 10px;
     -fx-padding: 0 0 0 10;
 }
@@ -174,7 +174,8 @@
 }
 
 .programme-label, .semester-label, .year-label, .intake-label, .venue-label, 
-.programmelabel ,.intakelabel, .yearlabel{
+.available-label, .id-label,
+.unavailable-day-label, .programmelabel ,.intakelabel, .yearlabel{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
@@ -222,7 +223,7 @@
     -fx-text-fill: white;
 }
 
-.venue-textfield{
+.venue-textfield, .id-textfield{
     -fx-background-color: #8697C4;
     -fx-text-fill: black;
     -fx-font-size: 14;
@@ -253,19 +254,16 @@
     -fx-padding: 0 15 0 15;
 }
 
+
 .available-label{
-    -fx-font-family: inherit;
-    -fx-font-size: 20;
-    -fx-font-weight: bold;
-    -fx-font-color: black;
     -fx-pref-width: 250px;
 }
 
 .available-button{
     -fx-background-color: #3D52A0;
     -fx-text-fill: white;
-    -fx-font-size: 16;
-    -fx-font-family: inherit;
+    -fx-font-size: 15;
+    -fx-font-family: "serif";
     -fx-font-weight: bold;
     -fx-background-radius: 10;
     -fx-pref-width: 120px;
@@ -291,6 +289,21 @@
 .generate-button:hover{
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
+}
+
+/* Available Lecturer*/
+.id-label{
+    -fx-pref-width: 70px;
+}
+
+.unavailable-day-label{
+    -fx-padding: 0 0 0 10;
+    -fx-pref-width: 250px;
+}
+
+.unavailable-checkbox{
+    -fx-font-size: 15;
+    -fx-pref-width: 150px;
 }
 
 /* View Timetable*/

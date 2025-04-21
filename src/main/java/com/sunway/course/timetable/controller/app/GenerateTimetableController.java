@@ -97,4 +97,13 @@ public class GenerateTimetableController extends ContentController {
             currentRow++;
         }
     }
+
+    @FXML
+    private void addSection(){
+        try {
+            MainApp.getInstance().loadLecturerAvailabilityPage(); // Handle exception properly
+        } catch (Exception e) {
+            e.printStackTrace(); // Print the error if something goes wrong
+        }
+    }
 }

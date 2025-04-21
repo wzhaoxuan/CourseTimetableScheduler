@@ -131,7 +131,7 @@
                                  <children>
                                     <Label fx:id="lecturerAvailable" prefHeight="39.0" styleClass="available-label" stylesheets="@style.css" text="Label" />
                                     <Region fx:id="spacer4" prefHeight="200.0" prefWidth="200.0" />
-                                    <Button fx:id="sectionButton" mnemonicParsing="false" styleClass="available-button" stylesheets="@style.css" text="Button" />
+                                    <Button fx:id="sectionButton" mnemonicParsing="false" onAction="#addSection" styleClass="available-button" stylesheets="@style.css" text="Button" />
                                  </children>
                               </HBox>
                               <GridPane>
