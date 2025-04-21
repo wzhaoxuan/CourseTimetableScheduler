@@ -57,7 +57,7 @@
                               <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1056.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
                            </children>
                         </HBox>
-                        <HBox prefHeight="100.0" prefWidth="200.0" styleClass="detials-hbox" stylesheets="@style.css">
+                        <HBox prefHeight="100.0" prefWidth="200.0" styleClass="details-hbox" stylesheets="@style.css">
                            <children>
                               <VBox prefHeight="43.0" prefWidth="161.0" styleClass="programme-vbox" stylesheets="@style.css">
                                  <children>
@@ -114,7 +114,7 @@
                               <TextField fx:id="venueField" prefHeight="36.0" prefWidth="185.0" styleClass="venue-textfield" stylesheets="@style.css" />
                            </children>
                         </HBox>
-                        <GridPane>
+                        <GridPane fx:id="venueGrid" styleClass="venue-display" stylesheets="@style.css">
                           <columnConstraints>
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -124,14 +124,31 @@
                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                           </columnConstraints>
-                          <rowConstraints>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                          </rowConstraints>
                         </GridPane>
+                        <VBox prefHeight="200.0" prefWidth="100.0" styleClass="available-vbox" stylesheets="@style.css">
+                           <children>
+                              <HBox prefHeight="58.0" prefWidth="1008.0" styleClass="available-hbox" stylesheets="@style.css">
+                                 <children>
+                                    <Label fx:id="lecturerAvailable" prefHeight="39.0" styleClass="available-label" stylesheets="@style.css" text="Label" />
+                                    <Region fx:id="spacer4" prefHeight="200.0" prefWidth="200.0" />
+                                    <Button fx:id="sectionButton" mnemonicParsing="false" styleClass="available-button" stylesheets="@style.css" text="Button" />
+                                 </children>
+                              </HBox>
+                              <GridPane>
+                                <columnConstraints>
+                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                </columnConstraints>
+                                <rowConstraints>
+                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                </rowConstraints>
+                              </GridPane>
+                           </children>
+                        </VBox>
                         <Button fx:id="generateButton" mnemonicParsing="false" styleClass="generate-button" stylesheets="@style.css" text="Button" />
                      </children>
                   </VBox>

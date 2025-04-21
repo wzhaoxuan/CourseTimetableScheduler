@@ -15,7 +15,7 @@ public abstract class ContentController extends BaseController {
     protected ImageView profile;
 
     @FXML
-    protected Label username;
+    protected Label username, subheading;
 
     @FXML
     protected Button homeButton, generateTimetable, viewTimetable, logOutButton;

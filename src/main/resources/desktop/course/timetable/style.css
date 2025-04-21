@@ -158,7 +158,7 @@
     -fx-alignment: center;
 }
 
-.detials-hbox{
+.details-hbox{
     -fx-spacing: 30px;
     -fx-pref-width: inherit;
     -fx-padding: 15;
@@ -229,6 +229,52 @@
     -fx-font-weight: bold;
     -fx-background-radius: 10;
     -fx-pref-height: inherit;
+}
+
+.venue-display{
+    -fx-background-color: #8697C4;
+    -fx-text-fill: black;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 5;
+}
+
+.available-vbox{
+    -fx-spacing: 20px;
+    -fx-pref-width: inherit;
+    -fx-alignment: center;
+    -fx-font-family: "serif";
+}
+
+.available-hbox{
+    -fx-spacing: 30px;
+    -fx-pref-width: inherit;
+    -fx-padding: 0 15 0 15;
+}
+
+.available-label{
+    -fx-font-family: inherit;
+    -fx-font-size: 20;
+    -fx-font-weight: bold;
+    -fx-font-color: black;
+    -fx-pref-width: 250px;
+}
+
+.available-button{
+    -fx-background-color: #3D52A0;
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-family: inherit;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-pref-width: 120px;
+}
+
+.available-button:hover{
+    -fx-background-color: #5569b5;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
 }
 
 .generate-button{

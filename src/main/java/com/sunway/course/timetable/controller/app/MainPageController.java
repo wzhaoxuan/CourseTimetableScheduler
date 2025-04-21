@@ -5,15 +5,9 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.view.MainApp;
 
-import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-
 
 @Component
 public class MainPageController extends ContentController{
-
-    @FXML
-    private Label subheading;
 
     public MainPageController(MainApp mainApp) {
         super(mainApp);
