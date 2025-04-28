@@ -153,7 +153,7 @@
 .generate-timetable-vbox, .available-lecturer-vbox{
     -fx-spacing: 20px;
     -fx-pref-width: inherit;
-    -fx-pref-height:200;
+    -fx-pref-height: 800;
     -fx-padding: 10;
     -fx-alignment: center;
 }
@@ -222,7 +222,39 @@
     -fx-background-color: #3D52A0; /* Blue hover */
     -fx-text-fill: white;
 }
+.venue-scroll-pane {
+    -fx-fit-to-width: true; /* Ensures the ScrollPane takes up full width */
+    -fx-fit-to-height: true; /* Ensures the ScrollPane takes up full height */
+    -fx-background-color: #3D52A0;
+}
 
+/* Customizing the vertical scrollbar */
+.venue-scroll-pane .scroll-bar:vertical {
+    -fx-background-color: inherit; /* Blue background for the scrollbar track */
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-pref-width: 15px; /* Set the width of the vertical scrollbar */
+}
+
+/* Customizing the scrollbar thumb */
+.venue-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #6A8DFF; /* Light blue thumb */
+    -fx-background-radius: 10;
+}
+
+/* Customizing the horizontal scrollbar */
+.venue-scroll-pane .scroll-bar:horizontal {
+    -fx-background-color: inherit; /* Blue background for the scrollbar track */
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-pref-height: 15px; /* Set the height of the horizontal scrollbar */
+}
+
+/* Customizing the scrollbar thumb */
+.venue-scroll-pane .scroll-bar:horizontal .thumb {
+    -fx-background-color: #6A8DFF; /* Light blue thumb */
+    -fx-background-radius: 10;
+}
 .venue-textfield, .id-textfield{
     -fx-background-color: #8697C4;
     -fx-text-fill: black;
@@ -237,8 +269,10 @@
     -fx-text-fill: black;
     -fx-font-size: 14;
     -fx-font-weight: bold;
-    -fx-background-radius: 10;
-    -fx-padding: 5;
+    -fx-padding: 10;
+    -fx-pref-width: 100%;
+    -fx-pref-height: 100%;
+    -fx-vgap: 25;
 }
 
 .venue-button, .lecturer-button{

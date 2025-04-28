@@ -19,6 +19,9 @@ public class Venue {
     private String type;
 
     @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
     private int capacity;
 
     @Column(nullable = false)
@@ -32,8 +35,9 @@ public class Venue {
         // Default constructor
     }
 
-    public Venue(String type, int capacity, String floorType, String floor) {
+    public Venue(String type, String name, int capacity, String floorType, String floor) {
         this.type = type;
+        this.name = name;
         this.capacity = capacity;
         this.floorType = floorType;
         this.floor = floor;
@@ -51,6 +55,12 @@ public class Venue {
     }
     public void setType(String type) {
         this.type = type;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
     }
     public int getCapacity() {
         return capacity;

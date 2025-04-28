@@ -10,11 +10,14 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.RowConstraints;
 
 @Component
 public class GenerateTimetableController extends ContentController {
@@ -35,11 +38,15 @@ public class GenerateTimetableController extends ContentController {
     private GridPane venueGrid, weekdayGrid;
 
     @FXML
+    private ScrollPane scrollPane;
+
+    @FXML
     private Region spacer1, spacer2, spacer3, spacer4;
 
     private int currentRow = 0; // Track the next available row in the grid
     private int currentCol = 0; // Track the next available column in the grid
-    private final int MAXCOLUMNS = 8; // Maximum number of columns in the grid
+    private final int MAXCOLUMNS = 10; // Maximum number of columns in the grid
+    private final int MAXROWS = 10; // Maximum number of rows in the grid
 
     public GenerateTimetableController(MainApp mainApp) {
         super(mainApp);
@@ -94,9 +101,9 @@ public class GenerateTimetableController extends ContentController {
         if (venueName == null || venueName.isEmpty()) {
             return; // Ignore empty venue names
         }
+        setupColumnGrid();
 
         Button venueButton = new Button(venueName);
-
         // Let it size to content — don't set max width/height unnecessarily
         venueButton.setMaxWidth(Region.USE_COMPUTED_SIZE); 
         venueButton.setMaxHeight(Region.USE_COMPUTED_SIZE); 
@@ -136,6 +143,26 @@ public class GenerateTimetableController extends ContentController {
         });
 
         System.out.println("Added Weekday Constraint: " + lecturerName);
+    }
+
+    private void setupColumnGrid(){
+        if(venueGrid.getColumnConstraints().isEmpty()){
+            for(int i = 0; i < MAXCOLUMNS; i++){
+                ColumnConstraints column = new ColumnConstraints(); // Create a new column constraint
+                column.setHgrow(Priority.ALWAYS); // Allow the column to grow
+                column.setPercentWidth(100.0); // Set the width of the column to 10% of the grid width
+                venueGrid.getColumnConstraints().add(column); // Add the column constraint to the grid
+            }
+        }
+
+        if(venueGrid.getRowConstraints().isEmpty()){
+            for(int i = 0; i < MAXROWS; i++){
+                RowConstraints row = new RowConstraints(); // Create a new row constraint
+                row.setVgrow(Priority.ALWAYS); // Allow the row to grow
+                row.setPercentHeight(100.0); // Set the height of the row to 10% of the grid height
+                venueGrid.getRowConstraints().add(row); // Add the row constraint to the grid
+            }
+        }
     }
 
     private void rearrangeGrid() {
