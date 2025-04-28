@@ -2,8 +2,9 @@ package com.sunway.course.timetable.controller.app;
 
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.SelectionController;
-import com.sunway.course.timetable.view.MainApp;
+import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.RadioButton;
@@ -16,8 +17,8 @@ public class LecturerController extends SelectionController{
     private RadioButton full_time, part_time, teaching_assistant;
 
 
-    public LecturerController(MainApp mainApp) {
-        super(mainApp);
+    public LecturerController(NavigationService navService, LoginSceneController loginController) {
+        super(navService, loginController);
     }
 
     @Override

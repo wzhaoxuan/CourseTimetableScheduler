@@ -2,8 +2,9 @@ package com.sunway.course.timetable.controller.app;
 
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.SelectionController;
-import com.sunway.course.timetable.view.MainApp;
+import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -13,10 +14,9 @@ public class ProgrammeController extends SelectionController{
 
     @FXML
     private Label programmelabel, intake, year;
-    
 
-    public ProgrammeController(MainApp mainApp) {
-        super(mainApp);
+    public ProgrammeController(NavigationService navService, LoginSceneController loginController){
+        super(navService, loginController);
     }
 
     @Override

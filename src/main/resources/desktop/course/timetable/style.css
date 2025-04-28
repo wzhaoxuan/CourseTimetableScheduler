@@ -269,7 +269,7 @@
     -fx-text-fill: black;
     -fx-font-size: 14;
     -fx-font-weight: bold;
-    -fx-padding: 10;
+    -fx-padding: 15;
     -fx-pref-width: 100%;
     -fx-pref-height: 100%;
     -fx-vgap: 25;
@@ -352,7 +352,14 @@
 .view-timetable-hbox{
     -fx-spacing: 30px;
     -fx-padding: 0 0 0 5;
+}
 
+.view-timetable-vbox{
+    -fx-spacing: 20px;
+    -fx-pref-width: inherit;
+    -fx-pref-height: 200;
+    -fx-padding: 10;
+    -fx-alignment: center;
 }
 
 .radio-button, .type-label{

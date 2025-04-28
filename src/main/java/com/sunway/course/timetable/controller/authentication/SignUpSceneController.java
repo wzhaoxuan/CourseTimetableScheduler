@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
-import com.sunway.course.timetable.model.User;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.UserService;
 import com.sunway.course.timetable.view.MainApp;
 
@@ -21,8 +21,8 @@ public class SignUpSceneController extends AuthBaseController {
     @Autowired
     private UserService userService;
 
-    public SignUpSceneController(MainApp mainApp) { // Prevents premature injection
-        super(mainApp); 
+    public SignUpSceneController(NavigationService navService) { 
+        super(navService); // Call the superclass constructor
     }
 
     @Override
@@ -37,28 +37,11 @@ public class SignUpSceneController extends AuthBaseController {
         password = trimPassword();
         String confirmPassword = confirmPasswordField.getText().trim();
 
-        if(username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){
-            System.out.println("All fields are required!");
-        }
-
-        if(!password.equals(confirmPassword)){
-            System.out.println("Password does not match!");
-        }
-
-        if(userService.findByUsername(username).isPresent()){
-            System.out.println("User already exists");
-        }
-
-        if(!userService.findByUsername(username).isPresent() && password.equals(confirmPassword)){
-            User newUser = new User(username, password, false);
-            userService.addUser(newUser);
-            System.out.println("Sign Up Successfully");
-
-            try {
-                MainApp.getInstance().loadLoginPage(); // Handle exception properly
-            } catch (Exception e) {
-                e.printStackTrace(); // Print the error if something goes wrong
-            }
+        if(userService.validateSignUpField(username, password, confirmPassword)) {
+            userService.addUser(username, password);
+            navigateToPage("LoginPage"); // Navigate to the login page
+        } else {
+            System.out.println("Sign up failed");
         }
     }
 }

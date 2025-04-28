@@ -1,13 +1,15 @@
 package com.sunway.course.timetable.controller.base;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
-import javafx.scene.Cursor;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 
 public abstract class BaseController {
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     @FXML
     protected Label title;
@@ -22,10 +24,4 @@ public abstract class BaseController {
     protected void initialize() {
         // Initialize common components here if needed
     }
-
-    protected void setButtonHoverEffect(Button button) {
-        button.setOnMouseEntered(e -> button.setCursor(Cursor.HAND));
-        button.setOnMouseExited(e -> button.setCursor(Cursor.DEFAULT));
-    }
-
 }

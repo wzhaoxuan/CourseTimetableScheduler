@@ -1,9 +1,9 @@
 package com.sunway.course.timetable.controller.authentication;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.UserService;
 import com.sunway.course.timetable.view.MainApp;
 
@@ -20,8 +20,8 @@ public class LoginSceneController extends AuthBaseController {
     UserService userService; // Autowire UserService
 
     // Inject MainApp using constructor
-    public LoginSceneController(MainApp mainApp) { // Prevents premature injection
-        super(mainApp); // Call the superclass constructor
+    public LoginSceneController(NavigationService navService) { 
+        super(navService); // Call the superclass constructor
     }
 
     @Override
@@ -29,7 +29,6 @@ public class LoginSceneController extends AuthBaseController {
         super.initialize(); // Call BaseController's initialize()
         loginButton.setText("Login");
         loginButton.setDefaultButton(true);
-        setButtonHoverEffect(loginButton);
     }
 
     @FXML
@@ -39,11 +38,7 @@ public class LoginSceneController extends AuthBaseController {
 
         if(userService.validateUser(username, password)) {
             System.out.println("Login successful");
-            try {
-                MainApp.getInstance().loadMainPage(); // Handle exception properly
-            } catch (Exception e) {
-                e.printStackTrace(); // Print the error if something goes wrong
-            }
+            navigateToPage("MainPage"); // Navigate to the main page
         } else {
             System.out.println("Login failed");
         }
@@ -52,11 +47,7 @@ public class LoginSceneController extends AuthBaseController {
     @Override
     protected void signUp() {
         System.out.println("Sign up clicked");
-        try {
-            MainApp.getInstance().loadSignUpPage(); // Handle exception properly
-        } catch (Exception e) {
-            e.printStackTrace(); // Print the error if something goes wrong
-        }
+        navigateToPage("SignUpPage"); // Navigate to the sign-up page
     }
 
     public String getUsername() {

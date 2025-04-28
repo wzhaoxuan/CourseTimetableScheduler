@@ -1,5 +1,5 @@
 package com.sunway.course.timetable.controller.base;
-
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
@@ -14,6 +14,8 @@ public abstract class AuthBaseController extends BaseController{
 
     protected String username;
     protected String password;
+    private final String titleName = "SunwayCTS";
+    private final String icon = "/images/sunwaycts.png";
 
     @FXML
     private TextField usernameField;
@@ -30,26 +32,48 @@ public abstract class AuthBaseController extends BaseController{
     @FXML
     private ImageView logo;
 
-    public AuthBaseController(MainApp mainApp) {
-        super(mainApp);
+    protected NavigationService navigationService;
+
+    public AuthBaseController(NavigationService navigationService) {
+        super(navigationService.getMainApp()); // set mainApp in BaseController for backward compatibility
+        this.navigationService = navigationService;
     }
 
     @Override
     protected void initialize(){
-        title.setText(mainApp.getTitle());
+        super.initialize(); // Call BaseController's initialize()
+        title.setText(titleName);
         description.setText("Empowering smarter\nscheduling with\nAI precision");
         signUpButton.setText("Sign Up");
         signUpButton.setDefaultButton(true);
 
         usernameField.setPromptText("UserID");
         passwordField.setPromptText("Password");
-        logo.setImage(new Image(getClass().getResourceAsStream(mainApp.getIcon())));
-
-        setButtonHoverEffect(signUpButton);
+        logo.setImage(new Image(getClass().getResourceAsStream(icon)));
     }
     
     @FXML
     protected abstract void signUp();
+
+    protected void navigateToPage(String page) {
+        try {
+            switch(page){
+                case "MainPage":
+                    navigationService.loadMainPage();
+                    break;
+                case "LoginPage":
+                    navigationService.loadLoginPage();
+                    break;
+                case "SignUpPage":
+                    navigationService.loadSignUpPage();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid page: " + page);
+            }
+        } catch (Exception e) {
+            e.printStackTrace(); // Handle exception properly
+        }
+    }
 
     protected String trimUsername() {
         return usernameField.getText().trim();

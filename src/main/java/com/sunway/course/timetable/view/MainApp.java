@@ -2,9 +2,9 @@ package com.sunway.course.timetable.view;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.CourseTimetableSchedularApplication;
+import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -12,7 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-@Component // Spring-managed bean
 // @Lazy //Prevents early initiallization before JavaFX is ready
 public class MainApp extends Application {
     private static ConfigurableApplicationContext springContext;
@@ -33,15 +32,17 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         primaryStage.setTitle(title);
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream(icon)));
-        loadLoginPage();
+
+        NavigationService navigationService = springContext.getBean(NavigationService.class); 
+        navigationService.setMainApp(this); // Set MainApp in NavigationService
         
+        loadLoginPage();
     }
 
     public void loadLoginPage() throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LoginScene.fxml"));
         // Use Spring dependency injection
         fxmlLoader.setControllerFactory(springContext::getBean);
-
         
         Scene scene = new Scene(fxmlLoader.load());
 

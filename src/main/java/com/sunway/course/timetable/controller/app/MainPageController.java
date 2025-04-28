@@ -1,16 +1,17 @@
 package com.sunway.course.timetable.controller.app;
-
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.ContentController;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.view.MainApp;
 
 
 @Component
 public class MainPageController extends ContentController{
 
-    public MainPageController(MainApp mainApp) {
-        super(mainApp);
+    public MainPageController(NavigationService navService, LoginSceneController loginController) {
+        super(navService, loginController);
     }
 
     @Override

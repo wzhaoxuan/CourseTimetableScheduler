@@ -47,7 +47,7 @@
             </VBox>
             <VBox alignment="TOP_CENTER" prefHeight="750.0" prefWidth="1049.0" styleClass="content-vbox" stylesheets="@style.css" HBox.hgrow="ALWAYS">
                <children>
-                  <VBox prefHeight="200.0" prefWidth="1029.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
+                  <VBox prefHeight="200.0" prefWidth="1029.0" styleClass="view-timetable-vbox" stylesheets="@style.css">
                      <children>
                         <Label fx:id="title" alignment="CENTER" styleClass="heading" stylesheets="@style.css" text="Label" />
                         <HBox prefHeight="100.0" prefWidth="200.0">

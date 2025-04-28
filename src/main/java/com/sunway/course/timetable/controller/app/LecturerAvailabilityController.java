@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.WeekDayConstraint;
 import com.sunway.course.timetable.service.LecturerService;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.WeekDayConstraintService;
 import com.sunway.course.timetable.view.MainApp;
 
@@ -46,12 +47,12 @@ public class LecturerAvailabilityController{
     @Autowired
     private GenerateTimetableController generateTimetableController; // Assuming you have a controller for generating timetables
 
-    @Autowired
-    private MainApp mainApp;
+    private final NavigationService navigationService;
 
-    // public LecturerAvailabilityController(MainApp mainApp) {
-    //     this.mainApp = mainApp;
-    // }
+    @Autowired
+    public LecturerAvailabilityController(NavigationService navigationService) {
+        this.navigationService = navigationService;
+    }
 
     public void initialize() {
         subheading.setText("Lecturer Availability");

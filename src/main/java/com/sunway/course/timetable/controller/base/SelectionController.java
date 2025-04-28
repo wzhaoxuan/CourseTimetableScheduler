@@ -1,5 +1,11 @@
 package com.sunway.course.timetable.controller.base;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.event.ActionEvent;
@@ -10,24 +16,31 @@ import javafx.scene.control.ToggleGroup;
 
 public abstract class SelectionController extends ContentController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SelectionController.class);
+
     @FXML
     protected Label subheading;
 
     @FXML
     protected RadioButton programme, module, lecturer;
 
-    public SelectionController(MainApp mainApp) {
-        super(mainApp);
+    @Autowired
+    public SelectionController(NavigationService navigationService, 
+                                LoginSceneController loginSceneController) {
+        super(navigationService, loginSceneController);
     }
 
     @Override
     protected void initialize() {
         super.initialize(); // Call BaseController's initialize()
+         setupRadioButtons();
+    }
+
+    private void setupRadioButtons() {
         programme.setText("Programme");
         module.setText("Module");
         lecturer.setText("Lecturer");
 
-        // Handle RadioButton Selection
         ToggleGroup toggleGroup = new ToggleGroup();
         programme.setToggleGroup(toggleGroup);
         module.setToggleGroup(toggleGroup);
@@ -41,34 +54,25 @@ public abstract class SelectionController extends ContentController {
     @FXML
     protected void handleRadioSelection(ActionEvent event) {
         RadioButton selectedRadio = (RadioButton) event.getSource();
-        System.out.println("Selected Type: " + selectedRadio.getText());
+        String selectedText = selectedRadio.getText();
+        logger.info("Selected Type: {}", selectedText);
 
-        if (programme.isSelected()) {
-            loadPage("Programme");
-        } else if (lecturer.isSelected()) {
-            loadPage("Lecturer");
-        } else if (module.isSelected()) {
-            loadPage("Module");
-        }
-    }
-
-    protected void loadPage(String pageName) {
         try {
-            switch(pageName) {
+            switch (selectedText) {
                 case "Programme":
-                    MainApp.getInstance().loadProgrammePage();
+                    navigationService.loadProgrammePage();
                     break;
                 case "Lecturer":
-                    MainApp.getInstance().loadLecturerPage();
+                    navigationService.loadLecturerPage();
                     break;
                 case "Module":
-                    MainApp.getInstance().loadModulePage();
+                    navigationService.loadModulePage();
                     break;
                 default:
-                    System.out.println("Invalid page name: " + pageName);
+                    logger.warn("Invalid selection: {}", selectedText);
             }
         } catch (Exception e) {
-            e.printStackTrace();  // Log the error properly
+            logger.error("Failed to load page for selection: {}", selectedText, e);
         }
     }
 }

@@ -2,7 +2,9 @@ package com.sunway.course.timetable.controller.app;
 
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
+import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
@@ -48,8 +50,8 @@ public class GenerateTimetableController extends ContentController {
     private final int MAXCOLUMNS = 10; // Maximum number of columns in the grid
     private final int MAXROWS = 10; // Maximum number of rows in the grid
 
-    public GenerateTimetableController(MainApp mainApp) {
-        super(mainApp);
+    public GenerateTimetableController(NavigationService navService, LoginSceneController loginController) {
+        super(navService, loginController);
     }
 
     @Override
@@ -83,9 +85,6 @@ public class GenerateTimetableController extends ContentController {
         yearChoice.getItems().addAll("2022", "2023", "2024");
         intakeChoice.getItems().addAll("January", "April", "August");
         semesterChoice.getItems().addAll("1", "2", "3");
-
-        setButtonHoverEffect(generateButton);
-        setButtonHoverEffect(sectionButton);
     }
 
     @FXML
@@ -105,7 +104,6 @@ public class GenerateTimetableController extends ContentController {
 
         Button venueButton = new Button(venueName);
         // Let it size to content — don't set max width/height unnecessarily
-        venueButton.setMaxWidth(Region.USE_COMPUTED_SIZE); 
         venueButton.setMaxHeight(Region.USE_COMPUTED_SIZE); 
         venueButton.getStyleClass().add("venue-button"); 
 
