@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.view.MainApp;
 
 
 @Component

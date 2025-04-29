@@ -63,4 +63,9 @@ public class NavigationService {
         mainApp.loadModulePage();
     }
 
+    public void loadLecturerAvailabilityPage() throws Exception {
+        checkMainApp();
+        mainApp.loadLecturerAvailabilityPage();
+    }
+
 }

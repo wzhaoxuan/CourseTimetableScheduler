@@ -9,7 +9,6 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -51,7 +50,7 @@
                <children>
                   <VBox prefHeight="648.0" prefWidth="1050.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
                      <children>
-                        <Label fx:id="title" alignment="CENTER" prefHeight="62.0" prefWidth="1030.0" styleClass="heading" stylesheets="@style.css" text="Label" />
+                        <Label fx:id="title" alignment="CENTER" prefHeight="60.0" prefWidth="1030.0" styleClass="heading" stylesheets="@style.css" text="Label" />
                         <HBox prefHeight="41.0" prefWidth="1030.0">
                            <children>
                               <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="54.0" prefWidth="1030.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
@@ -114,13 +113,13 @@
                               <TextField fx:id="venueField" prefHeight="36.0" prefWidth="185.0" styleClass="venue-textfield" stylesheets="@style.css" />
                            </children>
                         </HBox>
-                        <ScrollPane fx:id="scrollPane" prefHeight="138.0" prefWidth="1030.0" styleClass="venue-scroll-pane" stylesheets="@style.css">
+                        <ScrollPane fx:id="venueScroll" prefHeight="174.0" prefWidth="1030.0" styleClass="venue-scroll-pane" stylesheets="@style.css">
                            <content>
-                              <GridPane fx:id="venueGrid" prefHeight="124.0" prefWidth="1028.0" styleClass="venue-display" stylesheets="@style.css">
+                              <GridPane fx:id="venueGrid" prefHeight="143.0" prefWidth="1028.0" styleClass="venue-display" stylesheets="@style.css">
                               </GridPane>
                            </content>
                         </ScrollPane>
-                        <VBox prefHeight="177.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css">
+                        <VBox prefHeight="222.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css">
                            <children>
                               <HBox prefHeight="58.0" prefWidth="1008.0" styleClass="available-hbox" stylesheets="@style.css">
                                  <children>
@@ -129,14 +128,12 @@
                                     <Button fx:id="sectionButton" mnemonicParsing="false" onAction="#addSection" styleClass="available-button" stylesheets="@style.css" text="Button" />
                                  </children>
                               </HBox>
-                              <GridPane fx:id="weekdayGrid" prefHeight="187.0" prefWidth="1030.0">
-                                <columnConstraints>
-                                  <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" prefWidth="100.0" />
-                                  <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" prefWidth="100.0" />
-                                </columnConstraints>
-                              </GridPane>
+                              <ScrollPane fx:id="weekdayScroll" prefHeight="204.0" prefWidth="1030.0" styleClass="venue-scroll-pane" stylesheets="@style.css">
+                                 <content>
+                                    <GridPane fx:id="weekdayGrid" prefHeight="170.0" prefWidth="1028.0" styleClass="week-day-display" stylesheets="@style.css">
+                                    </GridPane>
+                                 </content>
+                              </ScrollPane>
                            </children>
                         </VBox>
                         <Button fx:id="generateButton" mnemonicParsing="false" styleClass="generate-button" stylesheets="@style.css" text="Button" />

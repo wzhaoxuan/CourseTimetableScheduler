@@ -264,7 +264,7 @@
     -fx-pref-height: inherit;
 }
 
-.venue-display{
+.venue-display, .week-day-display{
     -fx-background-color: #8697C4;
     -fx-text-fill: black;
     -fx-font-size: 14;
