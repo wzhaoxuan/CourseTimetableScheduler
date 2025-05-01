@@ -11,6 +11,7 @@ import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.VenueService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
+import com.sunway.course.timetable.util.DateUtils;
 import com.sunway.course.timetable.util.DynamicGridManager;
 
 import javafx.fxml.FXML;
@@ -62,7 +63,7 @@ public class GenerateTimetableController extends ContentController {
     @Override
     protected void initialize() {
         super.initialize();
-        setupLabelsAndPrompts();
+        setupLabelsText();
         setupChoiceBoxes();
         setupLayout();
         setupVenueField();
@@ -109,7 +110,7 @@ public class GenerateTimetableController extends ContentController {
         System.out.println("Added Weekday Constraint: " + lecturerName);
     }
 
-    private void setupLabelsAndPrompts() {
+    private void setupLabelsText() {
         subheading.setText("Generate Timetable");
         programme.setText("Programme:");
         year.setText("Year:");
@@ -124,9 +125,9 @@ public class GenerateTimetableController extends ContentController {
 
     private void setupChoiceBoxes() {
         programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
-        yearChoice.getItems().addAll("2022", "2023", "2024");
+        yearChoice.getItems().addAll(DateUtils.getYearOptions());
         intakeChoice.getItems().addAll("January", "April", "August");
-        semesterChoice.getItems().addAll("1", "2", "3");
+        semesterChoice.getItems().addAll("1", "2", "3", "4", "5", "6", "7", "8", "9");
     }
 
     private void setupLayout() {

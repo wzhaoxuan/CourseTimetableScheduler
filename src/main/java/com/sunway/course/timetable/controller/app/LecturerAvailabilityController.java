@@ -71,7 +71,6 @@ public class LecturerAvailabilityController{
 
         if (lecturerIdText.isEmpty()) {
             System.out.println("Lecturer ID is required.");
-            return; // Exit if the ID is empty
         } else {
             try {
                 weekDayConstraintService.selectWeedayConstraint(lecturerIdText, monday, tuesday, wednesday, thursday, friday); 

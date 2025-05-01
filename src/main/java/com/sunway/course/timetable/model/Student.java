@@ -20,7 +20,6 @@ public class Student {
     
     public Student() {
         // Default constructor
-        this.name = "WONG ZHAO XUAN";
     }
 
     public Student(String name) {
