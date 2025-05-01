@@ -14,6 +14,7 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
     Optional<Venue> findByCapacity(int capacity);
     Optional<Venue> findByFloorType(String floorType);
     Optional<Venue> findByFloor(String floor);
+    Optional<Venue> findByName(String name);
 
 
 

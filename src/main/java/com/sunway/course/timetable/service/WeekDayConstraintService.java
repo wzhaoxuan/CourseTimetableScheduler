@@ -1,13 +1,10 @@
 package com.sunway.course.timetable.service;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
-import com.sunway.course.timetable.exception.IdNotFoundException;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.WeekDayConstraint;
 import com.sunway.course.timetable.repository.WeekDayConstraintRepository;
@@ -62,7 +59,7 @@ public class WeekDayConstraintService {
                 System.out.println("Availability saved for Lecturer ID: " + lecturerIdLong);
 
                 //Add button to weekdayGrid in GenerateTimetableController
-                eventPublisher.publishEvent(new LecturerConstraintConfirmedEvent(lecturer));
+                eventPublisher.publishEvent(lecturer);
                 
             } catch (NumberFormatException e) {
                 System.out.println("Invalid Lecturer ID. Must be a number.");

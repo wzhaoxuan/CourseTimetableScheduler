@@ -1,15 +1,16 @@
 package com.sunway.course.timetable.controller.app;
-
-import javafx.application.Platform;
-
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
+import com.sunway.course.timetable.event.VenueAddedEvent;
 import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.service.VenueService;
+import com.sunway.course.timetable.store.VenueSessionStore;
+import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.DynamicGridManager;
 
 import javafx.fxml.FXML;
@@ -26,72 +27,51 @@ import javafx.scene.layout.Region;
 @Component
 public class GenerateTimetableController extends ContentController {
 
-    @FXML
-    private Label programme, year, intake, semester, venue, lecturerAvailable;
-
-    @FXML
-    private ChoiceBox<String> programmeChoice, yearChoice, intakeChoice, semesterChoice;
-
-    @FXML
-    private TextField venueField;
-
-    @FXML
-    private Button generateButton, sectionButton;
-
-    @FXML
-    private GridPane venueGrid, weekdayGrid;
-
-    @FXML
-    private ScrollPane venueScroll, weekdayScroll;
-
-    @FXML
-    private Region spacer1, spacer2, spacer3, spacer4;
+    @FXML private Label programme, year, intake, semester, venue, lecturerAvailable;
+    @FXML private ChoiceBox<String> programmeChoice, yearChoice, intakeChoice, semesterChoice;
+    @FXML private TextField venueField;
+    @FXML private Button generateButton, sectionButton;
+    @FXML private GridPane venueGrid, weekdayGrid;
+    @FXML private ScrollPane venueScroll, weekdayScroll;
+    @FXML private Region spacer1, spacer2, spacer3, spacer4;
 
     private final int MAXCOLUMNS = 10;
-    private final int MAXROWS = 10; 
+    private final int MAXROWS = 10;
 
     private DynamicGridManager venueGridManager;
     private DynamicGridManager weekdayGridManager;
 
+    private final VenueService venueService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final VenueSessionStore venueStore;
+    private final WeekdaySessionStore weekdayStore;
+
     public GenerateTimetableController(NavigationService navService, 
-                                        LoginSceneController loginController) {
+                                        LoginSceneController loginController,
+                                        VenueService venueService,
+                                        ApplicationEventPublisher eventPublisher,
+                                        VenueSessionStore venueSessionStore,
+                                        WeekdaySessionStore weekdaySessionStore) {
         super(navService, loginController);
+        this.venueService = venueService;
+        this.eventPublisher = eventPublisher;
+        this.venueStore = venueSessionStore;
+        this.weekdayStore = weekdaySessionStore;
     }
 
     @Override
     protected void initialize() {
-        super.initialize(); // Call BaseController's initialize()
-        subheading.setText("Generate Timetable");
-        lecturerAvailable.setText("Lecturer Available:");
-        sectionButton.setText("Add Section");
-
-        // Make the spacers expand
-        HBox.setHgrow(spacer1, Priority.ALWAYS);
-        HBox.setHgrow(spacer2, Priority.ALWAYS);
-        HBox.setHgrow(spacer3, Priority.ALWAYS);
-        HBox.setHgrow(spacer4, Priority.ALWAYS);
-
-        programme.setText("Programme:");
-        year.setText("Year:");
-        intake.setText("Intake:");
-        semester.setText("Semester:");
-        venue.setText("Venue:");
-        generateButton.setText("Generate");
-
-        venueField.setPromptText("UW 2-5");
-        venueField.setOnAction(event -> {
-            String venue = venueField.getText().trim();
-            addVenueToGrid(venue); // Add the venue to the grid
-            venueField.clear(); // Clear the field after adding
-        });
-
-        programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
-        yearChoice.getItems().addAll("2022", "2023", "2024");
-        intakeChoice.getItems().addAll("January", "April", "August");
-        semesterChoice.getItems().addAll("1", "2", "3");
+        super.initialize();
+        setupLabelsAndPrompts();
+        setupChoiceBoxes();
+        setupLayout();
+        setupVenueField();
 
         venueGridManager = new DynamicGridManager(venueGrid, MAXCOLUMNS, MAXROWS);
         weekdayGridManager = new DynamicGridManager(weekdayGrid, MAXCOLUMNS, MAXROWS);
+
+        venueStore.get().forEach(this::addVenueToGrid);
+        weekdayStore.get().forEach(lecturer -> addWeekDayConstraintToGrid(lecturer, null)); // Adjust if ID is needed
     }
 
     @FXML
@@ -105,12 +85,19 @@ public class GenerateTimetableController extends ContentController {
 
     @EventListener
     public void handleLecturerConstraintConfirmed(LecturerConstraintConfirmedEvent event) {
-        Lecturer lecturer = event.getLecturer();
-        String lecturerName = lecturer.getName();
-        Long lecturerId = lecturer.getId();
-        Platform.runLater(()-> {
+        String lecturerName = event.getLecturer().getName();
+        Long lecturerId = event.getLecturer().getId();
+        if (weekdayStore.add(lecturerName)) {
             addWeekDayConstraintToGrid(lecturerName, lecturerId);
-        });
+        }
+    }
+
+    @EventListener
+    public void handleVenueAdded(VenueAddedEvent event) {
+        String venueName = event.getVenue().getName();
+        if (venueStore.add(venueName)) {
+            addVenueToGrid(venueName);
+        }
     }
 
     private void addVenueToGrid(String venueName){
@@ -122,4 +109,40 @@ public class GenerateTimetableController extends ContentController {
         System.out.println("Added Weekday Constraint: " + lecturerName);
     }
 
+    private void setupLabelsAndPrompts() {
+        subheading.setText("Generate Timetable");
+        programme.setText("Programme:");
+        year.setText("Year:");
+        intake.setText("Intake:");
+        semester.setText("Semester:");
+        venue.setText("Venue:");
+        lecturerAvailable.setText("Lecturer Available:");
+        venueField.setPromptText("UW 2-5");
+        generateButton.setText("Generate");
+        sectionButton.setText("Add Section");
+    }
+
+    private void setupChoiceBoxes() {
+        programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
+        yearChoice.getItems().addAll("2022", "2023", "2024");
+        intakeChoice.getItems().addAll("January", "April", "August");
+        semesterChoice.getItems().addAll("1", "2", "3");
+    }
+
+    private void setupLayout() {
+        HBox.setHgrow(spacer1, Priority.ALWAYS);
+        HBox.setHgrow(spacer2, Priority.ALWAYS);
+        HBox.setHgrow(spacer3, Priority.ALWAYS);
+        HBox.setHgrow(spacer4, Priority.ALWAYS);
+    }
+
+    private void setupVenueField() {
+        venueField.setOnAction(event -> {
+            String venue = venueField.getText().trim();
+            if (!venue.isEmpty()) {
+                venueService.publishVenueAddedEvent(venue);
+                venueField.clear();
+            }
+        });
+    }
 }

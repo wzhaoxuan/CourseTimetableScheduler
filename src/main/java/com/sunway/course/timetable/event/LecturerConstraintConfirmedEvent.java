@@ -12,5 +12,4 @@ public class LecturerConstraintConfirmedEvent {
       public Lecturer getLecturer() {
         return lecturer;
     }
-    
 }
