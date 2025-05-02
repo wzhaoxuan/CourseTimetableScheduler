@@ -16,7 +16,7 @@ import com.sunway.course.timetable.util.DynamicGridManager;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -29,7 +29,7 @@ import javafx.scene.layout.Region;
 public class GenerateTimetableController extends ContentController {
 
     @FXML private Label programme, year, intake, semester, venue, lecturerAvailable;
-    @FXML private ChoiceBox<String> programmeChoice, yearChoice, intakeChoice, semesterChoice;
+    @FXML private ComboBox<String>  programmeChoice, yearChoice, intakeChoice, semesterChoice;
     @FXML private TextField venueField;
     @FXML private Button generateButton, sectionButton;
     @FXML private GridPane venueGrid, weekdayGrid;
@@ -64,7 +64,7 @@ public class GenerateTimetableController extends ContentController {
     protected void initialize() {
         super.initialize();
         setupLabelsText();
-        setupChoiceBoxes();
+        setupComboBoxes();
         setupLayout();
         setupVenueField();
 
@@ -123,11 +123,15 @@ public class GenerateTimetableController extends ContentController {
         sectionButton.setText("Add Section");
     }
 
-    private void setupChoiceBoxes() {
+    private void setupComboBoxes() {
         programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
+        programmeChoice.setVisibleRowCount(5);
         yearChoice.getItems().addAll(DateUtils.getYearOptions());
-        intakeChoice.getItems().addAll("January", "April", "August");
+        yearChoice.setVisibleRowCount(5);
+        intakeChoice.getItems().addAll(DateUtils.getMonths());
+        intakeChoice.setVisibleRowCount(5);
         semesterChoice.getItems().addAll("1", "2", "3", "4", "5", "6", "7", "8", "9");
+        semesterChoice.setVisibleRowCount(5);
     }
 
     private void setupLayout() {

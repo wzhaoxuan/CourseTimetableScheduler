@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
@@ -18,7 +17,7 @@
    <children>
       <HBox layoutX="-4.0" layoutY="10.0" prefHeight="100.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <VBox prefHeight="759.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@style.css">
+            <VBox prefHeight="759.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@../../../style/style.css">
                <children>
                   <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" styleClass="profile-vbox" stylesheets="@style.css">
                      <children>
@@ -46,7 +45,7 @@
                   </Button>
                </children>
             </VBox>
-            <VBox alignment="TOP_CENTER" prefHeight="750.0" prefWidth="1049.0" styleClass="content-vbox" stylesheets="@style.css" HBox.hgrow="ALWAYS">
+            <VBox alignment="TOP_CENTER" prefHeight="750.0" prefWidth="1049.0" styleClass="content-vbox" stylesheets="@../../../style/style.css" HBox.hgrow="ALWAYS">
                <children>
                   <VBox prefHeight="648.0" prefWidth="1050.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
                      <children>
@@ -61,48 +60,28 @@
                               <VBox prefHeight="43.0" prefWidth="161.0" styleClass="programme-vbox" stylesheets="@style.css">
                                  <children>
                                     <Label fx:id="programme" styleClass="programme-label" stylesheets="@style.css" text="Label" />
-                                    <ChoiceBox fx:id="programmeChoice" prefWidth="150.0" stylesheets="@style.css">
-                                       <styleClass>
-                                          <String fx:value="programme-choice" />
-                                          <String fx:value="choice-box" />
-                                       </styleClass>
-                                    </ChoiceBox>
+                                    <ComboBox fx:id="programmeChoice" prefWidth="150.0" styleClass="programme-choice" stylesheets="@style.css" />
                                  </children>
                               </VBox>
                               <Region fx:id="spacer1" />
                               <VBox prefHeight="200.0" prefWidth="100.0" styleClass="year-vbox" stylesheets="@style.css">
                                  <children>
                                     <Label fx:id="year" styleClass="year-label" stylesheets="@style.css" text="Label" />
-                                    <ChoiceBox fx:id="yearChoice" prefWidth="150.0" stylesheets="@style.css">
-                                       <styleClass>
-                                          <String fx:value="year-choice" />
-                                          <String fx:value="choice-box" />
-                                       </styleClass>
-                                    </ChoiceBox>
+                                    <ComboBox fx:id="yearChoice" prefWidth="150.0" styleClass="year-choice" stylesheets="@style.css" />
                                  </children>
                               </VBox>
                               <Region fx:id="spacer2" />
                               <VBox prefHeight="200.0" prefWidth="100.0" styleClass="intake-vbox" stylesheets="@style.css">
                                  <children>
                                     <Label fx:id="intake" styleClass="intake-label" stylesheets="@style.css" text="Label" />
-                                    <ChoiceBox fx:id="intakeChoice" prefWidth="150.0" stylesheets="@style.css">
-                                       <styleClass>
-                                          <String fx:value="intake-choice" />
-                                          <String fx:value="choice-box" />
-                                       </styleClass>
-                                    </ChoiceBox>
+                                    <ComboBox fx:id="intakeChoice" prefWidth="150.0" styleClass="intake-choice" stylesheets="@style.css" />
                                  </children>
                               </VBox>
                               <Region fx:id="spacer3" />
                               <VBox prefHeight="200.0" prefWidth="100.0" styleClass="semester-vbox" stylesheets="@style.css">
                                  <children>
                                     <Label fx:id="semester" styleClass="semester-label" stylesheets="@style.css" text="Label" />
-                                    <ChoiceBox fx:id="semesterChoice" prefWidth="150.0" stylesheets="@style.css">
-                                       <styleClass>
-                                          <String fx:value="semester-choice" />
-                                          <String fx:value="choice-box" />
-                                       </styleClass>
-                                    </ChoiceBox>
+                                    <ComboBox fx:id="semesterChoice" prefWidth="150.0" styleClass="semester-choice" stylesheets="@style.css" />
                                  </children>
                               </VBox>
                            </children>

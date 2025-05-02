@@ -23,10 +23,6 @@
     -fx-font-weight: bold;
 }
 
-.sunway-label{
-    -fx-font-size: 45;
-}
-
 .login-vbox, .sign-up-vbox{
     -fx-spacing: 40px;
     -fx-pref-width:275;
@@ -34,7 +30,8 @@
     -fx-alignment: center;
 }
 
-.login-user-id, .login-password, .sign-up-user-id, .sign-up-password, .sign-up-confirm-password{
+.login-user-id, .login-password, .sign-up-user-id, 
+.sign-up-password, .sign-up-confirm-password{
     -fx-background-color: transparent;
     -fx-text-fill: black;
     -fx-font-size: 18;
@@ -174,7 +171,7 @@
 }
 
 .programme-label, .semester-label, .year-label, .intake-label, .venue-label, 
-.available-label, .id-label,.unavailable-day-label, 
+.available-label, .id-label, .unavailable-day-label, 
 .programmelabel ,.intakelabel, .yearlabel{
     -fx-font-family: "serif";
     -fx-font-size: 20;
@@ -197,6 +194,44 @@
     -fx-border-color: white, white, white, black;
     -fx-border-width: 0 0 1 0;
     -fx-pref-width: inherit;
+}
+
+ .programme-choice .list-cell, .semester-choice .list-cell, 
+ .intake-choice .list-cell, .year-choice .list-cell{
+    -fx-background-color: transparent;
+    -fx-text-fill: black;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.year-choice .list-cell:hover, .semester-choice .list-cell:hover, 
+.intake-choice .list-cell:hover, .programme-choice .list-cell:hover{
+    -fx-background-color: #3D52A0; /* Blue hover effect for list cells */
+    -fx-text-fill: white; /* Text color on hover */
+    -fx-cursor: hand;
+}
+
+ .semester-choice .list-view, .year-choice .list-view, 
+ .intake-choice .list-view, .programme-choice .list-view{
+    -fx-background-color: linear-gradient(from 50% 50% to 100% 0%, #EDE8F5 10%, #ADBBDA 80%); /* Transparent background for list cells */
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.intake-choice .scroll-bar:vertical, .semester-choice .scroll-bar:vertical, 
+.year-choice .scroll-bar:vertical, .programme-choice .scroll-bar:vertical{
+    -fx-background-color: inherit; /* Blue background for the scrollbar track */
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-pref-width: 15px; /* Set the width of the vertical scrollbar */
+}
+
+.intake-choice .scroll-bar:vertical .thumb, .semester-choice .scroll-bar:vertical .thumb,
+.year-choice .scroll-bar:vertical .thumb, .programme-choice .scroll-bar:vertical .thumb{
+    -fx-background-color: #3D52A0; 
+    -fx-background-radius: 10;
 }
 
 /* Style the dropdown list */

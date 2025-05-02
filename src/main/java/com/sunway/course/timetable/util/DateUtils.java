@@ -5,17 +5,19 @@ import java.util.List;
 
 public class DateUtils {
 
-    public static String getMonths(){
+    public static List<String> getMonths(){
+        List<String> monthOptions = new ArrayList<String>();
+
         String[] months = {
                 "January", "February", "March", "April",
                 "May", "June", "July", "August",
                 "September", "October", "November", "December"
         };
-        StringBuilder monthString = new StringBuilder();
+        
         for (String month : months) {
-            monthString.append(month).append(", ");
+            monthOptions.add(month);
         }
-        return monthString.substring(0, monthString.length() - 2); // Remove the last comma and space
+        return monthOptions;
     }
 
     public static int getCurrentYear() {
