@@ -1,6 +1,5 @@
 package com.sunway.course.timetable.controller.base;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -12,25 +11,16 @@ import javafx.scene.image.ImageView;
 
 public abstract class AuthBaseController extends BaseController{
 
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button signUpButton;
+    @FXML private Label description;
+    @FXML private ImageView logo;
+
     protected String username;
     protected String password;
     private final String titleName = "SunwayCTS";
     private final String icon = "/images/sunwaycts.png";
-
-    @FXML
-    private TextField usernameField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private Button signUpButton;
-
-    @FXML 
-    private Label description;
-
-    @FXML
-    private ImageView logo;
 
     protected NavigationService navigationService;
 
@@ -75,11 +65,11 @@ public abstract class AuthBaseController extends BaseController{
         }
     }
 
-    protected String trimUsername() {
+    protected String trimUsername() { 
         return usernameField.getText().trim();
     }
 
-    protected String trimPassword() {
+    protected String trimPassword() { 
         return passwordField.getText().trim();
     }
 

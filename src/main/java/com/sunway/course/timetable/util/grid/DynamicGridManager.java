@@ -1,19 +1,25 @@
-package com.sunway.course.timetable.util;
+package com.sunway.course.timetable.util.grid;
+
+import com.sunway.course.timetable.util.pdf.PdfExporter;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
-
+import javafx.scene.layout.StackPane;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 
 public class DynamicGridManager {
     private final GridPane gridPane;
-    private final int maxColumns;
-    private final int maxRows;
+    private int maxColumns;
+    private int maxRows;
     private int currentRow = 0;
     private int currentCol = 0;
 
+
+    public DynamicGridManager(GridPane gridPane) {
+        this.gridPane = gridPane;
+    }
 
     public DynamicGridManager(GridPane gridPane, int maxColumns, int maxRows) {
         this.gridPane = gridPane;
@@ -69,5 +75,39 @@ public class DynamicGridManager {
 
         currentRow = row;
         currentCol = col;
+    }
+
+    public void setupGridBorders() {
+        int totalCol = gridPane.getColumnConstraints().size();
+        int totalRow = gridPane.getRowConstraints().size();
+
+        for(int col = 0; col < totalCol; col++){
+            for(int row = 0; row < totalRow; row++){
+                //Get existing node
+                Node content = getNodeByRowColumnIndex(col, row, gridPane);
+
+                if(content != null && !(content instanceof StackPane)) {
+                    gridPane.getChildren().remove(content);
+
+                    StackPane cell = new StackPane(content);
+                    cell.getStyleClass().add("grid-cell");
+                    gridPane.add(cell, col, row);
+                }
+            }
+        }
+    } 
+
+    public Node getNodeByRowColumnIndex(int column, int row, GridPane gridPane) {
+        for (Node node : gridPane.getChildren()) {
+            Integer colIndex = GridPane.getColumnIndex(node);
+            Integer rowIndex = GridPane.getRowIndex(node);
+            int col = (colIndex == null) ? 0 : colIndex;
+            int rw = (rowIndex == null) ? 0 : rowIndex;
+
+            if (col == column && rw == row) {
+                return node;
+            }
+        }
+        return null;
     }
 }

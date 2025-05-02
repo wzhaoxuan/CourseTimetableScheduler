@@ -11,8 +11,8 @@ import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.VenueService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
-import com.sunway.course.timetable.util.DateUtils;
-import com.sunway.course.timetable.util.DynamicGridManager;
+import com.sunway.course.timetable.util.date.DateUtils;
+import com.sunway.course.timetable.util.grid.DynamicGridManager;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -79,6 +79,15 @@ public class GenerateTimetableController extends ContentController {
     private void addSection(){
         try {
             navigationService.loadLecturerAvailabilityPage(); // Handle exception properly
+        } catch (Exception e) {
+            e.printStackTrace(); // Print the error if something goes wrong
+        }
+    }
+
+    @FXML
+    private void generate() {
+        try{
+            navigationService.loadTimetablePage(); // Handle exception properly
         } catch (Exception e) {
             e.printStackTrace(); // Print the error if something goes wrong
         }

@@ -14,8 +14,7 @@ import javafx.scene.control.PasswordField;
 @Component
 public class SignUpSceneController extends AuthBaseController {
 
-    @FXML
-    private PasswordField confirmPasswordField;
+    @FXML private PasswordField confirmPasswordField;
 
     @Autowired
     private UserService userService;

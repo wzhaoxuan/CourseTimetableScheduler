@@ -1,0 +1,73 @@
+package com.sunway.course.timetable.controller.app;
+import java.io.IOException;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
+
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
+import com.sunway.course.timetable.controller.base.ContentController;
+import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.util.grid.DynamicGridManager;
+
+import java.io.File;
+import com.sunway.course.timetable.util.pdf.PdfExporter;
+import javafx.stage.FileChooser;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class TimetableController extends ContentController {
+
+    @FXML Button downloadTimetable;
+    @FXML Label satisfaction, score, monday, tuesday, wednesday, thursday, friday;
+    @FXML GridPane timetableGrid;
+
+    private DynamicGridManager timetableGridManager;
+
+    public TimetableController(NavigationService navService, LoginSceneController loginController) {
+        super(navService, loginController);
+    }
+
+    @Override
+    protected void initialize() {
+        super.initialize(); 
+        setupLabelsText();
+
+        timetableGridManager = new DynamicGridManager(timetableGrid);
+        timetableGridManager.setupGridBorders();
+
+    }
+
+    private void setupLabelsText() {
+        subheading.setText("Timetable");
+        downloadTimetable.setText("Download");
+        satisfaction.setText("Satisfaction");
+        score.setText("99%");
+        monday.setText("Monday");
+        tuesday.setText("Tuesday");
+        wednesday.setText("Wednesday");
+        thursday.setText("Thursday");
+        friday.setText("Friday");
+    }
+
+    @FXML
+    private void downloadTimetable() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Timetable");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDf files", "*.pdf"));
+        fileChooser.setInitialFileName("timetable.pdf");
+
+        File selectedFile = fileChooser.showSaveDialog(null);
+
+        if (selectedFile != null) {
+            try {
+                PdfExporter.exportGridToPDF(timetableGrid, selectedFile);
+                System.out.println("PDF saved successfully to: " + selectedFile.getAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}

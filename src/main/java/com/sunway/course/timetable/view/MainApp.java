@@ -45,10 +45,6 @@ public class MainApp extends Application {
         fxmlLoader.setControllerFactory(springContext::getBean);
         
         Scene scene = new Scene(fxmlLoader.load());
-
-        // Ensure scene resizes with window
-        primaryStage.widthProperty().addListener((obs, oldVal, newVal) -> scene.getRoot().resize(newVal.doubleValue(), primaryStage.getHeight()));
-        primaryStage.heightProperty().addListener((obs, oldVal, newVal) -> scene.getRoot().resize(primaryStage.getWidth(), newVal.doubleValue()));
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -133,16 +129,14 @@ public class MainApp extends Application {
         primaryStage.show();
     }
 
-    public static MainApp getInstance() {
-        return instance;
-    }
+    public void loadTimetablePage() throws Exception{
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/TimetableScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
 
-    public String getIcon() {
-        return icon;
-    }
-
-    public String getTitle() {
-        return title;
+        Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
     @Override

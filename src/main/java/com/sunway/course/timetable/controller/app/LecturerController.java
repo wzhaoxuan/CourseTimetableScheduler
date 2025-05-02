@@ -13,9 +13,7 @@ import javafx.scene.control.ToggleGroup;
 @Component
 public class LecturerController extends SelectionController{
     
-    @FXML
-    private RadioButton full_time, part_time, teaching_assistant;
-
+    @FXML private RadioButton full_time, part_time, teaching_assistant;
 
     public LecturerController(NavigationService navService, LoginSceneController loginController) {
         super(navService, loginController);

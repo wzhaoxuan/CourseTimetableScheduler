@@ -115,7 +115,7 @@
                               </ScrollPane>
                            </children>
                         </VBox>
-                        <Button fx:id="generateButton" mnemonicParsing="false" styleClass="generate-button" stylesheets="@style.css" text="Button" />
+                        <Button fx:id="generateButton" mnemonicParsing="false" onAction="#generate" styleClass="generate-button" stylesheets="@style.css" text="Button" />
                      </children>
                   </VBox>
                </children>

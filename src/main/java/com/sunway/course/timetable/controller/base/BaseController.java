@@ -11,8 +11,7 @@ public abstract class BaseController {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @FXML
-    protected Label title;
+    @FXML protected Label title;
 
     protected final MainApp mainApp;
 

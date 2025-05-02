@@ -18,11 +18,8 @@ public abstract class SelectionController extends ContentController {
 
     private static final Logger logger = LoggerFactory.getLogger(SelectionController.class);
 
-    @FXML
-    protected Label subheading;
-
-    @FXML
-    protected RadioButton programme, module, lecturer;
+    @FXML protected Label subheading;
+    @FXML protected RadioButton programme, module, lecturer;
 
     @Autowired
     public SelectionController(NavigationService navigationService, 

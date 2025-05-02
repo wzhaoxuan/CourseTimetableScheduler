@@ -12,8 +12,7 @@ import javafx.scene.control.Label;
 @Component
 public class ProgrammeController extends SelectionController{
 
-    @FXML
-    private Label programmelabel, intake, year;
+    @FXML private Label programmelabel, intake, year;
 
     public ProgrammeController(NavigationService navService, LoginSceneController loginController){
         super(navService, loginController);

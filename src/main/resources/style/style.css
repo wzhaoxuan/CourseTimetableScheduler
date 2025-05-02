@@ -170,9 +170,11 @@
     -fx-pref-width: 200px;
 }
 
-.programme-label, .semester-label, .year-label, .intake-label, .venue-label, 
-.available-label, .id-label, .unavailable-day-label, 
-.programmelabel ,.intakelabel, .yearlabel{
+.programme-label, .semester-label, .year-label, 
+.intake-label, .venue-label, .available-label, 
+.id-label, .unavailable-day-label, .programmelabel,
+.intakelabel, .yearlabel, .sactisfaction-label,
+.score-label{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
@@ -448,4 +450,63 @@
     -fx-spacing: 50px;
     -fx-padding: 0 0 0 5;
     /* -fx-max-width: 1000; */
+}
+
+/* Timetable Table */
+.download-button{
+    -fx-pref-width: 300;
+    -fx-pref-height: 10;
+    -fx-background-color: #8697C4;
+    -fx-text-fill: black;
+    -fx-font-size: 15;
+    -fx-font-family: "serif";
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    fx-cursor: hand;
+}
+
+.download-button:hover{
+    -fx-background-color: #6176c7;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.grid-cell{
+    -fx-border-color: black;
+    -fx-border-width: 1;
+    -fx-background-color: #6176c7;
+}
+
+.weekday-label, .time-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 15;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+    -fx-pref-width: inherit;
+    -fx-alignment: center;
+}
+
+.time-label{
+    -fx-font-size: 10;
+}
+
+.statisfaction-label{
+    -fx-font-family: "serif";
+    -fx-font-size: 40;
+    -fx-font-color: black;
+    -fx-font-weight: bold;
+    -fx-pref-height: 20;
+}
+
+.satisfaction-vbox{
+    -fx-padding: 0 15 0 15;
+}
+
+.score-label{
+    -fx-background-color: #8697C4;
+    -fx-pref-width: 100;
+    -fx-pref-height: inherit;
+    -fx-background-radius: 20;
+    -fx-alignment: center;
+    -fx-font-size: 40;
 }

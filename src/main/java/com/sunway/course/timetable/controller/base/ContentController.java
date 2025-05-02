@@ -16,14 +16,9 @@ public abstract class ContentController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentController.class);
 
-    @FXML
-    protected ImageView profile;
-
-    @FXML
-    protected Label username, subheading;
-
-    @FXML
-    protected Button homeButton, generateTimetable, viewTimetable, logOutButton;
+    @FXML protected ImageView profile;
+    @FXML protected Label username, subheading;
+    @FXML protected Button homeButton, generateTimetable, viewTimetable, logOutButton;
 
     protected NavigationService navigationService;
     private final LoginSceneController loginSceneController;

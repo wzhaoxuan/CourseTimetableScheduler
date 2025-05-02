@@ -18,20 +18,11 @@ import javafx.scene.layout.Region;
 @Component
 public class LecturerAvailabilityController{
 
-    @FXML
-    private Label subheading, id, unavaliableDay;
-
-    @FXML
-    private TextField lecturerId;
-
-    @FXML 
-    private Button confirm;
-
-    @FXML
-    private CheckBox monday, tuesday, wednesday, thursday, friday;
-
-    @FXML
-    private Region spacer1, spacer2, spacer3, spacer4;
+    @FXML private Label subheading, id, unavaliableDay;
+    @FXML private TextField lecturerId;
+    @FXML private Button confirm;
+    @FXML private CheckBox monday, tuesday, wednesday, thursday, friday;
+    @FXML private Region spacer1, spacer2, spacer3, spacer4;
 
     @Autowired
     private WeekDayConstraintService weekDayConstraintService;

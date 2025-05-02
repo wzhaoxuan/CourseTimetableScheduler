@@ -68,4 +68,8 @@ public class NavigationService {
         mainApp.loadLecturerAvailabilityPage();
     }
 
+    public void loadTimetablePage() throws Exception {
+        checkMainApp();
+        mainApp.loadTimetablePage();
+    }
 }

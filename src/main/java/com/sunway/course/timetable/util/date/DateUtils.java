@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.util;
+package com.sunway.course.timetable.util.date;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
