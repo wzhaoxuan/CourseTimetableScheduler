@@ -31,5 +31,4 @@ public class VenueDistanceService {
     public void deleteVenueDistance(VenueDistanceId id) {
         venueDistanceRepository.deleteById(id);
     }
-
 }

@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.model.venuedistance;
 import com.sunway.course.timetable.model.Venue;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -17,7 +18,7 @@ public class VenueDistance {
 
     @ManyToOne
     @MapsId("venueId") // Maps venueId from the embedded composite key
-    @JoinColumn(name = "venue_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "venue_id", referencedColumnName = "id")
     private Venue venue;
 
     @Column(nullable=false)
@@ -38,6 +39,14 @@ public class VenueDistance {
 
     public void setVenueDistanceId(VenueDistanceId venueDistanceId) {
         this.venueDistanceId = venueDistanceId;
+    }
+
+    public Venue getVenue() {
+        return venue;
+    }
+
+    public void setVenue(Venue venue) {
+        this.venue = venue;
     }
 
     public Double getDistance() {

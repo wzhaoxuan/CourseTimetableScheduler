@@ -39,15 +39,19 @@ public class Programme {
     @Column(nullable = false)
     private int duration;
 
+    @Column(nullable = false)
+    private int semester;
+
     // Default constructor
     public Programme() {}
 
-    public Programme(ProgrammeId programmeId, String name, int year, String intake, int duration) {
+    public Programme(ProgrammeId programmeId, String name, int year, String intake, int duration, int semester) {
         this.programmeId = programmeId;
         this.name = name;
         this.year = year;
         this.intake = intake;
         this.duration = duration;
+        this.semester = semester;
     }
 
     public ProgrammeId getProgrammeId() {
@@ -90,5 +94,12 @@ public class Programme {
         this.duration = duration;
     }
 
+    public int getSemester() {
+        return semester;
+    }
+
+    public void setSemester(int semester) {
+        this.semester = semester;
+    }
 
 }
