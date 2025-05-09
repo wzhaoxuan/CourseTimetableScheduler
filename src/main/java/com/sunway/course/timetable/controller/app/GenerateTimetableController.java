@@ -52,7 +52,8 @@ public class GenerateTimetableController extends ContentController {
                                         VenueService venueService,
                                         ApplicationEventPublisher eventPublisher,
                                         VenueSessionStore venueSessionStore,
-                                        WeekdaySessionStore weekdaySessionStore) {
+                                        WeekdaySessionStore weekdaySessionStore
+                                        ) {
         super(navService, loginController);
         this.venueService = venueService;
         this.eventPublisher = eventPublisher;
@@ -61,15 +62,16 @@ public class GenerateTimetableController extends ContentController {
     }
 
     @Override
-    protected void initialize() {
+    public void initialize() {
         super.initialize();
         setupLabelsText();
         setupComboBoxes();
         setupLayout();
         setupVenueField();
 
-        venueGridManager = new DynamicGridManager(venueGrid, MAXCOLUMNS, MAXROWS);
-        weekdayGridManager = new DynamicGridManager(weekdayGrid, MAXCOLUMNS, MAXROWS);
+        venueGridManager = createVenueGridManager();
+        weekdayGridManager = createWeekdayGridManager();
+
 
         venueStore.get().forEach(this::addVenueToGrid);
         weekdayStore.get().forEach(lecturer -> addWeekDayConstraintToGrid(lecturer, null)); // Adjust if ID is needed
@@ -159,4 +161,13 @@ public class GenerateTimetableController extends ContentController {
             }
         });
     }
+
+    protected DynamicGridManager createVenueGridManager() {
+        return new DynamicGridManager(venueGrid, MAXCOLUMNS, MAXROWS);
+    }
+    
+    protected DynamicGridManager createWeekdayGridManager() {
+        return new DynamicGridManager(weekdayGrid, MAXCOLUMNS, MAXROWS);
+    }
+    
 }

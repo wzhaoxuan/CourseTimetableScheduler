@@ -1,13 +1,12 @@
 package com.sunway.course.timetable.util.grid;
 
-import com.sunway.course.timetable.util.pdf.PdfExporter;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.RowConstraints;
-import javafx.scene.layout.StackPane;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.StackPane;
 
 public class DynamicGridManager {
     private final GridPane gridPane;
@@ -46,8 +45,6 @@ public class DynamicGridManager {
         if (label == null || label.isEmpty()) return;
 
         Button button = new Button(label);
-        // button.setMaxWidth(Region.USE_COMPUTED_SIZE);
-        // button.setMaxHeight(Region.USE_COMPUTED_SIZE);
         button.getStyleClass().add(styleClass);
         gridPane.add(button, currentCol, currentRow);
         rearrangeGrid();

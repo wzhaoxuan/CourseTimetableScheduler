@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.util.pdf;
+import com.sunway.course.timetable.interfaces.PdfExportService;
 
 import com.sunway.course.timetable.util.grid.DynamicGridManager;
 import javafx.scene.control.Label;
@@ -21,17 +22,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.springframework.stereotype.Component;
+
 import javafx.scene.Parent;
 
+@Component
+public class PdfExporter implements PdfExportService {
 
-public class PdfExporter {
-
-    public static void exportGridToPDF(GridPane gridPane, File outputFile) throws IOException {
+    @Override
+    public void export(GridPane gridPane, File outputFile) throws IOException {
         PdfWriter writer = new PdfWriter(new FileOutputStream(outputFile));
         PdfDocument pdfDoc = new PdfDocument(writer);
 
-        // Set page size to A4 landscape
-        PageSize pageSize = PageSize.A4.rotate();
+        PageSize pageSize = PageSize.A4;
         Document document = new Document(pdfDoc, pageSize);
 
         int cols = gridPane.getColumnConstraints().size();
@@ -51,8 +54,7 @@ public class PdfExporter {
                 DynamicGridManager gridManager = new DynamicGridManager(gridPane);
                 Node cellNode = gridManager.getNodeByRowColumnIndex(col, row, gridPane);
                 String text = extractTextFromNode(cellNode);
-                Cell cell = new Cell().add(new Paragraph(text))
-                        .setPadding(30f);
+                Cell cell = new Cell().add(new Paragraph(text)).setPadding(30f);
                 table.addCell(cell);
             }
         }

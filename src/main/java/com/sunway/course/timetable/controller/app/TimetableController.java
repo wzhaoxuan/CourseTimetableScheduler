@@ -1,21 +1,21 @@
 package com.sunway.course.timetable.controller.app;
+import java.io.File;
 import java.io.IOException;
+
+import org.springframework.stereotype.Component;
+
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
+import com.sunway.course.timetable.controller.base.ContentController;
+import com.sunway.course.timetable.interfaces.PdfExportService;
+import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.util.grid.DynamicGridManager;
+import com.sunway.course.timetable.util.pdf.PdfExporter;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
-
-import com.sunway.course.timetable.controller.authentication.LoginSceneController;
-import com.sunway.course.timetable.controller.base.ContentController;
-import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.util.grid.DynamicGridManager;
-
-import java.io.File;
-import com.sunway.course.timetable.util.pdf.PdfExporter;
 import javafx.stage.FileChooser;
-
-import org.springframework.stereotype.Component;
 
 @Component
 public class TimetableController extends ContentController {
@@ -25,9 +25,13 @@ public class TimetableController extends ContentController {
     @FXML GridPane timetableGrid;
 
     private DynamicGridManager timetableGridManager;
+    private FileChooser fileChooser = new FileChooser(); 
+    private PdfExportService pdfExportService;
 
-    public TimetableController(NavigationService navService, LoginSceneController loginController) {
+    public TimetableController(NavigationService navService, LoginSceneController loginController, 
+                                PdfExportService pdfExportService) {
         super(navService, loginController);
+        this.pdfExportService = pdfExportService;
     }
 
     @Override
@@ -35,7 +39,7 @@ public class TimetableController extends ContentController {
         super.initialize(); 
         setupLabelsText();
 
-        timetableGridManager = new DynamicGridManager(timetableGrid);
+        timetableGridManager = createTimetableGridManager();
         timetableGridManager.setupGridBorders();
 
     }
@@ -53,8 +57,7 @@ public class TimetableController extends ContentController {
     }
 
     @FXML
-    private void downloadTimetable() {
-        FileChooser fileChooser = new FileChooser();
+    public void downloadTimetable() {
         fileChooser.setTitle("Save Timetable");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDf files", "*.pdf"));
         fileChooser.setInitialFileName("timetable.pdf");
@@ -63,11 +66,20 @@ public class TimetableController extends ContentController {
 
         if (selectedFile != null) {
             try {
-                PdfExporter.exportGridToPDF(timetableGrid, selectedFile);
+                System.out.println("Exporting timetable to: " + selectedFile.getAbsolutePath());
+                pdfExportService.export(timetableGrid, selectedFile);
                 System.out.println("PDF saved successfully to: " + selectedFile.getAbsolutePath());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    protected DynamicGridManager createTimetableGridManager() {
+        return new DynamicGridManager(timetableGrid); 
+    }
+
+    public void setFileChooser(FileChooser chooser) {
+        this.fileChooser = chooser;
     }
 }
