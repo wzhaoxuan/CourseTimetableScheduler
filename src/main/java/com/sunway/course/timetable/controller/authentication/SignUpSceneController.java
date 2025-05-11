@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.UserService;
+import com.sunway.course.timetable.interfaces.services.UserService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.PasswordField;

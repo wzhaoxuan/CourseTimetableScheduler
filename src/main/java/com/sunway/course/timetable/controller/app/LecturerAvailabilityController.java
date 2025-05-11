@@ -3,8 +3,8 @@ package com.sunway.course.timetable.controller.app;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.interfaces.services.WeekDayConstraintService;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.WeekDayConstraintService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -24,14 +24,14 @@ public class LecturerAvailabilityController{
     @FXML private CheckBox monday, tuesday, wednesday, thursday, friday;
     @FXML private Region spacer1, spacer2, spacer3, spacer4;
 
-    @Autowired
-    private WeekDayConstraintService weekDayConstraintService;
-
+    private final WeekDayConstraintService weekDayConstraintService;
     private final NavigationService navigationService;
 
     @Autowired
-    public LecturerAvailabilityController(NavigationService navigationService) {
+    public LecturerAvailabilityController(NavigationService navigationService,
+                                          WeekDayConstraintService weekDayConstraintService) {
         this.navigationService = navigationService;
+        this.weekDayConstraintService = weekDayConstraintService;
     }
 
     public void initialize() {

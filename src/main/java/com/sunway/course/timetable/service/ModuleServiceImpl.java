@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.service;
+import com.sunway.course.timetable.interfaces.services.ModuleService;
 
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.repository.ModuleRepository;
@@ -10,33 +11,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ModuleService {
+public class ModuleServiceImpl implements ModuleService {
 
     private final ModuleRepository moduleRepository;
 
     @Autowired
-    public ModuleService(ModuleRepository moduleRepository) {
+    public ModuleServiceImpl(ModuleRepository moduleRepository) {
         this.moduleRepository = moduleRepository;
     }
 
+    @Override
     public List<Module> getAllModules() {
         return moduleRepository.findAll();
     }
 
-    public Module getModuleById(Long id) {
-        return moduleRepository.findById(id).orElse(null);
-    }
-
-    public Module saveModule(Module module) {
-        return moduleRepository.save(module);
-    }
-
-    public void deleteModule(Long id) {
-        moduleRepository.deleteById(id);
+    @Override
+    public Optional<Module> getModuleById(Long id) {
+        return moduleRepository.findById(id);
     }
     
+    @Override
     public Optional<Module> getModuleByName(String name) {
         return moduleRepository.findByName(name);
+    }
+
+    @Override
+    public Optional<Module> getModuleCreditHour(int creditHour) {
+        if (creditHour <= 0) {
+            throw new IllegalArgumentException("Credit hour must be greater than zero");
+        }
+        return moduleRepository.findByCreditHour(creditHour);
     }
 
 }

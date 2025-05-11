@@ -11,5 +11,7 @@ public interface ModuleRepository extends JpaRepository<Module, Long> {
     // Custom query methods can be defined here if needed
     // For example, findByName(String name) to find modules by their name
     Optional<Module> findByName(String name);
+    Optional<Module> findById(Long id);
+    Optional<Module> findByCreditHour(int creditHour);
 
 }

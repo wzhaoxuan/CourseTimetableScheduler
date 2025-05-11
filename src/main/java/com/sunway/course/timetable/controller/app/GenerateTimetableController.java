@@ -7,8 +7,8 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
 import com.sunway.course.timetable.event.VenueAddedEvent;
+import com.sunway.course.timetable.interfaces.services.VenueService;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.VenueService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.date.DateUtils;

@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.UserService;
+import com.sunway.course.timetable.interfaces.services.UserService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -15,7 +15,7 @@ public class LoginSceneController extends AuthBaseController {
     @FXML private Button loginButton;
 
     @Autowired
-    UserService userService; // Autowire UserService
+    private UserService userService; // Autowire UserService
 
     // Inject MainApp using constructor
     public LoginSceneController(NavigationService navService) { 

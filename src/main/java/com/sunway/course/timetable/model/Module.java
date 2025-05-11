@@ -19,15 +19,15 @@ public class Module {
     private String name;
 
     @Column(nullable = false)
-    private int creditHours;
+    private int creditHour;
 
     public Module() {
         // Default constructor
     }
 
-    public Module(String name, int creditHours) {
+    public Module(String name, int creditHour) {
         this.name = name;
-        this.creditHours = creditHours;
+        this.creditHour = creditHour;
     }
 
     public Long getId() {
@@ -36,17 +36,17 @@ public class Module {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getname() {
+    public String getName() {
         return name;
     }
-    public void setname(String name) {
+    public void setName(String name) {
         this.name = name;
     }
-    public int getCreditHours() {
-        return creditHours;
+    public int getCreditHour() {
+        return creditHour;
     }
-    public void setCreditHours(int creditHours) {
-        this.creditHours = creditHours;
+    public void setCreditHour(int creditHour) {
+        this.creditHour = creditHour;
     }
 
 }

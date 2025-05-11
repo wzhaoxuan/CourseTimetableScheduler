@@ -9,38 +9,42 @@ import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.WeekDayConstraint;
 import com.sunway.course.timetable.repository.WeekDayConstraintRepository;
+import com.sunway.course.timetable.interfaces.services.WeekDayConstraintService;
 
 import javafx.scene.control.CheckBox;
 
 
 @Service
-public class WeekDayConstraintService {
-
-    @Autowired
-    private LecturerService lecturerService;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
 
     private final WeekDayConstraintRepository weekDayConstraintRepository;
+    private final LecturerServiceImpl lecturerService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    public WeekDayConstraintService(WeekDayConstraintRepository weekDayConstraintRepository) {
+    public WeekDayConstraintServiceImpl(WeekDayConstraintRepository weekDayConstraintRepository,
+                                        LecturerServiceImpl lecturerService,
+                                        ApplicationEventPublisher eventPublisher) {
         this.weekDayConstraintRepository = weekDayConstraintRepository;
+        this.lecturerService = lecturerService;
+        this.eventPublisher = eventPublisher;
     }
 
+    @Override
     public Optional<WeekDayConstraint> getByLecturerId(Long lecturerId) {
         return weekDayConstraintRepository.findByLecturer_Id(lecturerId);
     }
 
+    @Override
     public WeekDayConstraint addWeekDayConstraint(WeekDayConstraint weekDayConstraint) {
         return weekDayConstraintRepository.save(weekDayConstraint);
     }
 
+    @Override
     public void deleteWeekDayConstraint(Long id) {
         weekDayConstraintRepository.deleteById(id);
     }
 
+    @Override
     public void selectWeedayConstraint(String lecturerIdText, 
                                         CheckBox monday, 
                                         CheckBox tuesday, 

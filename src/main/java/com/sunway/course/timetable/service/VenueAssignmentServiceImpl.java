@@ -9,29 +9,33 @@ import org.springframework.stereotype.Service;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.repository.VenueAssignmentRepository;
+import com.sunway.course.timetable.interfaces.services.VenueAssignmentService;
 
 @Service
-public class VenueAssignmentService {
+public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     private final VenueAssignmentRepository venueAssignmentRepository;
 
-    @Autowired
-    public VenueAssignmentService(VenueAssignmentRepository repository) {
+    public VenueAssignmentServiceImpl(VenueAssignmentRepository repository) {
         this.venueAssignmentRepository = repository;
     }
 
+    @Override
     public List<VenueAssignment> getAllAssignments() {
         return venueAssignmentRepository.findAll();
     }
 
+    @Override
     public Optional<VenueAssignment> getAssignmentById(VenueAssignmentId key) {
         return venueAssignmentRepository.findById(key);
     }
 
+    @Override
     public VenueAssignment saveAssignment(VenueAssignment assignment) {
         return venueAssignmentRepository.save(assignment);
     }
 
+    @Override
     public void deleteAssignment(VenueAssignmentId key) {
         venueAssignmentRepository.deleteById(key);
     }
