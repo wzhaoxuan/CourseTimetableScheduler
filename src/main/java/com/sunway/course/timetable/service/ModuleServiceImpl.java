@@ -36,7 +36,7 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public Optional<Module> getModuleCreditHour(int creditHour) {
+    public Optional<List<Module>> getModuleCreditHour(int creditHour) {
         if (creditHour <= 0) {
             throw new IllegalArgumentException("Credit hour must be greater than zero");
         }

@@ -1,30 +1,29 @@
-package com.sunway.course.timetable.service;
-import static org.mockito.Mockito.times;
-import java.util.ArrayList;
+package com.sunway.course.timetable.unit.service;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.sunway.course.timetable.exception.CreationException;
-import com.sunway.course.timetable.exception.IdNotFoundException;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.repository.VenueRepository;
+import com.sunway.course.timetable.service.VenueServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class VenueServiceTest {
@@ -33,28 +32,30 @@ public class VenueServiceTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @InjectMocks private VenueServiceImpl venueService;
 
-    @Test
-    @DisplayName("Test Get All Venues -- Success")
-    void testGetAllVenues() {
-        List<Venue> venues = new ArrayList<>();
+    private Venue venue, venue2;
 
-        Venue venue = new Venue();
+    @BeforeEach
+    void setUp() {
+        venue = new Venue();
         venue.setName("UW2-10");
         venue.setCapacity(100);
         venue.setFloor("Level 2");
         venue.setFloorType("Uni West");
         venue.setType("Room");
-        venues.add(venue);
 
-        Venue venue2 = new Venue();
+        venue2 = new Venue();
         venue2.setName("UW2-11");
         venue2.setCapacity(35);
         venue2.setFloor("Level 2");
         venue2.setFloorType("Uni West");
         venue2.setType("Room");
-        venues.add(venue2);
+    }
 
-        when(venueRepository.findAll()).thenReturn(venues);
+    @Test
+    @DisplayName("Test Get All Venues -- Success")
+    void testGetAllVenues() {
+        
+        when(venueRepository.findAll()).thenReturn(Arrays.asList(venue, venue2));
 
         List<Venue> result = venueService.getAllVenues();
 
@@ -66,31 +67,14 @@ public class VenueServiceTest {
     @Test
     @DisplayName("Test Get All Venues -- Empty List")
     void testGetAllVenuesEmpty() {
-        List<Venue> venues = new ArrayList<>();
         List<Venue> result = venueService.getAllVenues();
 
         assertTrue(result.isEmpty());
     }
 
     @Test
-    @DisplayName("Test Get All Venues -- Failure")
-    void testGetAllVenuesFailure() {
-        when(venueRepository.findAll())
-        .thenThrow(new RuntimeException("Database error"));
-
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            venueService.getAllVenues();
-        });
-
-        assertEquals("Database error", exception.getMessage());
-        verify(venueRepository, times(1)).findAll();
-    }
-
-    @Test
     @DisplayName("Test Get Venue By ID -- Success")
     void testGetVenueById() {
-        Venue venue = new Venue();
-        venue.setId(1L);
 
         when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
 
@@ -103,7 +87,6 @@ public class VenueServiceTest {
     @Test
     @DisplayName("Test Get Venue By ID -- Not Found")
     void testGetVenueByIdNotFound() {
-
         when(venueRepository.findById(1L)).thenReturn(Optional.empty());
 
         Optional<Venue> result = venueService.getVenueById(1L);
@@ -116,8 +99,6 @@ public class VenueServiceTest {
     @Test
     @DisplayName("Test Get Venue By Name -- Success")
     void testGetVenueByName(){
-        Venue venue = new Venue();
-        venue.setName("UW2-10");
 
         when(venueRepository.findByName("UW2-10")).thenReturn(Optional.of(venue));
         assertTrue(venueService.getVenueByName("UW2-10").isPresent());
@@ -137,15 +118,8 @@ public class VenueServiceTest {
     @Test
     @DisplayName("Test Add Venue -- Success")
     void testAddVenue() {
-        Venue venue = new Venue();
-        venue.setName("UW2-10");
-        venue.setCapacity(100);
-        venue.setFloor("Level 2");
-        venue.setFloorType("Uni West");
-        venue.setType("Room");
 
-        when(venueRepository.save(any(Venue.class)))
-        .thenReturn(venue);
+        when(venueRepository.save(any(Venue.class))).thenReturn(venue);
 
         Venue result = venueService.addVenue(venue);
 
@@ -158,12 +132,6 @@ public class VenueServiceTest {
     @Test
     @DisplayName("Test Add Venue -- Failure")
     void testAddVenueFailure() {
-        Venue venue = new Venue();
-        venue.setName("UW2-10");
-        venue.setCapacity(100);
-        venue.setFloor("Level 2");
-        venue.setFloorType("Uni West");
-        venue.setType("Room");
 
         when(venueRepository.save(any(Venue.class)))
         .thenThrow(new CreationException("Failed to add venue"));

@@ -3,7 +3,6 @@ package com.sunway.course.timetable.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,13 +14,13 @@ import com.sunway.course.timetable.interfaces.services.UserService;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder encoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder encoder) {
         this.userRepository = userRepository;
+        this.encoder = encoder;
     }
-    
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     
     @Override
     public List<User> getAllUser() {

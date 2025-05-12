@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.controller.app;
+package com.sunway.course.timetable.unit.controller;
 // package com.sunway.course.timetable.controller;
 
 // import java.util.concurrent.CountDownLatch;

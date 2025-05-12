@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.repository;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,6 @@ public interface ModuleRepository extends JpaRepository<Module, Long> {
     // For example, findByName(String name) to find modules by their name
     Optional<Module> findByName(String name);
     Optional<Module> findById(Long id);
-    Optional<Module> findByCreditHour(int creditHour);
+    Optional<List<Module>> findByCreditHour(int creditHour);
 
 }

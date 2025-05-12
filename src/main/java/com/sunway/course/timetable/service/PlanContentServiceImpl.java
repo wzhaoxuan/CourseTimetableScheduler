@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.service;
+import java.util.Optional;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,8 @@ public class PlanContentServiceImpl implements PlanContentService{
     }
 
     @Override
-    public PlanContent getPlanContentById(PlanContentId id) {
-        return planContentRepository.findById(id).orElse(null);
+    public Optional<PlanContent> getPlanContentById(PlanContentId id) {
+        return planContentRepository.findById(id);
     }
 
     @Override

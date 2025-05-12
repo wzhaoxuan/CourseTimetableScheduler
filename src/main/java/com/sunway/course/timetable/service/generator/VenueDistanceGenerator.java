@@ -69,14 +69,12 @@ public class VenueDistanceGenerator {
         boolean sameLevel = fromLevel == toLevel;
         boolean sameFloorType = fromFloorType.equalsIgnoreCase(toFloorType);
 
-        // Rule 1: University → University, same level, same floor types
-        if (isUniversityFrom && isUniversityTo && sameLevel && sameFloorType) return 20.0;
 
         // Rule 2: University → University, same level, going between west/center/east
         if (isUniversityFrom && isUniversityTo && sameLevel && !sameFloorType) return 50.0;
 
-        // Rule 3: University → University, different level, going between west/center/east
-        if (isUniversityFrom && isUniversityTo && !sameLevel && !sameFloorType) return 50.0 * levelDifference;
+        // Rule 3: University → University, different level, going between west/center/east or same floor types
+        if (isUniversityFrom && isUniversityTo && !sameLevel && (!sameFloorType || sameFloorType)) return 50.0 * levelDifference;
 
         // Rule 4: From university → college
         if (isUniversityFrom && isCollegeTo) {
@@ -104,8 +102,8 @@ public class VenueDistanceGenerator {
 
         if (isCollegeFrom && isCollegeTo && isSW && isSE && !sameLevel) return 50.0 * levelDifference;
 
-        // Default: University → University, different level, same floor types
-        return 50.0 * levelDifference;
+        // Default: University → University, same level, same floor types
+        return 20.0;
     }
 
     private int extractFloorLevel(String floorLevel) {

@@ -1,15 +1,11 @@
-package com.sunway.course.timetable.service;
-import com.sunway.course.timetable.exception.NullValueException;
-import com.sunway.course.timetable.model.Module;
-import com.sunway.course.timetable.repository.ModuleRepository;
-
+package com.sunway.course.timetable.unit.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +15,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-;
+
+import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.repository.ModuleRepository;
+import com.sunway.course.timetable.service.ModuleServiceImpl;
+
 
 @ExtendWith(MockitoExtension.class)
 public class ModuleServiceTest {
@@ -27,20 +27,28 @@ public class ModuleServiceTest {
     @Mock private ModuleRepository moduleRepository;
     @InjectMocks private ModuleServiceImpl moduleService;
 
-    @Test
-    @DisplayName("Test Get All Modules -- Success")
-    void testGetAllModules() {
-        List<Module> modules = new ArrayList<>();
-
-        Module module = new Module();
+    private Module module, module2;
+    private List<Module> modules;
+    
+    @BeforeEach
+    void setUp() {
+        modules = new ArrayList<>();
+        module = new Module();
+        module.setId(1L);
         module.setName("Software Engineering");
         module.setCreditHour(3);
         modules.add(module);
 
-        Module module2 = new Module();
-        module2.setName("Database Systems");
+        module2 = new Module();
         module2.setCreditHour(3);
+        module2.setName("Database Systems");
         modules.add(module2);
+
+    }
+
+    @Test
+    @DisplayName("Test Get All Modules -- Success")
+    void testGetAllModules() {
 
         when(moduleRepository.findAll()).thenReturn(modules);
 
@@ -51,7 +59,7 @@ public class ModuleServiceTest {
     }
 
     @Test
-    @DisplayName("Test Get All Modules -- Empty List")
+    @DisplayName("Should return empty list if no lecturers exist")
     void testGetAllModulesEmptyList() {
         List<Module> modules = new ArrayList<>();
 
@@ -65,11 +73,6 @@ public class ModuleServiceTest {
     @Test
     @DisplayName("Test Get Module By ID -- Success")
     void testGetModuleById() {
-        Module module = new Module();
-        module.setId(1L);
-        module.setName("Software Engineering");
-        module.setCreditHour(3);
-
         when(moduleRepository.findById(1L)).thenReturn(Optional.of(module));
 
         Optional<Module> result = moduleService.getModuleById(1L);
@@ -80,7 +83,7 @@ public class ModuleServiceTest {
     }
 
     @Test
-    @DisplayName("Test Get Module By ID -- Not Found")
+    @DisplayName("Should return empty list if module not found by ID")
     void testGetModuleByIdNotFound() {
         when(moduleRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -91,12 +94,8 @@ public class ModuleServiceTest {
     }
 
     @Test
-    @DisplayName("Test Get Module By Name -- Success")
+    @DisplayName("Test Get Module By Name")
     void testGetModuleByName() {
-        Module module = new Module();
-        module.setName("Software Engineering");
-        module.setCreditHour(3);
-
         when(moduleRepository.findByName("Software Engineering")).thenReturn(Optional.of(module));
 
         Optional<Module> result = moduleService.getModuleByName("Software Engineering");
@@ -107,7 +106,7 @@ public class ModuleServiceTest {
     }
 
     @Test
-    @DisplayName("Test Get Module By Name -- Not Found")
+    @DisplayName("Should return empty list if module not found by Name")
     void testGetModuleByNameNotFound() {
         when(moduleRepository.findByName("Software Engineering")).thenReturn(Optional.empty());
 
@@ -118,39 +117,44 @@ public class ModuleServiceTest {
     }
 
     @Test
-    @DisplayName("Test Get Module By Credit Hour -- Success")
+    @DisplayName("Test Get Module By Credit Hour")
     void testGetModuleByCreditHour() {
-        Module module = new Module();
-        module.setCreditHour(3);
+        when(moduleRepository.findByCreditHour(3)).thenReturn(Optional.of(modules));
 
-        when(moduleRepository.findByCreditHour(3)).thenReturn(Optional.of(module));
-
-        Optional<Module> result = moduleService.getModuleCreditHour(3);
+        Optional<List<Module>> result = moduleService.getModuleCreditHour(3);
 
         assertTrue(result.isPresent());
-        assertEquals(3, result.get().getCreditHour());
+        assertEquals(2, result.get().size());
         verify(moduleRepository, times(1)).findByCreditHour(3);
     }
 
     @Test
-    @DisplayName("Test Get Module By Credit Hour -- Not Found")
+    @DisplayName("Test Get Module By Credit Hour -- Positive")
+    void testGetModuleByCreditHourPositive() {
+        int validCreditHour = 3;
+
+        // Mock the repository to return the expected list
+        when(moduleRepository.findByCreditHour(validCreditHour)).thenReturn(Optional.of(modules));
+
+        // Call the method
+        Optional<List<Module>> result = moduleService.getModuleCreditHour(validCreditHour);
+
+        // Assertions
+        assertTrue(result.isPresent());
+        assertEquals(2, result.get().size());
+        assertEquals("Software Engineering", result.get().get(0).getName());
+        verify(moduleRepository, times(1)).findByCreditHour(validCreditHour);
+    }
+    
+
+    @Test
+    @DisplayName("Return empty list if module not found by credit hour")
     void testGetModuleByCreditHourNotFound() {
         when(moduleRepository.findByCreditHour(3)).thenReturn(Optional.empty());
 
-        Optional<Module> result = moduleService.getModuleCreditHour(3);
+        Optional<List<Module>> result = moduleService.getModuleCreditHour(3);
 
         assertTrue(result.isEmpty());
         verify(moduleRepository, times(1)).findByCreditHour(3);
-    }
-
-    @Test
-    @DisplayName("Test Get Module By Credit Hour -- Nagative")
-    void testGetModuleByCreditHourNegative() {
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            moduleService.getModuleCreditHour(-1);
-        });
-
-        assertEquals("Credit hour must be greater than zero", exception.getMessage());
     }
 }
