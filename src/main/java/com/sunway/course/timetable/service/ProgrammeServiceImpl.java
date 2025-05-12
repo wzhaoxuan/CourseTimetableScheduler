@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.service;
 import com.sunway.course.timetable.interfaces.services.ProgrammeService;
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,21 @@ public class ProgrammeServiceImpl implements ProgrammeService {
     @Override
      public Optional<Programme> getProgrammeByName(String name) {
         return programmeRepository.findByName(name);
+    }
+
+    @Override
+    public List<Programme> getProgrammesByYear(int year) {
+        return programmeRepository.findByYear(year);
+    }
+
+    @Override
+    public List<Programme> getProgrammesByIntake(String intake) {
+        return programmeRepository.findByIntake(intake);
+    }
+
+    @Override
+    public List<Programme> getProgrammesBySemester(int semester) {
+        return programmeRepository.findBySemester(semester);
     }
 
 }

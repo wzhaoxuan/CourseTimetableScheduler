@@ -14,7 +14,6 @@ public class PlanContentServiceImpl implements PlanContentService{
 
     private final PlanContentRepository planContentRepository;
 
-    @Autowired
     public PlanContentServiceImpl(PlanContentRepository planContentRepository) {
         this.planContentRepository = planContentRepository;
     }
