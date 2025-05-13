@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.edge;
+package com.sunway.course.timetable.edge.service;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

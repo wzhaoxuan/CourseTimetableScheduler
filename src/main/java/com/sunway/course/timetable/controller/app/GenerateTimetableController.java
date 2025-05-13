@@ -107,7 +107,7 @@ public class GenerateTimetableController extends ContentController {
     @EventListener
     public void handleVenueAdded(VenueAddedEvent event) {
         String venueName = event.getVenue().getName();
-        if (venueStore.add(venueName)) {
+        if(venueStore.add(venueName)) {
             addVenueToGrid(venueName);
         }
     }

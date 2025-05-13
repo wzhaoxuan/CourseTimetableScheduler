@@ -102,6 +102,19 @@ public class StudentSeviceTest {
     }
 
     @Test
+    @DisplayName("Test Delete Non-Existent Student")
+    void testDeleteNonExistentStudent() {
+        doThrow(new IllegalArgumentException("Student not found")).when(studentRepository).deleteById(999L);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            studentService.deleteStudent(999L);
+        });
+
+        assertEquals("Student not found", exception.getMessage());
+        verify(studentRepository).deleteById(999L);
+    }
+
+    @Test
     @DisplayName("Test Update Student - Success")
     void testUpdateStudent() {
         when(studentRepository.existsById(student.getId())).thenReturn(true);

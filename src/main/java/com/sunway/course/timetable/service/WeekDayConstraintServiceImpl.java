@@ -1,15 +1,15 @@
 package com.sunway.course.timetable.service;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
+import com.sunway.course.timetable.interfaces.services.WeekDayConstraintService;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.WeekDayConstraint;
 import com.sunway.course.timetable.repository.WeekDayConstraintRepository;
-import com.sunway.course.timetable.interfaces.services.WeekDayConstraintService;
+import com.sunway.course.timetable.exception.ValueNotFoundException;
 
 import javafx.scene.control.CheckBox;
 
@@ -30,18 +30,13 @@ public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
     }
 
     @Override
-    public Optional<WeekDayConstraint> getByLecturerId(Long lecturerId) {
+    public Optional<WeekDayConstraint> getWeekDayConstraintByLecturerId(Long lecturerId) {
         return weekDayConstraintRepository.findByLecturer_Id(lecturerId);
     }
 
     @Override
     public WeekDayConstraint addWeekDayConstraint(WeekDayConstraint weekDayConstraint) {
         return weekDayConstraintRepository.save(weekDayConstraint);
-    }
-
-    @Override
-    public void deleteWeekDayConstraint(Long id) {
-        weekDayConstraintRepository.deleteById(id);
     }
 
     @Override
@@ -57,7 +52,7 @@ public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
                 Lecturer lecturer = findLecturerById(lecturerIdLong);
                 if (lecturer == null) return;
         
-                WeekDayConstraint constraint = getByLecturerId(lecturerIdLong).orElse(new WeekDayConstraint());
+                WeekDayConstraint constraint = getWeekDayConstraintByLecturerId(lecturerIdLong).orElse(new WeekDayConstraint());
                 updateConstraintWithUIValues(constraint, lecturer, monday, tuesday, wednesday, thursday, friday);
                 addWeekDayConstraint(constraint);
         

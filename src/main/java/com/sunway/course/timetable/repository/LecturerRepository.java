@@ -9,8 +9,6 @@ import com.sunway.course.timetable.model.Lecturer;
 
 @Repository
 public interface LecturerRepository extends JpaRepository<Lecturer, Long> {
-    // Define methods for CRUD operations and custom queries here
-    // For example, findByName(String name) to find lecturers by their name
     Optional<Lecturer> findById(Long id);
     Optional<Lecturer> findByName(String name);
     Optional<List<Lecturer>> findByType(String type);

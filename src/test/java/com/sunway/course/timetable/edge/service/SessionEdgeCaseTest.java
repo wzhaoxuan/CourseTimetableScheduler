@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.edge;
+package com.sunway.course.timetable.edge.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,9 +47,11 @@ public class SessionEdgeCaseTest {
             .when(sessionRepository).save(session);
 
         // Then: verify that the exception is thrown
-        assertThrows(IllegalArgumentException.class, () -> {
-            sessionRepository.save(session);
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            sessionService.saveSession(session);
         });
+
+        assertEquals("Session cannot be null", exception.getMessage());
 
         // Verify that the session was saved
         verify(sessionRepository).save(session);
