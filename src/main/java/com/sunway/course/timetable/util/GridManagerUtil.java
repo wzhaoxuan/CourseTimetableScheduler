@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.util.grid;
+package com.sunway.course.timetable.util;
 
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -8,7 +8,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 
-public class DynamicGridManager {
+public class GridManagerUtil {
     private final GridPane gridPane;
     private int maxColumns;
     private int maxRows;
@@ -16,11 +16,11 @@ public class DynamicGridManager {
     private int currentCol = 0;
 
 
-    public DynamicGridManager(GridPane gridPane) {
+    public GridManagerUtil(GridPane gridPane) {
         this.gridPane = gridPane;
     }
 
-    public DynamicGridManager(GridPane gridPane, int maxColumns, int maxRows) {
+    public GridManagerUtil(GridPane gridPane, int maxColumns, int maxRows) {
         this.gridPane = gridPane;
         this.maxColumns = maxColumns;
         this.maxRows = maxRows;

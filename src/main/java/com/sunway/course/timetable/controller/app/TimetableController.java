@@ -8,8 +8,8 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.interfaces.PdfExportService;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.util.grid.DynamicGridManager;
-import com.sunway.course.timetable.util.pdf.PdfExporter;
+import com.sunway.course.timetable.service.PdfExporterService;
+import com.sunway.course.timetable.util.GridManagerUtil;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -24,7 +24,7 @@ public class TimetableController extends ContentController {
     @FXML Label satisfaction, score, monday, tuesday, wednesday, thursday, friday;
     @FXML GridPane timetableGrid;
 
-    private DynamicGridManager timetableGridManager;
+    private GridManagerUtil timetableGridManager;
     private FileChooser fileChooser = new FileChooser(); 
     private PdfExportService pdfExportService;
 
@@ -75,8 +75,8 @@ public class TimetableController extends ContentController {
         }
     }
 
-    protected DynamicGridManager createTimetableGridManager() {
-        return new DynamicGridManager(timetableGrid); 
+    protected GridManagerUtil createTimetableGridManager() {
+        return new GridManagerUtil(timetableGrid); 
     }
 
     public void setFileChooser(FileChooser chooser) {

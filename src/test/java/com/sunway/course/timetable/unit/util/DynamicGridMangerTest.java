@@ -6,8 +6,11 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.testfx.framework.junit5.ApplicationTest;
+
+import com.sunway.course.timetable.util.GridManagerUtil;
+
 import org.junit.jupiter.api.Test;
-import com.sunway.course.timetable.util.grid.DynamicGridManager;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -18,14 +21,14 @@ import javafx.scene.control.Button;
 
 public class DynamicGridMangerTest extends ApplicationTest {
 
-    private DynamicGridManager dynamicGridManager;
+    private GridManagerUtil dynamicGridManager;
     private GridPane gridPane;
 
 
     @Override
     public void start(Stage stage) {
         gridPane = new GridPane();
-        dynamicGridManager = new DynamicGridManager(gridPane, 3, 3);
+        dynamicGridManager = new GridManagerUtil(gridPane, 3, 3);
         Scene scene = new Scene(gridPane, 300, 300);
         stage.setScene(scene);
         stage.show();
@@ -37,7 +40,7 @@ public class DynamicGridMangerTest extends ApplicationTest {
             gridPane.getChildren().clear();
             gridPane.getColumnConstraints().clear();
             gridPane.getRowConstraints().clear();
-            dynamicGridManager = new DynamicGridManager(gridPane, 3, 3);
+            dynamicGridManager = new GridManagerUtil(gridPane, 3, 3);
         });
     }
 

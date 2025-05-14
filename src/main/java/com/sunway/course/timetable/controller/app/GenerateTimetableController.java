@@ -11,8 +11,8 @@ import com.sunway.course.timetable.interfaces.services.VenueService;
 import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
-import com.sunway.course.timetable.util.date.DateUtils;
-import com.sunway.course.timetable.util.grid.DynamicGridManager;
+import com.sunway.course.timetable.util.DateUtil;
+import com.sunway.course.timetable.util.GridManagerUtil;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -39,8 +39,8 @@ public class GenerateTimetableController extends ContentController {
     private final int MAXCOLUMNS = 10;
     private final int MAXROWS = 10;
 
-    private DynamicGridManager venueGridManager;
-    private DynamicGridManager weekdayGridManager;
+    private GridManagerUtil venueGridManager;
+    private GridManagerUtil weekdayGridManager;
 
     private final VenueService venueService;
     private final ApplicationEventPublisher eventPublisher;
@@ -137,9 +137,9 @@ public class GenerateTimetableController extends ContentController {
     private void setupComboBoxes() {
         programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
         programmeChoice.setVisibleRowCount(5);
-        yearChoice.getItems().addAll(DateUtils.getYearOptions());
+        yearChoice.getItems().addAll(DateUtil.getYearOptions());
         yearChoice.setVisibleRowCount(5);
-        intakeChoice.getItems().addAll(DateUtils.getMonths());
+        intakeChoice.getItems().addAll(DateUtil.getMonths());
         intakeChoice.setVisibleRowCount(5);
         semesterChoice.getItems().addAll("1", "2", "3", "4", "5", "6", "7", "8", "9");
         semesterChoice.setVisibleRowCount(5);
@@ -162,12 +162,12 @@ public class GenerateTimetableController extends ContentController {
         });
     }
 
-    protected DynamicGridManager createVenueGridManager() {
-        return new DynamicGridManager(venueGrid, MAXCOLUMNS, MAXROWS);
+    protected GridManagerUtil createVenueGridManager() {
+        return new GridManagerUtil(venueGrid, MAXCOLUMNS, MAXROWS);
     }
     
-    protected DynamicGridManager createWeekdayGridManager() {
-        return new DynamicGridManager(weekdayGrid, MAXCOLUMNS, MAXROWS);
+    protected GridManagerUtil createWeekdayGridManager() {
+        return new GridManagerUtil(weekdayGrid, MAXCOLUMNS, MAXROWS);
     }
     
 }

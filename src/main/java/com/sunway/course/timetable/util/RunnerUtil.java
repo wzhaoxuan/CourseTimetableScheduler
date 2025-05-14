@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.util.runner;
+package com.sunway.course.timetable.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -6,10 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
+import com.sunway.course.timetable.service.ExcelReaderService;
 
 @Configuration
-public class VenueDistanceRunner {
-    Logger logger = LoggerFactory.getLogger(VenueDistanceRunner.class);
+public class RunnerUtil {
+    Logger logger = LoggerFactory.getLogger(RunnerUtil.class);
 
 
     @Bean

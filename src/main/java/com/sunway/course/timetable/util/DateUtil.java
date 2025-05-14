@@ -1,9 +1,9 @@
-package com.sunway.course.timetable.util.date;
+package com.sunway.course.timetable.util;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DateUtils {
+public class DateUtil {
 
     public static List<String> getMonths(){
         List<String> monthOptions = new ArrayList<String>();
