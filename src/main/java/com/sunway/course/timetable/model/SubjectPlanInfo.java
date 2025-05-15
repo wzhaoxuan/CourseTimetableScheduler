@@ -3,7 +3,7 @@ package com.sunway.course.timetable.model;
 public class SubjectPlanInfo {
     private String subjectCode;
     private String subjectName;
-    private boolean Lecture;
+    private boolean lecture;
     private boolean practical;
     private boolean tutorial;
     private boolean workshop;
@@ -20,7 +20,7 @@ public class SubjectPlanInfo {
                             String workshopTutor) {
         this.subjectCode = subjectCode;
         this.subjectName = subjectName;
-        this.Lecture = lecture;
+        this.lecture = lecture;
         this.practical = practical;
         this.tutorial = tutorial;
         this.workshop = workshop;
@@ -45,10 +45,10 @@ public class SubjectPlanInfo {
         this.subjectName = subjectName;
     }
     public boolean hasLecture() {
-        return Lecture;
+        return lecture;
     }
     public void setLecture(boolean lecture) {
-        this.Lecture = lecture;
+        this.lecture = lecture;
     }
     public boolean hasPractical() {
         return practical;
@@ -98,5 +98,21 @@ public class SubjectPlanInfo {
     public void setWorkshopTutor(String workshopTutor) {
         this.workshopTutor = workshopTutor;
     }
-    
+
+    @Override
+    public String toString() {
+        return "SubjectPlanInfo{" +
+                "subjectCode='" + subjectCode + '\'' +
+                ", subjectName='" + subjectName + '\'' +
+                ", lecture=" + lecture +
+                ", practical=" + practical +
+                ", tutorial=" + tutorial +
+                ", workshop=" + workshop +
+                ", totalStudents=" + totalStudents +
+                ", mainlecturer='" + mainLecturer + '\'' +
+                ", practicalTutor='" + practicalTutor + '\'' +
+                ", tutorialTutor='" + tutorialTutor + '\'' +
+                ", workshopTutor='" + workshopTutor + '\'' +
+                '}';
+    }
 }

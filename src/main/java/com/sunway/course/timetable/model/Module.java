@@ -2,8 +2,6 @@ package com.sunway.course.timetable.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -12,8 +10,8 @@ import jakarta.persistence.Table;
 public class Module {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length=10, nullable = false)
+    private String id;
 
     @Column(nullable = false)
     private String name;
@@ -30,10 +28,10 @@ public class Module {
         this.creditHour = creditHour;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
     public String getName() {

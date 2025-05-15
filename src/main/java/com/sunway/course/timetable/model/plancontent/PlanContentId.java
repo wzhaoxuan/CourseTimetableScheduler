@@ -12,7 +12,7 @@ public class PlanContentId {
     private Long id;
 
     @Column(name = "module_id")
-    private Long moduleId;
+    private String moduleId;
 
     @Column(name = "session_id")
     private Long sessionId;
@@ -21,7 +21,7 @@ public class PlanContentId {
         // Default constructor
     }
 
-    public PlanContentId(Long id, Long moduleId, Long sessionId) {
+    public PlanContentId(Long id, String moduleId, Long sessionId) {
         this.id = id;
         this.moduleId = moduleId;
         this.sessionId = sessionId;
@@ -35,11 +35,11 @@ public class PlanContentId {
         this.id = id;
     }
 
-    public Long getModuleId() {
+    public String getModuleId() {
         return moduleId;
     }
 
-    public void setModuleId(Long moduleId) {
+    public void setModuleId(String moduleId) {
         this.moduleId = moduleId;
     }
 

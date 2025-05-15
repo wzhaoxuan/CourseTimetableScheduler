@@ -10,29 +10,29 @@ import jakarta.persistence.Embeddable;
 public class ProgrammeId implements Serializable{
 
     @Column(name = "id")
-    private Long id;
+    private String id;
 
     @Column(name = "student_id")
     private Long studentId;
 
     @Column(name = "module_id")
-    private Long moduleId;
+    private String moduleId;
 
     public ProgrammeId() {
         // Default constructor
     }
 
-    public ProgrammeId(Long id, Long studentId, Long moduleId) {
+    public ProgrammeId(String id, Long studentId, String moduleId) {
         this.id = id;
         this.studentId = studentId;
         this.moduleId = moduleId;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -44,11 +44,11 @@ public class ProgrammeId implements Serializable{
         this.studentId = studentId;
     }
 
-    public Long getModuleId() {
+    public String getModuleId() {
         return moduleId;
     }
 
-    public void setModuleId(Long moduleId) {
+    public void setModuleId(String moduleId) {
         this.moduleId = moduleId;
     }
 

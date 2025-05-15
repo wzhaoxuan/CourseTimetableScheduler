@@ -33,7 +33,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test getAllPlanContents - Success")
     void testGetAllPlanContents() {
-        List<PlanContent> mockList = List.of(new PlanContent(new PlanContentId(1L, 101L, 201L)));
+        List<PlanContent> mockList = List.of(new PlanContent(new PlanContentId(1L, "101L", 201L)));
         when(planContentRepository.findAll()).thenReturn(mockList);
 
         List<PlanContent> result = planContentService.getAllPlanContents();
@@ -44,7 +44,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test getPlanContentById - Success")
     void testGetPlanContentById() {
-        PlanContentId id = new PlanContentId(1L, 101L, 201L);
+        PlanContentId id = new PlanContentId(1L, "101L", 201L);
         PlanContent planContent = new PlanContent(id);
 
         when(planContentRepository.findById(id)).thenReturn(Optional.of(planContent));
@@ -58,7 +58,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test getPlanContentById - Not Found")
     void testGetPlanContentByIdNotFound() {
-        PlanContentId id = new PlanContentId(2L, 102L, 202L);
+        PlanContentId id = new PlanContentId(2L, "102L", 202L);
 
         when(planContentRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -70,7 +70,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test savePlanContent - Success")
     void testSavePlanContent() {
-        PlanContentId id = new PlanContentId(1L, 101L, 201L);
+        PlanContentId id = new PlanContentId(1L, "101L", 201L);
         PlanContent planContent = new PlanContent(id);
 
         when(planContentRepository.save(planContent)).thenReturn(planContent);
@@ -83,7 +83,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test savePlanContent - Repository Failure")
     void testSavePlanContentFailure() {
-        PlanContentId id = new PlanContentId(3L, 103L, 203L);
+        PlanContentId id = new PlanContentId(3L, "103L", 203L);
         PlanContent planContent = new PlanContent(id);
 
         when(planContentRepository.save(planContent))
@@ -101,7 +101,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test deletePlanContent - Success")
     void testDeletePlanContent() {
-        PlanContentId id = new PlanContentId(1L, 101L, 201L);
+        PlanContentId id = new PlanContentId(1L, "101L", 201L);
 
         doNothing().when(planContentRepository).deleteById(id);
         planContentService.deletePlanContent(id);
@@ -112,7 +112,7 @@ public class PlanContentServiceTest {
     @Test
     @DisplayName("Test deletePlanContent - Repository Failure")
     void testDeletePlanContentFailure() {
-        PlanContentId id = new PlanContentId(4L, 104L, 204L);
+        PlanContentId id = new PlanContentId(4L, "104L", 204L);
 
         doThrow(new RuntimeException("Delete error")).when(planContentRepository).deleteById(id);
 

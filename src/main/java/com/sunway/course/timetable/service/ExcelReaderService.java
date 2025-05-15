@@ -49,9 +49,10 @@ public class ExcelReaderService {
                         totalStudents, mainlecturer, practicalTutor, tutorialTutor, workshopTutor);
 
                 subjectPlanInfos.add(subjectPlanInfo);
+
             }
             
-        } 
+        }
 
         return subjectPlanInfos;
     }

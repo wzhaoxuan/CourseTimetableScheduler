@@ -38,7 +38,7 @@ public class ProgrammeServiceTest{
 
     @BeforeEach
     void setUp() {
-        programmeId = new ProgrammeId(1L, 2L, 3L);
+        programmeId = new ProgrammeId("1", 2L, "3");
         programme = new Programme();
         programme.setProgrammeId(programmeId);
         programme.setName("Computer Science");

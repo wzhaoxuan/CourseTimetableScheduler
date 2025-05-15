@@ -34,7 +34,7 @@ public class ModuleServiceTest {
     void setUp() {
         modules = new ArrayList<>();
         module = new Module();
-        module.setId(1L);
+        module.setId("BIS2104");
         module.setName("Software Engineering");
         module.setCreditHour(3);
         modules.add(module);
