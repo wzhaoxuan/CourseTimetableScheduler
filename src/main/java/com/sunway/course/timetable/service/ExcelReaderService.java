@@ -13,10 +13,16 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.model.SubjectPlanInfo;
+import com.sunway.course.timetable.service.generator.ModuleGenerator;
 import com.sunway.course.timetable.util.ExcelUtil;
 
 @Service
 public class ExcelReaderService {
+    private final ModuleGenerator moduleGenerator;
+
+    public ExcelReaderService(ModuleGenerator moduleGenerator) {
+        this.moduleGenerator = moduleGenerator;
+    }
 
     public List<SubjectPlanInfo> readExcelFile(String filePath) throws IOException, InvalidFormatException {
         List<SubjectPlanInfo> subjectPlanInfos = new ArrayList<>();
@@ -35,6 +41,8 @@ public class ExcelReaderService {
 
                 String subjectCode = ExcelUtil.getCellValue(row.getCell(0));
                 String subjectName = ExcelUtil.getCellValue(row.getCell(1));
+                moduleGenerator.saveModulesFromExcel(subjectCode, subjectName);
+
                 boolean lecture = ExcelUtil.parseBoolean(ExcelUtil.getCellValue(row.getCell(2)));
                 boolean practical = ExcelUtil.parseBoolean(ExcelUtil.getCellValue(row.getCell(3)));
                 boolean tutorial = ExcelUtil.parseBoolean(ExcelUtil.getCellValue(row.getCell(4)));

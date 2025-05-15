@@ -6,7 +6,7 @@ import com.sunway.course.timetable.model.Module;
 
 public interface ModuleService {
     List<Module> getAllModules();
-    Optional<Module> getModuleById(Long id);
+    Optional<Module> getModuleById(String id);
     Optional<Module> getModuleByName(String name);
     Optional<List<Module>> getModuleCreditHour(int creditHour);
     

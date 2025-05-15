@@ -27,7 +27,6 @@ import com.sunway.course.timetable.service.PlanContentServiceImpl;
 public class PlanContentServiceTest {
     
     @Mock private PlanContentRepository planContentRepository;
-
     @InjectMocks private PlanContentServiceImpl planContentService;
 
     @Test

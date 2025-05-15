@@ -26,7 +26,7 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public Optional<Module> getModuleById(Long id) {
+    public Optional<Module> getModuleById(String id) {
         return moduleRepository.findById(id);
     }
     

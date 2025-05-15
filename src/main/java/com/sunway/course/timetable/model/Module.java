@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 public class Module {
 
     @Id
-    @Column(length=10, nullable = false)
+    @Column(length = 15, nullable = false)
     private String id;
 
     @Column(nullable = false)
@@ -23,7 +23,8 @@ public class Module {
         // Default constructor
     }
 
-    public Module(String name, int creditHour) {
+    public Module(String id, String name, int creditHour) {
+        this.id = id;
         this.name = name;
         this.creditHour = creditHour;
     }

@@ -73,24 +73,24 @@ public class ModuleServiceTest {
     @Test
     @DisplayName("Test Get Module By ID -- Success")
     void testGetModuleById() {
-        when(moduleRepository.findById(1L)).thenReturn(Optional.of(module));
+        when(moduleRepository.findById("BIS2104")).thenReturn(Optional.of(module));
 
-        Optional<Module> result = moduleService.getModuleById(1L);
+        Optional<Module> result = moduleService.getModuleById("BIS2104");
 
         assertTrue(result.isPresent());
         assertEquals("Software Engineering", result.get().getName());
-        verify(moduleRepository, times(1)).findById(1L);
+        verify(moduleRepository, times(1)).findById("BIS2104");
     }
 
     @Test
     @DisplayName("Should return empty list if module not found by ID")
     void testGetModuleByIdNotFound() {
-        when(moduleRepository.findById(1L)).thenReturn(Optional.empty());
+        when(moduleRepository.findById("BIS2104")).thenReturn(Optional.empty());
 
-        Optional<Module> result = moduleService.getModuleById(1L);
+        Optional<Module> result = moduleService.getModuleById("BIS2104");
 
         assertTrue(result.isEmpty());
-        verify(moduleRepository, times(1)).findById(1L);
+        verify(moduleRepository, times(1)).findById("BIS2104");
     }
 
     @Test
