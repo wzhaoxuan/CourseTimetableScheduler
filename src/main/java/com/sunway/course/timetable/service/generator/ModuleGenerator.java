@@ -23,7 +23,6 @@ public class ModuleGenerator {
 
         String[] codes = subjectCode.split("/");
         for(String code: codes){
-            logger.info("Processing subject code: " + code);
             if(!code.isEmpty() ){
                 code = code.trim();
                 if(!moduleRepository.existsById(code)){

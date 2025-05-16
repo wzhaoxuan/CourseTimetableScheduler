@@ -16,14 +16,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sunway.course.timetable.model.SubjectPlanInfo;
-import com.sunway.course.timetable.service.ExcelReaderService;
+import com.sunway.course.timetable.service.excelReader.ModuleExcelReaderService;
 import com.sunway.course.timetable.service.generator.ModuleGenerator;
 
 @ExtendWith(MockitoExtension.class)
 public class ExcelReaderServiceTest {
 
     @Mock private ModuleGenerator moduleGenerator;
-    @InjectMocks private ExcelReaderService excelReaderService;
+    @InjectMocks private ModuleExcelReaderService excelReaderService;
     
     @BeforeEach
     public void setUp() {

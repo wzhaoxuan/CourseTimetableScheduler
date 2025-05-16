@@ -1,30 +1,30 @@
 package com.sunway.course.timetable.util;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 
 public class ExcelUtil {
 
-    public static String getCellValue(Cell cell){
-        if(cell == null) return "";
-        return switch (cell.getCellType()){
-            case STRING -> cell.getStringCellValue();
-            case NUMERIC -> String.valueOf((int) cell.getNumericCellValue());
-            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
-            case FORMULA -> cell.getCellFormula();
-            default -> "";
-        };
+    public static Map<String, Integer> getHeaderMap(Row headerRow) {
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (Cell cell : headerRow) {
+            String key = cell.getStringCellValue().trim();
+            headerMap.put(key, cell.getColumnIndex());
+        }
+        return headerMap;
     }
 
-    public static boolean parseBoolean(String value){
-        if(value == null || value.isEmpty()) return false;
-        return "true".equalsIgnoreCase(value.trim()) || "yes".equalsIgnoreCase(value.trim());
-        }
-
-    public static int parseInt(String value){
-        if(value == null || value.isEmpty()) return 0;
-        try{
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException e){
-            return 0;
-        }
+    public static String getCellValue(Row row, int cellIndex) {
+        if(cellIndex == -1 || row == null) return "";
+        Cell cell = row.getCell(cellIndex);
+        if (cell == null) return "";
+        return switch (cell.getCellType()) {
+            case STRING -> cell.getStringCellValue().trim();
+            case NUMERIC -> String.valueOf((int) cell.getNumericCellValue());
+            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            default -> "";
+        };
     }
 }

@@ -62,6 +62,22 @@ public class Programme {
         this.programmeId = programmeId;
     }
 
+    public Student getStudent() {
+        return student;
+    }
+
+    public void setStudent(Student student) {
+        this.student = student;
+    }
+
+    public Module getModule() {
+        return module;
+    }
+
+    public void setModule(Module module) {
+        this.module = module;
+    }
+
     public String getName() {
         return name;
     }

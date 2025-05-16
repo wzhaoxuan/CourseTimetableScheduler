@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.sunway.course.timetable.model.SubjectPlanInfo;
-import com.sunway.course.timetable.service.ExcelReaderService;
+import com.sunway.course.timetable.service.excelReader.ModuleExcelReaderService;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 
 @Configuration
@@ -27,7 +27,7 @@ public class RunnerUtil {
     }
 
     @Bean
-    public CommandLineRunner readExcelFile(ExcelReaderService excelReaderService) {
+    public CommandLineRunner readExcelFile(ModuleExcelReaderService excelReaderService) {
         return args -> {
             // Read Excel file and process data
             String filePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -44,4 +44,18 @@ public class RunnerUtil {
             }
         };
     }
+
+    // @Bean
+    // public CommandLineRunner programmeExcelReader(ProgrammeExcelReaderService programmeExcelReaderService) {
+    //     return args -> {
+    //         // Read Excel file and process data
+    //         String filePath = "src/main/resources/file/ProgrammeDetails.xlsx";
+    //         try {
+    //             programmeExcelReaderService.processProgrammeExcelData(filePath);
+    //         } catch (Exception e) {
+    //             System.err.println("Error reading Excel file: " + e.getMessage());
+    //             e.printStackTrace();
+    //         }
+    //     };
+    // }
 }
