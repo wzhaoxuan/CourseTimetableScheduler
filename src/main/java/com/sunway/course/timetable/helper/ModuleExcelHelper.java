@@ -1,4 +1,8 @@
 package com.sunway.course.timetable.helper;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ModuleExcelHelper {
 
@@ -16,4 +20,12 @@ public class ModuleExcelHelper {
         }
     }
 
+    public static List<String> splitSubjectCode(String moduleCode){
+        if(moduleCode == null || moduleCode.isEmpty()) return Collections.emptyList();
+        
+        return Arrays.stream(moduleCode.split("/"))
+                    .map(String::trim)
+                    .filter(code -> !code.isEmpty())
+                    .collect(Collectors.toList());
+    }
 }

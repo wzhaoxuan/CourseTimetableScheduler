@@ -38,21 +38,21 @@ public class Session {
     @Column(nullable = false)
     private String type;
 
-    @Column(nullable = false)
-    private String session_group;
+    @Column
+    private String type_group;
 
     public Session() {
         // Default constructor
     }
 
-    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String session_group) {
+    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String type_group) {
         this.student = student;
         this.lecturer = lecturer;
         this.day = day;
         this.startTime = startTime;
         this.endTime = endTime;
         this.type = type;
-        this.session_group = session_group;
+        this.type_group = type_group;
     }
 
     public Long getId() {
@@ -97,10 +97,24 @@ public class Session {
     public void setType(String type) {
         this.type = type;
     }
-    public String getsession_group() {
-        return session_group;
+    public String gettype_group() {
+        return type_group;
     }
-    public void setsession_group(String session_group) {
-        this.session_group = session_group;
+    public void settype_group(String type_group) {
+        this.type_group = type_group;
+    }
+
+    @Override
+    public String toString() {
+        return "Session{" +
+                "id=" + id +
+                ", student=" + student +
+                ", lecturer=" + lecturer +
+                ", day='" + day + '\'' +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", type='" + type + '\'' +
+                ", type_group='" + type_group + '\'' +
+                '}';
     }
 }

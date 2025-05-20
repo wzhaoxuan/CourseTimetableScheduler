@@ -18,6 +18,7 @@ public class SubjectPlanInfo {
     public SubjectPlanInfo(String subjectCode, String subjectName, boolean lecture, boolean practical, boolean tutorial, boolean workshop,
                             int totalStudents, String mainLecturer, String practicalTutor, String tutorialTutor, 
                             String workshopTutor) {
+                                
         this.subjectCode = subjectCode;
         this.subjectName = subjectName;
         this.lecture = lecture;

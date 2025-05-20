@@ -1,9 +1,12 @@
 package com.sunway.course.timetable.service.generator;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.config.SubjectCreditHourConfig;
+import com.sunway.course.timetable.helper.ModuleExcelHelper;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.repository.ModuleRepository;
 
@@ -19,16 +22,13 @@ public class ModuleGenerator {
     }
 
     public void saveModulesFromExcel(String subjectCode, String subjectName){
+        List<String> codes = ModuleExcelHelper.splitSubjectCode(subjectCode);
+        
         if(subjectCode == null || subjectCode.isBlank()) return;
-
-        String[] codes = subjectCode.split("/");
-        for(String code: codes){
-            if(!code.isEmpty() ){
-                code = code.trim();
-                if(!moduleRepository.existsById(code)){
-                    int creditHour = SubjectCreditHourConfig.getCreditHour(code);
-                    moduleRepository.save(new Module(code, subjectName, creditHour));
-                }
+        for (String code : codes) {
+            if (!moduleRepository.existsById(code)) {
+                int creditHour = SubjectCreditHourConfig.getCreditHour(code);
+                moduleRepository.save(new Module(code, subjectName, creditHour));
             }
         }
     }

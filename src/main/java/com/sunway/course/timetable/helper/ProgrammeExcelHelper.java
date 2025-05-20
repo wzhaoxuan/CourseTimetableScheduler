@@ -39,6 +39,6 @@ public class ProgrammeExcelHelper {
     }
 
     public static String getRandomIntake() {
-        return INTAKES.get(new Random().nextInt(INTAKES.size()));
+        return INTAKES.get(new Random().nextInt(INTAKES.size())).toUpperCase();
     }
 }
