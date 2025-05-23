@@ -68,9 +68,6 @@ public class PreprocessingService {
 
                     ModuleAssignmentData assignmentData = new ModuleAssignmentData(subject, module, programmes, eligibleStudents);
                     assignmentDataList.add(assignmentData);
-
-                    logger.info("Subject Code: {} | Credit Hour: {} | Programmes: {} | Eligible Students: {}", 
-                                code, creditHour, programmes.size(), eligibleStudents.size(), eligibleStudents);
                 }
             }
             

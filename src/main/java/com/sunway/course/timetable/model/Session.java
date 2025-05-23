@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.model;
 import java.time.LocalTime;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +14,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "session")
 public class Session {
+    private final String tempId = UUID.randomUUID().toString();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,6 +55,10 @@ public class Session {
         this.endTime = endTime;
         this.type = type;
         this.type_group = type_group;
+    }
+
+    public String getTempId() {
+        return tempId;
     }
 
     public Long getId() {
@@ -109,7 +115,7 @@ public class Session {
         return "Session{" +
                 "id=" + id +
                 ", student=" + student +
-                ", lecturer=" + lecturer +
+                ", lecturer=" + lecturer+
                 ", day='" + day + '\'' +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +

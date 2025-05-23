@@ -35,20 +35,6 @@ public class DateUtil {
         }
     }
 
-    public static boolean isWithinThreeMonths(Month baseMonth, Month intakeMonth) {
-        if (baseMonth == null || intakeMonth == null) return false;
-
-        int base = baseMonth.getValue();    // 1 to 12
-        int intake = intakeMonth.getValue();
-
-        // Calculate both forward and backward difference with wrap-around
-        int forwardDiff = Math.floorMod(intake - base, 12);
-        int backwardDiff = Math.floorMod(base - intake, 12);
-
-        // Accept within ±3 months
-        return forwardDiff > 3 || backwardDiff > 3;
-    }
-
     public static int getCurrentYear() {
         return Year.now().getValue();
     }

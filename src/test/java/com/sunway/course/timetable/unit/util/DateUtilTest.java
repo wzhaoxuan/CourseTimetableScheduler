@@ -4,7 +4,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import org.junit.jupiter.api.Test;
 
 import com.sunway.course.timetable.util.DateUtil;
@@ -18,9 +17,9 @@ public class DateUtilTest {
 
         assertNotNull(months, "Month list should not be null");
 
-        assertEquals("January", months.get(0));
-        assertEquals("February", months.get(1));
-        assertEquals("December", months.get(11));
+        assertEquals("JANUARY", months.get(0));
+        assertEquals("FEBRUARY", months.get(1));
+        assertEquals("DECEMBER", months.get(11));
     }
 
     @Test

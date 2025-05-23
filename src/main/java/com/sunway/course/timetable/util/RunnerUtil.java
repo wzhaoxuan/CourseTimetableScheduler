@@ -6,13 +6,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
+import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
-import com.sunway.course.timetable.model.Session;
 
 @Configuration
 public class RunnerUtil {
@@ -63,6 +64,7 @@ public class RunnerUtil {
     // }
 
     @Bean
+    @Profile("!test")  // Exclude from tests
     public CommandLineRunner ModeleDataProcessor(PreprocessingService programmeExcelReaderService,
                                                  LecturerServiceImpl lecturerService) {
         return args -> {

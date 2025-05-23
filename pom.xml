@@ -11,6 +11,7 @@
 	<groupId>com.sunway.course</groupId>
 	<artifactId>timetable</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<name>CourseTimetableSchedular</name>
 	<description>AI-based Course Timetable Scheduling System</description>
 	<url/>
@@ -164,6 +165,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>course-timetable</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
