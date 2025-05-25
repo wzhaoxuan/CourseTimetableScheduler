@@ -1,19 +1,11 @@
 package com.sunway.course.timetable.util;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
-import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
-import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
-import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 
 @Configuration
 public class RunnerUtil {
@@ -63,30 +55,30 @@ public class RunnerUtil {
     //     };
     // }
 
-    @Bean
-    @Profile("!test")  // Exclude from tests
-    public CommandLineRunner ModeleDataProcessor(PreprocessingService programmeExcelReaderService,
-                                                 LecturerServiceImpl lecturerService) {
-        return args -> {
-            try {
-                String filePath = "src/main/resources/file/SubjectPlan.xlsx";
-                List<ModuleAssignmentData> assignmentDataList = programmeExcelReaderService.preprocessModuleAndStudents(filePath);
+    // @Bean
+    // @Profile("!test")  // Exclude from tests
+    // public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
+    //                                              LecturerServiceImpl lecturerService) {
+    //     return args -> {
+    //         try {
+    //             String filePath = "src/main/resources/file/SubjectPlan.xlsx";
+    //             List<ModuleAssignmentData> assignmentDataList = preprocessingService.preprocessModuleAndStudents(filePath);
 
-                // Manually create the processor
-                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(assignmentDataList, lecturerService);
+    //             // Manually create the processor
+    //             ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(assignmentDataList, lecturerService);
 
-                // Run the assignment
-                List<Session> sessions = processor.processAssignments();
+    //             // Run the assignment
+    //             processor.processAssignments();
 
-                // Output results for verification
-                for(int i = 0; i < 300; i++){
-                    Session session = sessions.get(i);
-                    System.out.println(session);
-                }
-            } catch (Exception e) {
-                System.err.println("Error reading Excel file: " + e.getMessage());
-                e.printStackTrace();
-            }
-        };
-    }
+    //             // Output results for verification
+    //             // for(int i = 0; i < 300; i++){
+    //             //     Session session = sessions.get(i);
+    //             //     System.out.println(session);
+    //             // }
+    //         } catch (Exception e) {
+    //             System.err.println("Error reading Excel file: " + e.getMessage());
+    //             e.printStackTrace();
+    //         }
+    //     };
+    // }
 }

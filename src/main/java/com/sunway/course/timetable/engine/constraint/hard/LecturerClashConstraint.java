@@ -6,9 +6,9 @@ import java.util.Objects;
 
 import com.sunway.course.timetable.engine.TimeSlot;
 import com.sunway.course.timetable.engine.Variable;
-import com.sunway.course.timetable.engine.constraint.interfaces.Constraint;
+import com.sunway.course.timetable.engine.constraint.interfaces.BinaryConstraint;
 
-public class LecturerClashConstraint implements Constraint {
+public class LecturerClashConstraint implements BinaryConstraint {
 
     private final Variable v1;
     private final Variable v2;

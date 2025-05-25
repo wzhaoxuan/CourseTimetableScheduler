@@ -1,4 +1,6 @@
 package com.sunway.course.timetable.service.processor;
+import org.springframework.stereotype.Service;
+
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,22 +21,22 @@ import com.sunway.course.timetable.service.tracker.CreditHourTracker;
 import com.sunway.course.timetable.util.DateUtil;
 import com.sunway.course.timetable.util.FilterUtil;
 
-
+@Service
 public class ModuleAssignmentProcessor {
 
     private final int MAX_GROUP_SIZE = 35;
-    private final List<ModuleAssignmentData> moduleDataList;
     private final CreditHourTracker creditTracker;
     private final LecturerServiceImpl lecturerService;
+    private final ConstraintEngine constraintEngine;
 
-    public ModuleAssignmentProcessor(List<ModuleAssignmentData> moduleDataList,
-                                      LecturerServiceImpl lecturerService) {
-        this.moduleDataList = moduleDataList;
+    public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
+                                      ConstraintEngine constraintEngine) {
         this.lecturerService = lecturerService;
+        this.constraintEngine = constraintEngine;
         this.creditTracker = new CreditHourTracker();
     }
 
-    public List<Session> processAssignments() {
+    public List<Session> processAssignments(List<ModuleAssignmentData> moduleDataList) {
         List<Session> sessions = new ArrayList<>();
 
         for(ModuleAssignmentData data : moduleDataList) {
@@ -55,9 +57,7 @@ public class ModuleAssignmentProcessor {
         }
 
         System.out.println("Total sessions created: " + sessions.size());
-
         // Apply constraints to the sessions
-        ConstraintEngine constraintEngine = new ConstraintEngine();
         System.out.println("Engine started");
         constraintEngine.scheduleSessions(sessions);
         
@@ -164,6 +164,8 @@ public class ModuleAssignmentProcessor {
             session.settype_group(groupName);
             session.setLecturer(lecturer.orElse(null));
             groupSessions.add(session);
+            
+            System.out.println(session);
         }
         return groupSessions;
     }

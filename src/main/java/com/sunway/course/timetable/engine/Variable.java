@@ -31,6 +31,10 @@ public class Variable {
         this.domain = domain;
     }
 
+    public Long getLecturerId() {
+        return session.getLecturer() != null ? session.getLecturer().getId() : null;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;

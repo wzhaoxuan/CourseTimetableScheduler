@@ -26,7 +26,7 @@ public class TimeSlotFactory {
             while(!start.isAfter(lastestStart)) {
                 LocalTime end = start.plusHours(durationsInHours);
                 slots.add(new TimeSlot(day, start, end));
-                start = start.plusMinutes(30); // 30-minute interval between options
+                start = start.plusMinutes(60); // 1-hour interval between options
             }
         }
         return slots;

@@ -1,30 +1,38 @@
 package com.sunway.course.timetable.store;
+import java.time.DayOfWeek;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
+import java.util.List;
+import java.util.Collections;
+
 
 import org.springframework.stereotype.Component;
 
 @Component
-public class WeekdaySessionStore extends SessionStore {
-    private final Set<String> weekdays = new HashSet<>();
+public class WeekdaySessionStore {
+    private final Map<Long, Set<String>> lecturerAvailability = new HashMap<>();
 
-    @Override
-    public boolean add(String weekdayName) {
-        return weekdays.add(weekdayName); // Returns true if newly added
+    public boolean add(Long lecturerId, List<String> availableDays) {
+        return lecturerAvailability
+            .computeIfAbsent(lecturerId, id -> new HashSet<>())
+            .addAll(availableDays);
     }
 
-    @Override
-    public boolean contains(String weekdayName) {
-        return weekdays.contains(weekdayName);
+    public Set<String> getAvailableDays(Long lecturerId) {
+        return lecturerAvailability.getOrDefault(lecturerId, Collections.emptySet());
     }
 
-    @Override
-    public Set<String> get() {
-        return new HashSet<>(weekdays);
+    public boolean isAvailable(Long lecturerId, DayOfWeek day) {
+        return lecturerAvailability.getOrDefault(lecturerId, Collections.emptySet()).contains(day);
     }
 
-    @Override
     public void clear() {
-        weekdays.clear();
+        lecturerAvailability.clear();
+    }
+
+    public Map<Long, Set<String>> getAllAvailability() {
+        return new HashMap<>(lecturerAvailability);
     }
 }

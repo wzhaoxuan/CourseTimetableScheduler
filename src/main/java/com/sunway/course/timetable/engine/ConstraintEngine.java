@@ -1,48 +1,83 @@
 package com.sunway.course.timetable.engine;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import com.sunway.course.timetable.engine.constraint.interfaces.Constraint;
+import org.springframework.stereotype.Component;
+
+import com.sunway.course.timetable.engine.constraint.interfaces.BinaryConstraint;
+import com.sunway.course.timetable.engine.constraint.interfaces.UnaryConstraint;
+import com.sunway.course.timetable.engine.constraint.soft.LecturerUnavailabilityConstraint;
 import com.sunway.course.timetable.engine.factory.TimeSlotFactory;
 import com.sunway.course.timetable.model.Session;
+import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.ConstraintGeneratorUtil;
 
-
+@Component
 public class ConstraintEngine {
+
+    private final WeekdaySessionStore weekdaySessionStore;
+    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+    public ConstraintEngine(WeekdaySessionStore weekdaySessionStore) {
+        this.weekdaySessionStore = weekdaySessionStore;
+    }
+
     public List<Session> scheduleSessions(List<Session> unscheduledSessions) {
+        // Step 1: Create variables from sessions
         List<Variable> variables = new ArrayList<>();
         List<TimeSlot> fullDomain = TimeSlotFactory.generateValidTimeSlots(); // includes filtering for C5, C11
-        int count = 0;
         for (Session s : unscheduledSessions) {
-            System.out.println(count);
-            count++;
             variables.add(new Variable(s, new ArrayList<>(fullDomain)));
         }
 
-        List<Constraint> constraints = new ArrayList<>();
-        System.out.println("Generating student clash constraints...");
-        constraints.addAll(ConstraintGeneratorUtil.generateStudentClashBinaryConstraints(variables));
-        // System.out.println("Generating lecturer clash constraints...");
-        // constraints.addAll(ConstraintGeneratorUtil.generateLecturerClashBinaryConstraints(variables));
-        // System.out.println("Generating unique type per week constraints...");
-        // constraints.addAll(ConstraintGeneratorUtil.generateUniqueTypePerWeekBinaryConstraints(variables));
-       
+        // Step 2: Generate binary constraints
+        List<BinaryConstraint> binaryConstraints = new ArrayList<>();
+        System.out.println("Generating student clash binary constraints...");
+        binaryConstraints.addAll(ConstraintGeneratorUtil.generateStudentClashBinaryConstraints(variables));
+        // System.out.println("Generating lecturer clash binaryConstraints...");
+        // binaryConstraints.addAll(ConstraintGeneratorUtil.generateLecturerClashBinarybinaryConstraints(variables));
+        // System.out.println("Generating unique type per week binaryConstraints...");
+        // binaryConstraints.addAll(ConstraintGeneratorUtil.generateUniqueTypePerWeekBinarybinaryConstraints(variables));
+
+        // Step 3: Generate unary constraints (e.g. soft lecturer unavailability)
+        List<UnaryConstraint> unaryConstraints = new ArrayList<>();
+        Map<Long, Set<String>> unavailableDays = weekdaySessionStore.getAllAvailability();
+
+        for(Map.Entry<Long, Set<String>> entry : unavailableDays.entrySet()) {
+            Long lecturerId = entry.getKey();
+            Set<String> days = entry.getValue();
+            System.out.println("Lecturer ID: " + lecturerId + ", Unavailable Days: " + days);
+            }
+        
+        unaryConstraints.add(new LecturerUnavailabilityConstraint(unavailableDays));
+
+       // Step 4: Apply AC3 to reduce domains using only hard binary constraints
         AC3 ac3 = new AC3();
         System.out.println("AC3 starting");
-        System.out.println("Total constraints generated: " + constraints.size());
-        boolean consistent = ac3.runAC3(variables, constraints);
+        System.out.println("Total binaryConstraints generated: " + binaryConstraints.size());
+        boolean consistent = ac3.runAC3(variables, binaryConstraints);
         System.out.println("AC3 finished");
-        if (!consistent) throw new IllegalStateException("No valid schedule possible under constraints.");
 
-        Map<Variable, TimeSlot> assignment = new HashMap<>();
-        BacktrackingSolver solver = new BacktrackingSolver();
-        boolean solved = solver.solve(assignment, variables, constraints);
-        if (!solved) throw new IllegalStateException("Failed to find a complete schedule.");
+        if (!consistent) throw new IllegalStateException("No valid schedule possible under binaryConstraints.");
 
-        // Apply the result
+        // Step 5: Solve using Backtracking considering both binary and unary constraints
+        BacktrackingSolver solver = new BacktrackingSolver(executor);
+        boolean solved = false;
+        try {
+            solved = solver.solve(variables, binaryConstraints, unaryConstraints);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // restore interrupted status
+            System.err.println("Solving interrupted: " + e.getMessage());
+        }
+
+        Map<Variable, TimeSlot> assignment = solver.getBestAssignment();
+        executor.shutdown();
+
+        // Step 6: Apply result to session entities
         for (Map.Entry<Variable, TimeSlot> entry : assignment.entrySet()) {
             Session s = entry.getKey().getSession();
             TimeSlot t = entry.getValue();
@@ -50,6 +85,21 @@ public class ConstraintEngine {
             s.setStartTime(t.getStartTime());
             s.setEndTime(t.getEndTime());
         }
+
+        if (solved) {
+            System.out.println("✅ Timetable successfully generated:");
+            assignment.forEach((variable, timeslot) -> {
+                System.out.printf("Session: %-25s | Day: %-8s | Start: %-5s | End: %-5s%n",
+                    variable.getSession(),
+                    timeslot.getDay(),
+                    timeslot.getStartTime(),
+                    timeslot.getEndTime()
+                );
+            });
+        } else {
+            System.out.println("❌ Failed to generate a valid timetable.");
+        }
+
 
         return unscheduledSessions;
     }

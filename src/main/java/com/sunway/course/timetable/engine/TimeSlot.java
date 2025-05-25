@@ -63,4 +63,9 @@ public class TimeSlot {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return String.format("TimeSlot{day=%s, start=%s, end=%s}", day, startTime, endTime);
+    }
+
 }

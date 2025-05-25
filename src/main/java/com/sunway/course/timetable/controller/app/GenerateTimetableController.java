@@ -1,4 +1,7 @@
 package com.sunway.course.timetable.controller.app;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -8,7 +11,11 @@ import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
 import com.sunway.course.timetable.event.VenueAddedEvent;
 import com.sunway.course.timetable.interfaces.services.VenueService;
+import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
+import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.DateUtil;
@@ -46,19 +53,28 @@ public class GenerateTimetableController extends ContentController {
     private final ApplicationEventPublisher eventPublisher;
     private final VenueSessionStore venueStore;
     private final WeekdaySessionStore weekdayStore;
+    private final LecturerServiceImpl lecturerService;
+    private final PreprocessingService preprocessingService;
+    private final ModuleAssignmentProcessor processor;
 
     public GenerateTimetableController(NavigationService navService, 
                                         LoginSceneController loginController,
                                         VenueService venueService,
                                         ApplicationEventPublisher eventPublisher,
                                         VenueSessionStore venueSessionStore,
-                                        WeekdaySessionStore weekdaySessionStore
+                                        WeekdaySessionStore weekdaySessionStore,
+                                        PreprocessingService preprocessingService,
+                                        LecturerServiceImpl lecturerService,
+                                        ModuleAssignmentProcessor processor
                                         ) {
         super(navService, loginController);
         this.venueService = venueService;
         this.eventPublisher = eventPublisher;
         this.venueStore = venueSessionStore;
         this.weekdayStore = weekdaySessionStore;
+        this.lecturerService = lecturerService;
+        this.preprocessingService = preprocessingService;
+        this.processor = processor;
     }
 
     @Override
@@ -74,8 +90,13 @@ public class GenerateTimetableController extends ContentController {
 
 
         venueStore.get().forEach(this::addVenueToGrid);
-        weekdayStore.get().forEach(lecturer -> addWeekDayConstraintToGrid(lecturer, null)); // Adjust if ID is needed
+        weekdayStore.getAllAvailability().forEach((lecturerId, days) -> {
+        lecturerService.getLecturerById(lecturerId).ifPresent(lecturer -> {
+                addWeekDayConstraintToGrid(lecturer.getName(), null);
+            });
+        }); 
     }
+
 
     @FXML
     private void addSection(){
@@ -89,7 +110,37 @@ public class GenerateTimetableController extends ContentController {
     @FXML
     private void generate() {
         try{
-            navigationService.loadTimetablePage(); // Handle exception properly
+
+            String programme = programmeChoice.getValue();
+            String year = yearChoice.getValue();
+            String intake = intakeChoice.getValue();
+            String semester = semesterChoice.getValue();
+
+            // Step 1: Read Excel (use fixed path or let user upload in future)
+            String filePath = "src/main/resources/file/SubjectPlan.xlsx";
+            List<ModuleAssignmentData> allData = preprocessingService.preprocessModuleAndStudents(filePath);
+
+            // Step 2: Filter by selected programme ID or attributes
+            List<ModuleAssignmentData> filteredData = allData.stream()
+                .filter(data -> data.getProgrammeOfferingModules().stream()
+                    .anyMatch(p -> {
+                        String programmeCode = p.getProgrammeId().getId();
+                        System.out.println("Programme Code: " + programmeCode.equals(programme));
+                        return programmeCode.equals(programme);
+                    }
+                        
+                        // p.getYear() == Integer.parseInt(year) 
+                        // p.getIntake().equals(intake) &&
+                        // p.getSemester() == Integer.parseInt(semester)
+                    )
+                )
+                .collect(Collectors.toList());
+
+            // Step 3: Pass to processor
+            processor.processAssignments(filteredData);
+
+            // navigationService.loadTimetablePage(); // Handle exception properly
+
         } catch (Exception e) {
             e.printStackTrace(); // Print the error if something goes wrong
         }
@@ -99,8 +150,12 @@ public class GenerateTimetableController extends ContentController {
     public void handleLecturerConstraintConfirmed(LecturerConstraintConfirmedEvent event) {
         String lecturerName = event.getLecturer().getName();
         Long lecturerId = event.getLecturer().getId();
-        if (weekdayStore.add(lecturerName)) {
-            addWeekDayConstraintToGrid(lecturerName, lecturerId);
+        List<String> unavailableDays = event.getUnavailableDays();
+
+        weekdayStore.add(lecturerId, unavailableDays);
+
+        for (String day : unavailableDays) {
+            addWeekDayConstraintToGrid(lecturerName, day);
         }
     }
 
@@ -116,7 +171,7 @@ public class GenerateTimetableController extends ContentController {
         venueGridManager.addButton(venueName, "venue-button");
     }
 
-    private void addWeekDayConstraintToGrid(String lecturerName, Long lecturerId) {
+    private void addWeekDayConstraintToGrid(String lecturerName, String day) {
         weekdayGridManager.addButton(lecturerName, "lecturer-button");
         System.out.println("Added Weekday Constraint: " + lecturerName);
     }
@@ -135,7 +190,7 @@ public class GenerateTimetableController extends ContentController {
     }
 
     private void setupComboBoxes() {
-        programmeChoice.getItems().addAll("Diploma in IT", "Diploma in Business", "Diploma in Communication");
+        programmeChoice.getItems().addAll("BIT", "BCS");
         programmeChoice.setVisibleRowCount(5);
         yearChoice.getItems().addAll(DateUtil.getYearOptions());
         yearChoice.setVisibleRowCount(5);

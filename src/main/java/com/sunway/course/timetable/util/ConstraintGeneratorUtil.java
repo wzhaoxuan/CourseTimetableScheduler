@@ -12,13 +12,13 @@ import com.sunway.course.timetable.engine.Variable;
 import com.sunway.course.timetable.engine.constraint.hard.LecturerClashConstraint;
 import com.sunway.course.timetable.engine.constraint.hard.StudentClashConstraint;
 import com.sunway.course.timetable.engine.constraint.hard.UniqueTypePerWeekConstraint;
-import com.sunway.course.timetable.engine.constraint.interfaces.Constraint;
+import com.sunway.course.timetable.engine.constraint.interfaces.BinaryConstraint;
 
 import javafx.util.Pair;
 
 public class ConstraintGeneratorUtil {
 
-    public static List<Constraint> generateStudentClashBinaryConstraints(List<Variable> variables) {
+    public static List<BinaryConstraint> generateStudentClashBinaryConstraints(List<Variable> variables) {
         Set<Pair<Variable, Variable>> seenPairs = ConcurrentHashMap.newKeySet();
 
     return IntStream.range(0, variables.size())
@@ -48,8 +48,8 @@ public class ConstraintGeneratorUtil {
     }
 
 
-    public static List<Constraint> generateLecturerClashBinaryConstraints(List<Variable> variables) {
-        List<Constraint> constraints = new ArrayList<>();
+    public static List<BinaryConstraint> generateLecturerClashBinaryConstraints(List<Variable> variables) {
+        List<BinaryConstraint> constraints = new ArrayList<>();
         for (int i = 0; i < variables.size(); i++) {
             for (int j = i + 1; j < variables.size(); j++) {
                 Variable v1 = variables.get(i);
@@ -66,8 +66,8 @@ public class ConstraintGeneratorUtil {
         return constraints;
     }
 
-    public static List<Constraint> generateUniqueTypePerWeekBinaryConstraints(List<Variable> variables) {
-        List<Constraint> constraints = new ArrayList<>();
+    public static List<BinaryConstraint> generateUniqueTypePerWeekBinaryConstraints(List<Variable> variables) {
+        List<BinaryConstraint> constraints = new ArrayList<>();
         for (int i = 0; i < variables.size(); i++) {
             for (int j = i + 1; j < variables.size(); j++) {
                 Variable v1 = variables.get(i);

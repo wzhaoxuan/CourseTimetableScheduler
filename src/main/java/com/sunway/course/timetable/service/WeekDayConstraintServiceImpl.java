@@ -1,5 +1,8 @@
 package com.sunway.course.timetable.service;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.time.DayOfWeek;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -58,8 +61,16 @@ public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
         
                 System.out.println("Availability saved for Lecturer ID: " + lecturerIdLong);
 
+                // Build list of available days (selected checkboxes)
+                List<String> unavailableDays = new ArrayList<>();
+                if (monday.isSelected()) unavailableDays.add("MONDAY");
+                if (tuesday.isSelected()) unavailableDays.add("TUESDAY");
+                if (wednesday.isSelected()) unavailableDays.add("WEDNESDAY");
+                if (thursday.isSelected()) unavailableDays.add("THURSDAY");
+                if (friday.isSelected()) unavailableDays.add("FRIDAY");
+
                 //Add button to weekdayGrid in GenerateTimetableController
-                eventPublisher.publishEvent(new LecturerConstraintConfirmedEvent(lecturer));
+                eventPublisher.publishEvent(new LecturerConstraintConfirmedEvent(lecturer, unavailableDays));
                 
             } catch (NumberFormatException e) {
                 System.out.println("Invalid Lecturer ID. Must be a number.");

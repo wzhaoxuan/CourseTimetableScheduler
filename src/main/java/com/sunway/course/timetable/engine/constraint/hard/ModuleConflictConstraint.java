@@ -7,9 +7,9 @@ import java.util.Set;
 
 import com.sunway.course.timetable.engine.TimeSlot;
 import com.sunway.course.timetable.engine.Variable;
-import com.sunway.course.timetable.engine.constraint.interfaces.Constraint;
+import com.sunway.course.timetable.engine.constraint.interfaces.BinaryConstraint;
 
-public class ModuleConflictConstraint implements Constraint {
+public class ModuleConflictConstraint implements BinaryConstraint {
 
     private final List<Variable> involvedVariables;
 
