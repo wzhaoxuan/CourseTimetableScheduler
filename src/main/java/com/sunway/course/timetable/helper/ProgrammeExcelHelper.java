@@ -13,12 +13,12 @@ import com.sunway.course.timetable.model.Student;
 public class ProgrammeExcelHelper {
 
     private static final List<String> INTAKES = Arrays.asList(
-        "January", "February", "March", "April", "August", "September"
+        "January", "April", "August"
     );
 
     public static Map<String, List<Student>> assignStudentsToProgrammesEqually(List<Student> students) {
         Map<String, List<Student>> grouped = new HashMap<>();
-        List<String> programmeIds = List.of("BIT", "BSC", "BSE", "BCNS", "BSDA");
+        List<String> programmeIds = List.of("BIT", "BCS", "BSE", "BCNS", "BSDA");
 
         for (int i = 0; i < students.size(); i++) {
             String progId = programmeIds.get(i % programmeIds.size());
@@ -30,7 +30,7 @@ public class ProgrammeExcelHelper {
     public static String assignProgrammeName(String programmeId) {
         return switch (programmeId) {
             case "BIT" -> "Bachelor of Information Technology";
-            case "BSC" -> "Bachelor of Computer Science";
+            case "BCS" -> "Bachelor of Computer Science";
             case "BSE" -> "Bachelor of Software Engineering";
             case "BCNS" -> "Bachelor of Computer Network Security";
             case "BSDA" -> "Bachelor of Data Analytics";

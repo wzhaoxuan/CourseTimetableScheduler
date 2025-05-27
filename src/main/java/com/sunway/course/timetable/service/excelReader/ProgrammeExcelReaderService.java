@@ -29,6 +29,9 @@ import com.sunway.course.timetable.util.ExcelUtil;
 
 import jakarta.transaction.Transactional;
 
+/*
+ * This service reads programme data from an Excel file and processes it to create Programme entities.
+ */
 
 @Service
 public class ProgrammeExcelReaderService {

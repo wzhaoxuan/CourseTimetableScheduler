@@ -43,4 +43,14 @@ public class ModuleAssignmentData {
         this.eligibleStudents = eligibleStudents;
     }
 
+    @Override
+    public String toString() {
+        return "ModuleAssignmentData{" +
+                "subjectPlanInfo=" + subjectPlanInfo +
+                ", module=" + module +
+                ", programmeOfferingModules=" + programmeOfferingModules +
+                ", eligibleStudents=" + eligibleStudents +
+                '}';
+    }
+
 }

@@ -118,7 +118,8 @@ public class GenerateTimetableController extends ContentController {
 
             // Step 1: Read Excel (use fixed path or let user upload in future)
             String filePath = "src/main/resources/file/SubjectPlan.xlsx";
-            List<ModuleAssignmentData> allData = preprocessingService.preprocessModuleAndStudents(filePath);
+
+            List<ModuleAssignmentData> allData = preprocessingService.preprocessModuleAndStudents(filePath, filePath, filePath);
 
             // Step 2: Filter by selected programme ID or attributes
             List<ModuleAssignmentData> filteredData = allData.stream()
@@ -137,7 +138,7 @@ public class GenerateTimetableController extends ContentController {
                 .collect(Collectors.toList());
 
             // Step 3: Pass to processor
-            processor.processAssignments(filteredData);
+            // processor.processAssignments(filteredData);
 
             // navigationService.loadTimetablePage(); // Handle exception properly
 

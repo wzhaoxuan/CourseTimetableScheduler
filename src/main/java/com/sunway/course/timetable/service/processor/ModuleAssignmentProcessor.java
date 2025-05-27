@@ -1,12 +1,11 @@
 package com.sunway.course.timetable.service.processor;
-import org.springframework.stereotype.Service;
-
-import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.engine.ConstraintEngine;
 import com.sunway.course.timetable.model.Lecturer;
@@ -15,11 +14,17 @@ import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.SubjectPlanInfo;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
-import com.sunway.course.timetable.model.programme.Programme;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.tracker.CreditHourTracker;
-import com.sunway.course.timetable.util.DateUtil;
 import com.sunway.course.timetable.util.FilterUtil;
+
+/**
+ * Service class responsible for processing module assignments by:
+ * - Grouping students based on intake months.
+ * - Allocating students into sessions (lecture, practical, tutorial, workshop).
+ * - Enforcing credit hour limits using CreditHourTracker.
+ * - Optionally applying constraints for scheduling (currently commented out).
+ */
 
 @Service
 public class ModuleAssignmentProcessor {
@@ -36,55 +41,52 @@ public class ModuleAssignmentProcessor {
         this.creditTracker = new CreditHourTracker();
     }
 
+    /**
+     * Main entry point to process and assign sessions based on module data.
+     *
+     * @param moduleDataList List of ModuleAssignmentData containing module, subject plan, and programmes.
+     * @return List of generated sessions (lectures, tutorials, etc.)
+     */
     public List<Session> processAssignments(List<ModuleAssignmentData> moduleDataList) {
         List<Session> sessions = new ArrayList<>();
 
         for(ModuleAssignmentData data : moduleDataList) {
             SubjectPlanInfo plan = data.getSubjectPlanInfo();
             Module module = data.getModule();
-            List<Programme> programmes = data.getProgrammeOfferingModules();
+            Set<Student> eligibleStudents = data.getEligibleStudents();
 
-            // System.out.println("Processing module: " + module.getName() + " (" + module.getId() + ")");
-
-            Map<Month, List<Student>> studentsByIntake = groupStudentsByIntake(programmes);
-            printGroupedStudents(studentsByIntake);
+            // Print debug info
+            System.out.println("Processing module: " + module.getName() + " (" + module.getId() + ")");
+            System.out.println(" - Eligible students: " + eligibleStudents.size());
 
             int totalStudentsAllowed = plan.getTotalStudents();
             int groupCount = calculateGroupCount(totalStudentsAllowed);
 
-            List<List<Student>> groups = assignStudentsToGroups(studentsByIntake, module, totalStudentsAllowed, groupCount);
+            List<List<Student>> groups = assignStudentsToGroups(eligibleStudents, module, totalStudentsAllowed, groupCount);
             createSessionsForGroups(sessions, groups, plan, groupCount);
         }
 
         System.out.println("Total sessions created: " + sessions.size());
         // Apply constraints to the sessions
-        System.out.println("Engine started");
-        constraintEngine.scheduleSessions(sessions);
+        // System.out.println("Engine started");
+        // constraintEngine.scheduleSessions(sessions);
         
         return sessions;
     }
 
-    private Map<Month, List<Student>> groupStudentsByIntake(List<Programme> programmes) {
-        return programmes.stream()
-                .collect(Collectors.groupingBy(
-                        p -> DateUtil.parseMonth(p.getIntake()),
-                        Collectors.mapping(Programme::getStudent, Collectors.toList())
-                ));
-    }
-
-    private void printGroupedStudents(Map<Month, List<Student>> studentsByIntake) {
-        // System.out.println("Grouped students by intake month:");
-        for (Map.Entry<Month, List<Student>> entry : studentsByIntake.entrySet()) {
-            // System.out.println(" - " + entry.getKey() + ": " + entry.getValue().size() + " students");
-        }
-    }
-
+    /**
+     * Calculates the number of groups required based on total allowed students and max group size.
+     *
+     * @param totalStudentsAllowed Max number of students allowed to attend the session
+     * @return Number of student groups required
+     */
     private int calculateGroupCount(int totalStudentsAllowed) {
         return (int) Math.ceil((double) totalStudentsAllowed / MAX_GROUP_SIZE);
     }
 
+    // Assigns students to groups based on pre-filtered students for semester.
     private List<List<Student>> assignStudentsToGroups(
-            Map<Month, List<Student>> studentsByIntake,
+            Set<Student> students,
             Module module,
             int totalStudentsAllowed,
             int groupCount) {
@@ -94,39 +96,40 @@ public class ModuleAssignmentProcessor {
             groups.add(new ArrayList<>());
         }
 
+        List<Student> eligibleStudents = creditTracker.filterEligible(new ArrayList<>(students), module.getCreditHour());
+
         int totalAssigned = 0;
         int currentGroupIndex = 0;
 
-        for (Map.Entry<Month, List<Student>> intakeEntry : studentsByIntake.entrySet()) {
-            List<Student> batchStudents = intakeEntry.getValue();
-            List<Student> eligibleStudents = creditTracker.filterEligible(batchStudents, module.getCreditHour());
-
-            for (Student student : eligibleStudents) {
-                if (totalAssigned >= totalStudentsAllowed) break;
-
-                creditTracker.deductCredits(student, module.getCreditHour());
-
-                groups.get(currentGroupIndex).add(student);
-                totalAssigned++;
-
-                currentGroupIndex = (currentGroupIndex + 1) % groupCount;
-            }
-
-            // System.out.println("Assigned students so far: " + totalAssigned);
+         for (Student student : eligibleStudents) {
             if (totalAssigned >= totalStudentsAllowed) {
-                // System.out.println("Reached total students limit (" + totalStudentsAllowed + ") for module " + module.getName());
+                System.out.println(" - Reached total students allowed: " + totalStudentsAllowed);
                 break;
             }
+            creditTracker.deductCredits(student, module.getCreditHour());
+
+            groups.get(currentGroupIndex).add(student);
+            totalAssigned++;
+            currentGroupIndex = (currentGroupIndex + 1) % groupCount;
         }
         return groups;
     }
 
+    /**
+     * Assigns eligible students to groups while respecting the credit hour limit.
+     *
+     * @param students             Set of eligible students for the module
+     * @param module               The module being assigned
+     * @param totalStudentsAllowed Max students allowed for this module
+     * @param groupCount           Number of groups to split into
+     * @return List of groups with assigned students
+     */
     private void createSessionsForGroups(List<Session> sessions, List<List<Student>> groups, SubjectPlanInfo plan, int groupCount) {
 
         if (plan.hasLecture()) {
                 List<Student> allStudents = groups.stream().flatMap(List::stream).collect(Collectors.toList());
                 sessions.addAll(createSessions(allStudents, plan.getMainLecturer(), "Lecture", plan.getSubjectCode() + "-Lecture-G1"));
-                // System.out.println(" - Created " + allStudents.size() + " Lecture sessions");
+                System.out.println(" - Created " + allStudents.size() + " Lecture sessions");
             }
 
         for (int i = 0; i < groupCount; i++) {
@@ -135,21 +138,29 @@ public class ModuleAssignmentProcessor {
 
             if (plan.hasPractical()) {
                 sessions.addAll(createSessions(groupStudents, plan.getPracticalTutor(), "Practical", plan.getSubjectCode() + "-Practical" + groupSuffix));
-                // System.out.println(" - Created " + groupStudents.size() + " Practical sessions");
+                System.out.println(" - Created " + groupStudents.size() + " Practical sessions");
             }
 
             if (plan.hasTutorial()) {
                 sessions.addAll(createSessions(groupStudents, plan.getTutorialTutor(), "Tutorial", plan.getSubjectCode() + "-Tutorial" + groupSuffix));
-                // System.out.println(" - Created " + groupStudents.size() + " Tutorial sessions");
+                System.out.println(" - Created " + groupStudents.size() + " Tutorial sessions");
             }
 
             if (plan.hasWorkshop()) {
                 sessions.addAll(createSessions(groupStudents, plan.getWorkshopTutor(), "Workshop", plan.getSubjectCode() + "-Workshop" + groupSuffix));
-                // System.out.println(" - Created " + groupStudents.size() + " Workshop sessions");
+                System.out.println(" - Created " + groupStudents.size() + " Workshop sessions");
             }
         }
     }
 
+    /**
+     * Creates sessions for all groups based on the subject plan and session types.
+     *
+     * @param sessions    List to accumulate created sessions
+     * @param groups      List of student groups
+     * @param plan        Subject plan containing session info and tutors
+     * @param groupCount  Total number of student groups
+     */
     private List<Session> createSessions(List<Student> students, String lecturerName, String type, String groupName) {
         List<Session> groupSessions = new ArrayList<>();
         String name = FilterUtil.extractName(lecturerName);
@@ -167,6 +178,7 @@ public class ModuleAssignmentProcessor {
             
             System.out.println(session);
         }
+
         return groupSessions;
     }
 
