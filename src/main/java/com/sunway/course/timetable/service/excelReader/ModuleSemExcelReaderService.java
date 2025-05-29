@@ -52,7 +52,7 @@ public class ModuleSemExcelReaderService {
         } catch (IOException e) {
             logger.error("Error reading Module Semester Excel file: {}", e.getMessage());
         }
-        logger.info("Module Semester Map: {}", moduleSemMap);
+        // logger.info("Module Semester Map: {}", moduleSemMap);
         return moduleSemMap;
     }
 

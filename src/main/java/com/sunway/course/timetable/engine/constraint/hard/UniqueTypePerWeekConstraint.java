@@ -21,7 +21,7 @@ public class UniqueTypePerWeekConstraint implements BinaryConstraint {
     public boolean isSatisfied(Variable a, TimeSlot t1, Variable b, TimeSlot t2) {
         if ((a.equals(v1) && b.equals(v2)) || (a.equals(v2) && b.equals(v1))) {
             if (v1.getSession().getType().equals(v2.getSession().getType())
-                    && v1.getSession().gettype_group().equals(v2.getSession().gettype_group())) {
+                    && v1.getSession().getType_group().equals(v2.getSession().getType_group())) {
                 return !t1.getDay().equals(t2.getDay());
             }
         }

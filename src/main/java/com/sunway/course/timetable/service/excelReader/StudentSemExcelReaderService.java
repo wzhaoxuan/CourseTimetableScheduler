@@ -51,7 +51,7 @@ public class StudentSemExcelReaderService {
             logger.error("Error reading Student Semester Excel file: {}", e.getMessage());
         }
 
-        logger.info("Student Sem: {}", studentSemMap);
+        // logger.info("Student Sem: {}", studentSemMap);
         return studentSemMap;
     }
 

@@ -81,9 +81,9 @@ public class ModuleAssignmentProcessor {
      *         - List of created sessions (not saved to DB yet)
      *         - Map of module code -> (programme name -> percentage of students)
      */
-    public Pair<List<Session>, Map<Integer, Map <String, Map<String, Double>>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
-                                                                                                Map<Long, String> studentProgrammeMap,
-                                                                                                Map<Long, Integer> studentSemesterMap) {
+    public Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
+                                                                                                            Map<Long, String> studentProgrammeMap,
+                                                                                                            Map<Long, Integer> studentSemesterMap) {
         List<Session> sessions = new ArrayList<>();
         for (ModuleAssignmentData data : moduleDataList) {
             sessions.addAll(processSingleModuleAssignment(data));
@@ -143,7 +143,6 @@ public class ModuleAssignmentProcessor {
 
          for (Student student : students) {
             if (totalAssigned >= totalStudentsAllowed) {
-                System.out.println(" - Reached total students allowed: " + totalStudentsAllowed);
                 break;
             }
             creditTracker.deductCredits(student, module.getCreditHour());
@@ -169,7 +168,7 @@ public class ModuleAssignmentProcessor {
         if (plan.hasLecture()) {
                 List<Student> allStudents = groups.stream().flatMap(List::stream).collect(Collectors.toList());
                 sessions.addAll(createSessions(allStudents, plan.getMainLecturer(), "Lecture", plan.getSubjectCode() + "-Lecture-G1"));
-                System.out.println(" - Created " + allStudents.size() + " Lecture sessions");
+                // System.out.println(" - Created " + allStudents.size() + " Lecture sessions");
             }
 
         for (int i = 0; i < groupCount; i++) {
@@ -186,7 +185,7 @@ public class ModuleAssignmentProcessor {
                 String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
                 List<Session> groupSessions = createSessions(groupStudents, typeInfo.tutor, typeInfo.type, sessionCode);
                 sessions.addAll(groupSessions);
-                System.out.printf(" - Created %d %s sessions\n", groupSessions.size(), typeInfo.type());
+                // System.out.printf(" - Created %d %s sessions\n", groupSessions.size(), typeInfo.type());
             }
         }
     }
@@ -210,11 +209,11 @@ public class ModuleAssignmentProcessor {
             Session session = new Session();
             session.setStudent(student);
             session.setType(type);
-            session.settype_group(groupName);
+            session.setType_group(groupName);
             session.setLecturer(lecturer.orElse(null));
             groupSessions.add(session);
             
-            System.out.println(session);
+            // System.out.println(session);
         }
 
         return groupSessions;
@@ -265,7 +264,6 @@ public class ModuleAssignmentProcessor {
 
     //     System.out.println("Time slots successfully assigned to sessions");
     // }
-    
 }
 
 

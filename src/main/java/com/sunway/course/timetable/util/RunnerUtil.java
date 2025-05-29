@@ -17,6 +17,7 @@ import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClusteri
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
+import com.sunway.course.timetable.VenueAssignApp;
 
 @Configuration
 public class RunnerUtil {
@@ -66,45 +67,45 @@ public class RunnerUtil {
     //     };
     // }
 
-    @Bean
-    @Profile("!test")  // Exclude from tests
-    public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
-                                                 LecturerServiceImpl lecturerService,
-                                                 ConstraintEngine constraintEngine,
-                                                 ProgrammeDistributionClustering clustering) {
-        return args -> {
-            try {
-                String subjectPlanfilePath = "src/main/resources/file/SubjectPlan.xlsx";
-                String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
-                String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
+    // @Bean
+    // @Profile("!test")  // Exclude from tests
+    // public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
+    //                                              LecturerServiceImpl lecturerService,
+    //                                              ConstraintEngine constraintEngine,
+    //                                              ProgrammeDistributionClustering clustering) {
+    //     return args -> {
+    //         try {
+    //             String subjectPlanfilePath = "src/main/resources/file/SubjectPlan.xlsx";
+    //             String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
+    //             String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
 
-                PreprocessingResult assignmentData = preprocessingService.preprocessModuleAndStudents(subjectPlanfilePath, 
-                                                                                                            moduleSemFilePath, 
-                                                                                                            studentSemFilePath);
-                List<ModuleAssignmentData> assignmentDataList = assignmentData.getModuleAssignmentDataList();
-                Map<Long, String> studentProgrammeMap = assignmentData.getStudentProgrammeMap();
-                Map<Long, Integer> studentSemesterMap = assignmentData.getStudentSemesterMap();
+    //             PreprocessingResult assignmentData = preprocessingService.preprocessModuleAndStudents(subjectPlanfilePath, 
+    //                                                                                                         moduleSemFilePath, 
+    //                                                                                                         studentSemFilePath);
+    //             List<ModuleAssignmentData> assignmentDataList = assignmentData.getModuleAssignmentDataList();
+    //             Map<Long, String> studentProgrammeMap = assignmentData.getStudentProgrammeMap();
+    //             Map<Long, Integer> studentSemesterMap = assignmentData.getStudentSemesterMap();
 
-                // Manually create the processor
-                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
-                                                                                   constraintEngine,
-                                                                                   clustering);
+    //             // Manually create the processor
+    //             ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
+    //                                                                                constraintEngine,
+    //                                                                                clustering);
 
-                // Run the assignment
-                processor.processAssignments(assignmentDataList);
-                processor.clusterProgrammeDistribution(assignmentDataList, studentProgrammeMap, studentSemesterMap);
+    //             // Run the assignment
+    //             processor.processAssignments(assignmentDataList);
+    //             processor.clusterProgrammeDistribution(assignmentDataList, studentProgrammeMap, studentSemesterMap);
 
-                // Output results for verification
-                // for(int i = 0; i < 300; i++){
-                //     Session session = sessions.get(i);
-                //     System.out.println(session);
-                // }
-            } catch (Exception e) {
-                System.err.println("Error reading Excel file: " + e.getMessage());
-                e.printStackTrace();
-            }
-        };
-    }
+    //             // Output results for verification
+    //             // for(int i = 0; i < 300; i++){
+    //             //     Session session = sessions.get(i);
+    //             //     System.out.println(session);
+    //             // }
+    //         } catch (Exception e) {
+    //             System.err.println("Error reading Excel file: " + e.getMessage());
+    //             e.printStackTrace();
+    //         }
+    //     };
+    // }
 
 
     // @Bean
@@ -137,4 +138,12 @@ public class RunnerUtil {
     //         logger.info(">>> Module Semester Processing Runner Initialized <<<");
     //     };
     // }
+
+    @Bean
+    public CommandLineRunner akkaRun(VenueAssignApp venueAssignApp) {
+        return args -> {
+            venueAssignApp.runBlocking(args); // Change to blocking method
+            logger.info(">>> Lecturer Service Runner Initialized <<<");
+        };
+    }
 }

@@ -103,10 +103,10 @@ public class Session {
     public void setType(String type) {
         this.type = type;
     }
-    public String gettype_group() {
+    public String getType_group() {
         return type_group;
     }
-    public void settype_group(String type_group) {
+    public void setType_group(String type_group) {
         this.type_group = type_group;
     }
 

@@ -75,10 +75,10 @@ public class ConstraintGeneratorUtil {
 
                 if (v1.getSession() == null || v2.getSession() == null) continue;
                 if (v1.getSession().getType() == null || v2.getSession().getType() == null) continue;
-                if (v1.getSession().gettype_group() == null || v2.getSession().gettype_group() == null) continue;
+                if (v1.getSession().getType_group() == null || v2.getSession().getType_group() == null) continue;
 
                 if (v1.getSession().getType().equals(v2.getSession().getType())
-                        && v1.getSession().gettype_group().equals(v2.getSession().gettype_group())) {
+                        && v1.getSession().getType_group().equals(v2.getSession().getType_group())) {
                     constraints.add(new UniqueTypePerWeekConstraint(v1, v2));
                 }
             }

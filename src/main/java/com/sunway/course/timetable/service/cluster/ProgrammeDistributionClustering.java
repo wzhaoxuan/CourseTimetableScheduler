@@ -39,7 +39,7 @@ public class ProgrammeDistributionClustering {
             Integer semester = studentSemesterMap.get(studentId);
             if (programme == null || semester == null) continue;
 
-            String typeGroup = session.gettype_group();
+            String typeGroup = session.getType_group();
             if(typeGroup == null || !typeGroup.toLowerCase().contains("lecture")) continue;
 
             String moduleCode = extractModuleCodeFromGroup(typeGroup);

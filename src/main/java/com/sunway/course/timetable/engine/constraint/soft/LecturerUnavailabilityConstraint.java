@@ -34,6 +34,6 @@ public class LecturerUnavailabilityConstraint implements UnaryConstraint {
 
     @Override
     public boolean isHard() {
-        return false; // ✅ Marked as soft constraint
+        return false; // Marked as soft constraint
     }
 }
