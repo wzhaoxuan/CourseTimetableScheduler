@@ -62,15 +62,16 @@ public class ModuleAssignmentProcessor {
             SubjectPlanInfo plan = data.getSubjectPlanInfo();
             Module module = data.getModule();
             Set<Student> eligibleStudents = data.getEligibleStudents();
+            List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
 
             // Print debug info
             System.out.println("Processing module: " + module.getName() + " (" + module.getId() + ")");
             System.out.println(" - Eligible students: " + eligibleStudents.size());
 
             int totalStudentsAllowed = plan.getTotalStudents();
-            int groupCount = calculateGroupCount(totalStudentsAllowed);
+            int groupCount = calculateGroupCount(filteredStudents.size());
 
-            List<List<Student>> groups = assignStudentsToGroups(eligibleStudents, module, totalStudentsAllowed, groupCount);
+            List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
             createSessionsForGroups(sessions, groups, plan, groupCount);
         }
 
@@ -101,11 +102,12 @@ public class ModuleAssignmentProcessor {
             SubjectPlanInfo plan = data.getSubjectPlanInfo();
             Module module = data.getModule();
             Set<Student> eligibleStudents = data.getEligibleStudents();
+            List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
 
             int totalStudentsAllowed = plan.getTotalStudents();
-            int groupCount = calculateGroupCount(totalStudentsAllowed);
+            int groupCount = calculateGroupCount(filteredStudents.size());
 
-            List<List<Student>> groups = assignStudentsToGroups(eligibleStudents, module, totalStudentsAllowed, groupCount);
+            List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
             createSessionsForGroups(sessions, groups, plan, groupCount);
         }
 
@@ -151,7 +153,7 @@ public class ModuleAssignmentProcessor {
 
     // Assigns students to groups based on pre-filtered students for semester.
     private List<List<Student>> assignStudentsToGroups(
-            Set<Student> students,
+            List<Student> students,
             Module module,
             int totalStudentsAllowed,
             int groupCount) {
@@ -161,12 +163,11 @@ public class ModuleAssignmentProcessor {
             groups.add(new ArrayList<>());
         }
 
-        List<Student> eligibleStudents = creditTracker.filterEligible(new ArrayList<>(students), module.getCreditHour());
 
         int totalAssigned = 0;
         int currentGroupIndex = 0;
 
-         for (Student student : eligibleStudents) {
+         for (Student student : students) {
             if (totalAssigned >= totalStudentsAllowed) {
                 System.out.println(" - Reached total students allowed: " + totalStudentsAllowed);
                 break;
@@ -241,7 +242,7 @@ public class ModuleAssignmentProcessor {
             session.setLecturer(lecturer.orElse(null));
             groupSessions.add(session);
             
-            // System.out.println(session);
+            System.out.println(session);
         }
 
         return groupSessions;
