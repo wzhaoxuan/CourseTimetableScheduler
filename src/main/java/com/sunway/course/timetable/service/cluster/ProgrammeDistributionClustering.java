@@ -63,28 +63,21 @@ public class ProgrammeDistributionClustering {
             Integer semester = semesterEntry.getKey();
             Map<String, Map<String, Integer>> moduleProgrammeCounts = semesterEntry.getValue();
             Map<String, Integer> moduleTotalCounts = semesterModuleTotalStudents.get(semester);
-
-            System.out.println(moduleTotalCounts);
-
             Map<String, Map<String, Double>> modulePercentages = new HashMap<>();
 
-            System.out.println(">> Semester: " + semester);
             for (Map.Entry<String, Map<String, Integer>> moduleEntry : moduleProgrammeCounts.entrySet()) {
                 String moduleCode = moduleEntry.getKey();
                 Map<String, Integer> programmeCounts = moduleEntry.getValue();
                 int total = moduleTotalCounts.getOrDefault(moduleCode, 0);
-
                 Map<String, Double> percentageMap = new HashMap<>();
-                System.out.println("Module: " + moduleCode + " (Total Students: " + total + ")");
 
                 for (Map.Entry<String, Integer> entry : programmeCounts.entrySet()) {
                     String programme = entry.getKey();
                     int count = entry.getValue();
                     double percentage = (count * 100.0) / total;
-                    System.out.printf("  - %s: %d students (%.2f%%)\n", programme, count, percentage);
                     percentageMap.put(programme, percentage);
                 }
-                System.out.println("-----------------------------------------");
+                // System.out.println("-----------------------------------------");
 
                 modulePercentages.put(moduleCode, percentageMap);
             }

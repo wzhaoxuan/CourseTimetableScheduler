@@ -39,6 +39,7 @@ public class ModuleAssignmentProcessor {
     private final LecturerServiceImpl lecturerService;
     private final ConstraintEngine constraintEngine;
     private final ProgrammeDistributionClustering clustering;
+    
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                       ConstraintEngine constraintEngine,
@@ -59,20 +60,7 @@ public class ModuleAssignmentProcessor {
         List<Session> sessions = new ArrayList<>();
 
         for(ModuleAssignmentData data : moduleDataList) {
-            SubjectPlanInfo plan = data.getSubjectPlanInfo();
-            Module module = data.getModule();
-            Set<Student> eligibleStudents = data.getEligibleStudents();
-            List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
-
-            // Print debug info
-            System.out.println("Processing module: " + module.getName() + " (" + module.getId() + ")");
-            System.out.println(" - Eligible students: " + eligibleStudents.size());
-
-            int totalStudentsAllowed = plan.getTotalStudents();
-            int groupCount = calculateGroupCount(filteredStudents.size());
-
-            List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
-            createSessionsForGroups(sessions, groups, plan, groupCount);
+            sessions.addAll(processSingleModuleAssignment(data));
         }
 
         System.out.println("Total sessions created: " + sessions.size());
@@ -93,52 +81,38 @@ public class ModuleAssignmentProcessor {
      *         - List of created sessions (not saved to DB yet)
      *         - Map of module code -> (programme name -> percentage of students)
      */
-    public Pair<List<Session>, Map<String, Map<String, Double>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
+    public Pair<List<Session>, Map<Integer, Map <String, Map<String, Double>>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
                                                                                                 Map<Long, String> studentProgrammeMap,
                                                                                                 Map<Long, Integer> studentSemesterMap) {
         List<Session> sessions = new ArrayList<>();
-
         for (ModuleAssignmentData data : moduleDataList) {
-            SubjectPlanInfo plan = data.getSubjectPlanInfo();
-            Module module = data.getModule();
-            Set<Student> eligibleStudents = data.getEligibleStudents();
-            List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
-
-            int totalStudentsAllowed = plan.getTotalStudents();
-            int groupCount = calculateGroupCount(filteredStudents.size());
-
-            List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
-            createSessionsForGroups(sessions, groups, plan, groupCount);
+            sessions.addAll(processSingleModuleAssignment(data));
         }
 
         // Compute the percentage distribution of students’ programmes by semester
         Map<Integer, Map<String, Map<String, Double>>> distribution =
                 clustering.calculateProgrammePercentageDistributionBySemester(sessions, studentProgrammeMap, studentSemesterMap);
 
-        // Combine all semester maps into one map: moduleCode -> (programme -> percentage)
-        Map<String, Map<String, Double>> flatDistribution = new HashMap<>();
-        for (Map<String, Map<String, Double>> moduleMap : distribution.values()) {
-            for (Map.Entry<String, Map<String, Double>> entry : moduleMap.entrySet()) {
-                flatDistribution.merge(entry.getKey(), entry.getValue(), (existing, newMap) -> {
-                    newMap.forEach((k, v) -> existing.merge(k, v, Double::sum));
-                    return existing;
-                });
-            }
-        }
-       
-        // Optional: print the distribution for debugging
-        distribution.forEach((semester, moduleMap) -> {
-            System.out.println(">> Semester " + semester);
-            moduleMap.forEach((moduleCode, programmeMap) -> {
-                System.out.printf("Module %s:\n", moduleCode);
-                programmeMap.forEach((programme, percentage) -> {
-                    System.out.printf("  - %s: %.2f%%\n", programme, percentage);
-                });
-            }); 
-        });
-
         // Return both sessions and clustering result
-        return new Pair<>(sessions, flatDistribution);
+        return new Pair<>(sessions, distribution);
+    }
+
+
+    private List<Session> processSingleModuleAssignment(ModuleAssignmentData data){
+        List<Session> sessions = new ArrayList<>();
+
+        SubjectPlanInfo plan = data.getSubjectPlanInfo();
+        Module module = data.getModule();
+        Set<Student> eligibleStudents = data.getEligibleStudents();
+        List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
+
+        int totalStudentsAllowed = plan.getTotalStudents();
+        int groupCount = calculateGroupCount(filteredStudents.size());
+
+        List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
+        createSessionsForGroups(sessions, groups, plan, groupCount);
+
+        return sessions;
     }
 
     /**
@@ -201,20 +175,18 @@ public class ModuleAssignmentProcessor {
         for (int i = 0; i < groupCount; i++) {
             List<Student> groupStudents = groups.get(i);
             String groupSuffix = "-G" + (i + 1);
+            List<SessionTypeInfo> sessionTypes = List.of(
+                new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getPracticalTutor()),
+                new SessionTypeInfo("Practical", plan.hasPractical(), plan.getTutorialTutor()),
+                new SessionTypeInfo("Workshop", plan.hasWorkshop(), plan.getWorkshopTutor())
+            );
 
-            if (plan.hasPractical()) {
-                sessions.addAll(createSessions(groupStudents, plan.getPracticalTutor(), "Practical", plan.getSubjectCode() + "-Practical" + groupSuffix));
-                System.out.println(" - Created " + groupStudents.size() + " Practical sessions");
-            }
-
-            if (plan.hasTutorial()) {
-                sessions.addAll(createSessions(groupStudents, plan.getTutorialTutor(), "Tutorial", plan.getSubjectCode() + "-Tutorial" + groupSuffix));
-                System.out.println(" - Created " + groupStudents.size() + " Tutorial sessions");
-            }
-
-            if (plan.hasWorkshop()) {
-                sessions.addAll(createSessions(groupStudents, plan.getWorkshopTutor(), "Workshop", plan.getSubjectCode() + "-Workshop" + groupSuffix));
-                System.out.println(" - Created " + groupStudents.size() + " Workshop sessions");
+            for (SessionTypeInfo typeInfo : sessionTypes) {
+                if(!typeInfo.hasType) continue;
+                String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
+                List<Session> groupSessions = createSessions(groupStudents, typeInfo.tutor, typeInfo.type, sessionCode);
+                sessions.addAll(groupSessions);
+                System.out.printf(" - Created %d %s sessions\n", groupSessions.size(), typeInfo.type());
             }
         }
     }
@@ -247,6 +219,8 @@ public class ModuleAssignmentProcessor {
 
         return groupSessions;
     }
+
+    private static record SessionTypeInfo(String type, boolean hasType, String tutor) {}  
 
     // private void applyConstraintsScheduling(List<Session> sessions){
     //     // 1. Generate domain (valid time slots) for each session
@@ -291,5 +265,8 @@ public class ModuleAssignmentProcessor {
 
     //     System.out.println("Time slots successfully assigned to sessions");
     // }
+    
 }
+
+
 
