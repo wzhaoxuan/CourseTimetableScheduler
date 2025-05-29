@@ -1,6 +1,8 @@
 package com.sunway.course.timetable.service.processor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,8 +17,11 @@ import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.SubjectPlanInfo;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.tracker.CreditHourTracker;
 import com.sunway.course.timetable.util.FilterUtil;
+
+import javafx.util.Pair;
 
 /**
  * Service class responsible for processing module assignments by:
@@ -33,11 +38,14 @@ public class ModuleAssignmentProcessor {
     private final CreditHourTracker creditTracker;
     private final LecturerServiceImpl lecturerService;
     private final ConstraintEngine constraintEngine;
+    private final ProgrammeDistributionClustering clustering;
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
-                                      ConstraintEngine constraintEngine) {
+                                      ConstraintEngine constraintEngine,
+                                      ProgrammeDistributionClustering clustering) {
         this.lecturerService = lecturerService;
         this.constraintEngine = constraintEngine;
+        this.clustering = clustering;
         this.creditTracker = new CreditHourTracker();
     }
 
@@ -72,6 +80,63 @@ public class ModuleAssignmentProcessor {
         // constraintEngine.scheduleSessions(sessions);
         
         return sessions;
+
+    }
+
+    /**
+     * Process module assignments, create sessions, and perform clustering
+     * to identify programme distribution per module.
+     *
+     * @param moduleDataList List of module assignment data
+     * @return Pair containing:
+     *         - List of created sessions (not saved to DB yet)
+     *         - Map of module code -> (programme name -> percentage of students)
+     */
+    public Pair<List<Session>, Map<String, Map<String, Double>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
+                                                                                                Map<Long, String> studentProgrammeMap,
+                                                                                                Map<Long, Integer> studentSemesterMap) {
+        List<Session> sessions = new ArrayList<>();
+
+        for (ModuleAssignmentData data : moduleDataList) {
+            SubjectPlanInfo plan = data.getSubjectPlanInfo();
+            Module module = data.getModule();
+            Set<Student> eligibleStudents = data.getEligibleStudents();
+
+            int totalStudentsAllowed = plan.getTotalStudents();
+            int groupCount = calculateGroupCount(totalStudentsAllowed);
+
+            List<List<Student>> groups = assignStudentsToGroups(eligibleStudents, module, totalStudentsAllowed, groupCount);
+            createSessionsForGroups(sessions, groups, plan, groupCount);
+        }
+
+        // Compute the percentage distribution of students’ programmes by semester
+        Map<Integer, Map<String, Map<String, Double>>> distribution =
+                clustering.calculateProgrammePercentageDistributionBySemester(sessions, studentProgrammeMap, studentSemesterMap);
+
+        // Combine all semester maps into one map: moduleCode -> (programme -> percentage)
+        Map<String, Map<String, Double>> flatDistribution = new HashMap<>();
+        for (Map<String, Map<String, Double>> moduleMap : distribution.values()) {
+            for (Map.Entry<String, Map<String, Double>> entry : moduleMap.entrySet()) {
+                flatDistribution.merge(entry.getKey(), entry.getValue(), (existing, newMap) -> {
+                    newMap.forEach((k, v) -> existing.merge(k, v, Double::sum));
+                    return existing;
+                });
+            }
+        }
+       
+        // Optional: print the distribution for debugging
+        distribution.forEach((semester, moduleMap) -> {
+            System.out.println(">> Semester " + semester);
+            moduleMap.forEach((moduleCode, programmeMap) -> {
+                System.out.printf("Module %s:\n", moduleCode);
+                programmeMap.forEach((programme, percentage) -> {
+                    System.out.printf("  - %s: %.2f%%\n", programme, percentage);
+                });
+            }); 
+        });
+
+        // Return both sessions and clustering result
+        return new Pair<>(sessions, flatDistribution);
     }
 
     /**
@@ -176,7 +241,7 @@ public class ModuleAssignmentProcessor {
             session.setLecturer(lecturer.orElse(null));
             groupSessions.add(session);
             
-            System.out.println(session);
+            // System.out.println(session);
         }
 
         return groupSessions;

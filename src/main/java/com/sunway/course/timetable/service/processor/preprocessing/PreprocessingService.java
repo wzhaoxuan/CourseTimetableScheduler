@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.service.processor.preprocessing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.SubjectPlanInfo;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.ModuleSem;
+import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.model.assignment.StudentSem;
 import com.sunway.course.timetable.model.programme.Programme;
 import com.sunway.course.timetable.repository.ModuleRepository;
@@ -59,10 +61,12 @@ public class PreprocessingService {
         this.programmeRepository = programmeRepository;
     }
 
-    public List<ModuleAssignmentData> preprocessModuleAndStudents(String subjectPlanFilePath,
-                                                                 String moduleSemFilePath,
-                                                                    String studentSemFilePath) {
+    public PreprocessingResult preprocessModuleAndStudents(String subjectPlanFilePath,
+                                                            String moduleSemFilePath,
+                                                            String studentSemFilePath) {
         List<ModuleAssignmentData> assignmentDataList = new ArrayList<>();
+        Map<Long, String> studentProgrammeMap = new HashMap<>();
+        Map<Long, Integer> studentSemesterMap = new HashMap<>();
 
         try {
             List<SubjectPlanInfo> subjectPlans = moduleExcelReaderService.readExcelFile(subjectPlanFilePath);
@@ -109,6 +113,8 @@ public class PreprocessingService {
                                 Student student = programme.getStudent();
                                 if (student.getId() == studentSem.getStudentId()) {
                                     eligibleStudents.add(student);
+                                    studentProgrammeMap.put(student.getId(), programme.getProgrammeId().getId());
+                                    studentSemesterMap.put(student.getId(), semester);
                                     break;
                                 }
                             }
@@ -130,6 +136,7 @@ public class PreprocessingService {
             logger.error("Error reading Excel file: {}", e.getMessage());
             e.printStackTrace();
         }
+        
 
         // logger.info("=== Module Assignment Data Details ===");
         // for (ModuleAssignmentData data : assignmentDataList) {
@@ -148,7 +155,7 @@ public class PreprocessingService {
 
         //     logger.info("--------------------------------------------------");
         // }
-        return assignmentDataList;
+        return new PreprocessingResult(assignmentDataList, studentProgrammeMap, studentSemesterMap);
         
     }
 

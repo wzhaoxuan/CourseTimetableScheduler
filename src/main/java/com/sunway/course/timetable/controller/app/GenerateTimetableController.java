@@ -12,6 +12,7 @@ import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
 import com.sunway.course.timetable.event.VenueAddedEvent;
 import com.sunway.course.timetable.interfaces.services.VenueService;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
+import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
@@ -119,10 +120,11 @@ public class GenerateTimetableController extends ContentController {
             // Step 1: Read Excel (use fixed path or let user upload in future)
             String filePath = "src/main/resources/file/SubjectPlan.xlsx";
 
-            List<ModuleAssignmentData> allData = preprocessingService.preprocessModuleAndStudents(filePath, filePath, filePath);
+            PreprocessingResult allData = preprocessingService.preprocessModuleAndStudents(filePath, filePath, filePath);
+            List<ModuleAssignmentData> allDataList = allData.getModuleAssignmentDataList();
 
             // Step 2: Filter by selected programme ID or attributes
-            List<ModuleAssignmentData> filteredData = allData.stream()
+            List<ModuleAssignmentData> filteredData = allDataList.stream()
                 .filter(data -> data.getProgrammeOfferingModules().stream()
                     .anyMatch(p -> {
                         String programmeCode = p.getProgrammeId().getId();

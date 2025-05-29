@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.util;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,12 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
-import com.sunway.course.timetable.service.LecturerServiceImpl;
-import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
-import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
-import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.engine.ConstraintEngine;
+import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
+import com.sunway.course.timetable.model.assignment.PreprocessingResult;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
+import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
+import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
+import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 
 @Configuration
 public class RunnerUtil {
@@ -67,23 +70,29 @@ public class RunnerUtil {
     @Profile("!test")  // Exclude from tests
     public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
                                                  LecturerServiceImpl lecturerService,
-                                                 ConstraintEngine constraintEngine) {
+                                                 ConstraintEngine constraintEngine,
+                                                 ProgrammeDistributionClustering clustering) {
         return args -> {
             try {
                 String subjectPlanfilePath = "src/main/resources/file/SubjectPlan.xlsx";
                 String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
                 String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
 
-                List<ModuleAssignmentData> assignmentDataList = preprocessingService.preprocessModuleAndStudents(subjectPlanfilePath, 
+                PreprocessingResult assignmentData = preprocessingService.preprocessModuleAndStudents(subjectPlanfilePath, 
                                                                                                             moduleSemFilePath, 
                                                                                                             studentSemFilePath);
+                List<ModuleAssignmentData> assignmentDataList = assignmentData.getModuleAssignmentDataList();
+                Map<Long, String> studentProgrammeMap = assignmentData.getStudentProgrammeMap();
+                Map<Long, Integer> studentSemesterMap = assignmentData.getStudentSemesterMap();
 
                 // Manually create the processor
                 ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
-                                                                                   constraintEngine);
+                                                                                   constraintEngine,
+                                                                                   clustering);
 
                 // Run the assignment
                 processor.processAssignments(assignmentDataList);
+                processor.clusterProgrammeDistribution(assignmentDataList, studentProgrammeMap, studentSemesterMap);
 
                 // Output results for verification
                 // for(int i = 0; i < 300; i++){
