@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.service;
+package com.sunway.course.timetable.service.venue;
 import java.util.List;
 
 import org.springframework.stereotype.Service;

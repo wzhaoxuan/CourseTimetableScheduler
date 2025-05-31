@@ -128,7 +128,7 @@ public class BacktrackingSolver {
             AC3 ac3 = new AC3();
             if (ac3.runAC3(variables, binaryConstraints, newDomains)) {
                 boolean result = backtrack(assignment, variables, binaryConstraints, unaryConstraints, newDomains);
-                System.out.printf("🔄 Backtracking from variable %s and value %s%n", unassigned.getSession(), slot);
+                System.out.printf("Backtracking from variable %s and value %s%n", unassigned.getSession(), slot);
                 found = result || found;
             }
 

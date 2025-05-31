@@ -3,7 +3,7 @@ package com.sunway.course.timetable.unit.service;
 import com.sunway.course.timetable.model.venuedistance.VenueDistance;
 import com.sunway.course.timetable.model.venuedistance.VenueDistanceId;
 import com.sunway.course.timetable.repository.VenueDistanceRepository;
-import com.sunway.course.timetable.service.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

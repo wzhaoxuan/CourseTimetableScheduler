@@ -1,6 +1,5 @@
 package com.sunway.course.timetable.controller.app;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -11,12 +10,8 @@ import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
 import com.sunway.course.timetable.event.VenueAddedEvent;
 import com.sunway.course.timetable.interfaces.services.VenueService;
-import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
-import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
-import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 import com.sunway.course.timetable.store.VenueSessionStore;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.DateUtil;
@@ -55,8 +50,6 @@ public class GenerateTimetableController extends ContentController {
     private final VenueSessionStore venueStore;
     private final WeekdaySessionStore weekdayStore;
     private final LecturerServiceImpl lecturerService;
-    private final PreprocessingService preprocessingService;
-    private final ModuleAssignmentProcessor processor;
 
     public GenerateTimetableController(NavigationService navService, 
                                         LoginSceneController loginController,
@@ -64,9 +57,7 @@ public class GenerateTimetableController extends ContentController {
                                         ApplicationEventPublisher eventPublisher,
                                         VenueSessionStore venueSessionStore,
                                         WeekdaySessionStore weekdaySessionStore,
-                                        PreprocessingService preprocessingService,
-                                        LecturerServiceImpl lecturerService,
-                                        ModuleAssignmentProcessor processor
+                                        LecturerServiceImpl lecturerService
                                         ) {
         super(navService, loginController);
         this.venueService = venueService;
@@ -74,8 +65,6 @@ public class GenerateTimetableController extends ContentController {
         this.venueStore = venueSessionStore;
         this.weekdayStore = weekdaySessionStore;
         this.lecturerService = lecturerService;
-        this.preprocessingService = preprocessingService;
-        this.processor = processor;
     }
 
     @Override
@@ -118,26 +107,11 @@ public class GenerateTimetableController extends ContentController {
             String semester = semesterChoice.getValue();
 
             // Step 1: Read Excel (use fixed path or let user upload in future)
-            String filePath = "src/main/resources/file/SubjectPlan.xlsx";
+            String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
+            String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
+            String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
 
-            PreprocessingResult allData = preprocessingService.preprocessModuleAndStudents(filePath, filePath, filePath);
-            List<ModuleAssignmentData> allDataList = allData.getModuleAssignmentDataList();
-
-            // Step 2: Filter by selected programme ID or attributes
-            List<ModuleAssignmentData> filteredData = allDataList.stream()
-                .filter(data -> data.getProgrammeOfferingModules().stream()
-                    .anyMatch(p -> {
-                        String programmeCode = p.getProgrammeId().getId();
-                        System.out.println("Programme Code: " + programmeCode.equals(programme));
-                        return programmeCode.equals(programme);
-                    }
-                        
-                        // p.getYear() == Integer.parseInt(year) 
-                        // p.getIntake().equals(intake) &&
-                        // p.getSemester() == Integer.parseInt(semester)
-                    )
-                )
-                .collect(Collectors.toList());
+            
 
             // Step 3: Pass to processor
             // processor.processAssignments(filteredData);

@@ -13,6 +13,9 @@ import com.sunway.course.timetable.engine.constraint.interfaces.UnaryConstraint;
 import com.sunway.course.timetable.engine.constraint.soft.LecturerUnavailabilityConstraint;
 import com.sunway.course.timetable.engine.factory.TimeSlotFactory;
 import com.sunway.course.timetable.model.Session;
+import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.repository.VenueRepository;
+import com.sunway.course.timetable.repository.VenueDistanceRepository;
 import com.sunway.course.timetable.store.WeekdaySessionStore;
 import com.sunway.course.timetable.util.ConstraintGeneratorUtil;
 
@@ -20,19 +23,28 @@ import com.sunway.course.timetable.util.ConstraintGeneratorUtil;
 public class ConstraintEngine {
 
     private final WeekdaySessionStore weekdaySessionStore;
+    private final VenueRepository venueRepository; // Assuming this is injected or available
+    private final VenueDistanceRepository venueDistanceRepository; // Assuming this is injected or available
     ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public ConstraintEngine(WeekdaySessionStore weekdaySessionStore) {
+    public ConstraintEngine(WeekdaySessionStore weekdaySessionStore, 
+                            VenueRepository venueRepository,
+                            VenueDistanceRepository venueDistanceRepository) {
         this.weekdaySessionStore = weekdaySessionStore;
+        this.venueRepository = venueRepository;
+        this.venueDistanceRepository = venueDistanceRepository;
     }
 
     public List<Session> scheduleSessions(List<Session> unscheduledSessions) {
         // Step 1: Create variables from sessions
         List<Variable> variables = new ArrayList<>();
-        List<TimeSlot> fullDomain = TimeSlotFactory.generateValidTimeSlots(); // includes filtering for C5, C11
-        for (Session s : unscheduledSessions) {
-            variables.add(new Variable(s, new ArrayList<>(fullDomain)));
-        }
+
+        List<Venue> allVenues = venueRepository.findAll();
+
+        // List<TimeSlot> fullDomain = TimeSlotFactory.generateTimeSlotsByVenueDistance(); // includes filtering for C5, C11
+        // for (Session s : unscheduledSessions) {
+        //     variables.add(new Variable(s, new ArrayList<>(fullDomain)));
+        // }
 
         // Step 2: Generate binary constraints
         List<BinaryConstraint> binaryConstraints = new ArrayList<>();
@@ -87,7 +99,7 @@ public class ConstraintEngine {
         }
 
         if (solved) {
-            System.out.println("✅ Timetable successfully generated:");
+            System.out.println("Timetable successfully generated:");
             assignment.forEach((variable, timeslot) -> {
                 System.out.printf("Session: %-25s | Day: %-8s | Start: %-5s | End: %-5s%n",
                     variable.getSession(),
@@ -97,7 +109,7 @@ public class ConstraintEngine {
                 );
             });
         } else {
-            System.out.println("❌ Failed to generate a valid timetable.");
+            System.out.println("Failed to generate a valid timetable.");
         }
 
 

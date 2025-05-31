@@ -3,6 +3,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.sunway.course.timetable.model.Session;
+import com.sunway.course.timetable.model.Venue;
 
 public class Variable {
     private Session session;
@@ -33,6 +34,14 @@ public class Variable {
 
     public Long getLecturerId() {
         return session.getLecturer() != null ? session.getLecturer().getId() : null;
+    }
+
+    public Venue getVenue() {
+        // If domain is non-empty, get venue from first domain TimeSlot (or you can customize)
+        if (domain != null && !domain.isEmpty()) {
+            return domain.get(0).getVenue();
+        }
+        return null;
     }
 
     @Override

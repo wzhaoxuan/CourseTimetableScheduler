@@ -3,7 +3,7 @@ package com.sunway.course.timetable.unit.service;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.repository.VenueAssignmentRepository;
-import com.sunway.course.timetable.service.VenueAssignmentServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

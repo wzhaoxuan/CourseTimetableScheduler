@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.util;
+
 import java.util.List;
 import java.util.Map;
 
@@ -9,15 +10,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import com.sunway.course.timetable.FullActorTest;
 import com.sunway.course.timetable.engine.ConstraintEngine;
-import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
+import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
-import com.sunway.course.timetable.VenueAssignApp;
+import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+
 
 @Configuration
 public class RunnerUtil {
@@ -67,45 +70,68 @@ public class RunnerUtil {
     //     };
     // }
 
-    // @Bean
-    // @Profile("!test")  // Exclude from tests
-    // public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
-    //                                              LecturerServiceImpl lecturerService,
-    //                                              ConstraintEngine constraintEngine,
-    //                                              ProgrammeDistributionClustering clustering) {
-    //     return args -> {
-    //         try {
-    //             String subjectPlanfilePath = "src/main/resources/file/SubjectPlan.xlsx";
-    //             String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
-    //             String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
+    @Bean
+    @Profile("!test")  // Exclude from tests
+    public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
+                                                 LecturerServiceImpl lecturerService,
+                                                 ConstraintEngine constraintEngine,
+                                                 ProgrammeDistributionClustering clustering) {
+        return args -> {
+            try {
+                String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
+                String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
+                String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
 
-    //             PreprocessingResult assignmentData = preprocessingService.preprocessModuleAndStudents(subjectPlanfilePath, 
-    //                                                                                                         moduleSemFilePath, 
-    //                                                                                                         studentSemFilePath);
-    //             List<ModuleAssignmentData> assignmentDataList = assignmentData.getModuleAssignmentDataList();
-    //             Map<Long, String> studentProgrammeMap = assignmentData.getStudentProgrammeMap();
-    //             Map<Long, Integer> studentSemesterMap = assignmentData.getStudentSemesterMap();
+                PreprocessingResult preprocessingResult = preprocessingService
+                        .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
 
-    //             // Manually create the processor
-    //             ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
-    //                                                                                constraintEngine,
-    //                                                                                clustering);
 
-    //             // Run the assignment
-    //             processor.processAssignments(assignmentDataList);
-    //             processor.clusterProgrammeDistribution(assignmentDataList, studentProgrammeMap, studentSemesterMap);
+                // Manually create the processor
+                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
+                                                                                   constraintEngine,
+                                                                                   clustering);
 
-    //             // Output results for verification
-    //             // for(int i = 0; i < 300; i++){
-    //             //     Session session = sessions.get(i);
-    //             //     System.out.println(session);
-    //             // }
-    //         } catch (Exception e) {
-    //             System.err.println("Error reading Excel file: " + e.getMessage());
-    //             e.printStackTrace();
-    //         }
-    //     };
-    // }
+                // Run the assignment
+                // processor.setStudentSemesterMap(preprocessingResult.getStudentSemesterMap());
+                Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentSemesterMap());
+                processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
+                                                        preprocessingResult.getStudentProgrammeMap(), 
+                                                        preprocessingResult.getStudentSemesterMap());
+
+                System.out.println(preprocessingResult.getStudentProgrammeMap());
+                System.out.println(preprocessingResult.getStudentSemesterMap());
+
+                // Output results for verification
+                for(Map.Entry<Integer, Map<String, List<Session>>> semEntry : session.entrySet()) {
+                    Integer semester = semEntry.getKey();
+                    Map<String, List<Session>> moduleMap = semEntry.getValue();
+                    System.out.println("Semester: " + semester);
+                    for (Map.Entry<String, List<Session>> modEntry : moduleMap.entrySet()) {
+                        String moduleId = modEntry.getKey();
+                        System.out.println("  Module (" + moduleId + ")");
+
+                        List<Session> sessions = modEntry.getValue();
+                        System.out.println("  Sessions size:" + sessions.size());
+                        for(Session sessionItem : sessions) {
+                            String sessionInfo = String.format(
+                                "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
+                                sessionItem.getType(),
+                                sessionItem.getType_group(),
+                                sessionItem.getStudent() != null ? sessionItem.getStudent().getId() : "N/A",
+                                sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A"
+                            );
+                            System.out.println(sessionInfo);
+                        }
+                    }
+                }
+
+
+            } catch (Exception e) {
+                System.err.println("Error reading Excel file: " + e.getMessage());
+                e.printStackTrace();
+            }
+        };
+    }
 
 
     // @Bean
@@ -140,10 +166,19 @@ public class RunnerUtil {
     // }
 
     @Bean
-    public CommandLineRunner akkaRun(VenueAssignApp venueAssignApp) {
+    public CommandLineRunner venueMatrix(VenueAvailabilityMatrix venueAvailabilityMatrix) {
         return args -> {
-            venueAssignApp.runBlocking(args); // Change to blocking method
-            logger.info(">>> Lecturer Service Runner Initialized <<<");
+            logger.info(">>> Venue Matrix <<<");
+            venueAvailabilityMatrix.printAvailability(); 
+        };
+    }
+
+    @Bean
+    public CommandLineRunner akkaRun(FullActorTest fullActorTest) {
+        return args -> {
+            logger.info(">>> Running Venue Actor Test <<<");
+            // Run the VenueActorTest
+            fullActorTest.runTest();
         };
     }
 }

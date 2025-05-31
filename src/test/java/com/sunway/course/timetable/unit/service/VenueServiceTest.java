@@ -23,7 +23,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.sunway.course.timetable.exception.CreationException;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.repository.VenueRepository;
-import com.sunway.course.timetable.service.VenueServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class VenueServiceTest {

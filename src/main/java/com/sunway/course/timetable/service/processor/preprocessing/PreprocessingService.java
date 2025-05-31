@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -69,95 +70,98 @@ public class PreprocessingService {
         Map<Long, Integer> studentSemesterMap = new HashMap<>();
 
         try {
-            List<SubjectPlanInfo> subjectPlans = moduleExcelReaderService.readExcelFile(subjectPlanFilePath);
-            Map<Integer, List<ModuleSem>> moduleSemMap = moduleSemExcelReaderService.readModuleSemExcelFile(moduleSemFilePath);
-            Map<Integer, List<StudentSem>> studentSemMap = studentSemExcelReaderService.readStudentSemExcelFile(studentSemFilePath);
+                List<SubjectPlanInfo> subjectPlans = moduleExcelReaderService.readExcelFile(subjectPlanFilePath);
+                Map<Integer, List<ModuleSem>> moduleSemMap = moduleSemExcelReaderService.readModuleSemExcelFile(moduleSemFilePath);
+                Map<Integer, List<StudentSem>> studentSemMap = studentSemExcelReaderService.readStudentSemExcelFile(studentSemFilePath);
 
-            for(SubjectPlanInfo subject: subjectPlans){
-                // Split the subject code into individual module codes
-                List<String> subjectCode = ModuleExcelHelper.splitSubjectCode(subject.getSubjectCode());
+                for (Map.Entry<Integer, List<ModuleSem>> semEntry : moduleSemMap.entrySet()) {
+                int semester = semEntry.getKey();
+                List<ModuleSem> modulesInSem = semEntry.getValue();
 
-                // For each module code, find the corresponding Module entity
-                for(String moduleCode: subjectCode){
-                    Optional<Module> moduleOptional = moduleRepository.findById(moduleCode);
-                    if(moduleOptional.isEmpty()){
-                        logger.info("Module with code {} not found in database", subjectCode);
-                        continue;
-                    }
+                Set<String> moduleCodesInSemester = modulesInSem.stream()
+                    .map(ModuleSem::getModuleId)
+                    .collect(Collectors.toSet());
 
-                    // If module is found, get its credit hour
-                    Module module = moduleOptional.get();
+                List<StudentSem> studentsInSemester = studentSemMap.getOrDefault(semester, List.of());
 
-                    // Find semester that offers this module
-                    int semester = findSemesterForModule(moduleSemMap, moduleCode);
-                    if (semester == -1) {
-                        logger.warn("No semester found for module: {}", moduleCode);
-                        continue;
-                    }
+                for (SubjectPlanInfo subject : subjectPlans) {
+                    List<String> subjectCodes = ModuleExcelHelper.splitSubjectCode(subject.getSubjectCode());
 
-                    // Get all programmes associated with the module
-                    List<Programme> programmesOfferingModule  = programmeRepository.findByModuleId(moduleCode);
-                    Set<String> programmeCodes = programmesOfferingModule.stream()
+                    for (String moduleCode : subjectCodes) {
+                        if (!moduleCodesInSemester.contains(moduleCode)) {
+                            continue; // skip modules not offered in this semester
+                        }
+
+                        Optional<Module> moduleOptional = moduleRepository.findById(moduleCode);
+                        if (moduleOptional.isEmpty()) {
+                            continue;
+                        }
+
+                        Module module = moduleOptional.get();
+
+                        // Programmes offering the module
+                        List<Programme> programmesOfferingModule = programmeRepository.findByModuleId(moduleCode);
+                        Set<String> programmeCodes = programmesOfferingModule.stream()
                             .map(p -> p.getProgrammeId().getId())
                             .collect(Collectors.toSet());
 
-                    // Filter students by:
-                    // - Belonging to one of these programmes
-                    // - Matching the module's offered semester
-                    Set<Student> eligibleStudents = new HashSet<>();
-                    List<StudentSem> studentsInSemester = studentSemMap.getOrDefault(semester, List.of());
-
-                    for (StudentSem studentSem : studentsInSemester) {
-                        if (programmeCodes.contains(studentSem.getProgramme())) {
-                            for (Programme programme : programmesOfferingModule) {
-                                Student student = programme.getStudent();
-                                if (student.getId() == studentSem.getStudentId()) {
-                                    eligibleStudents.add(student);
-                                    studentProgrammeMap.put(student.getId(), programme.getProgrammeId().getId());
-                                    studentSemesterMap.put(student.getId(), semester);
-                                    break;
+                        Set<Student> eligibleStudents = new HashSet<>();
+                        for (StudentSem studentSem : studentsInSemester) {
+                            if (programmeCodes.contains(studentSem.getProgramme())) {
+                                for (Programme programme : programmesOfferingModule) {
+                                    Student student = programme.getStudent();
+                                    if (student.getId() == studentSem.getStudentId()) {
+                                        eligibleStudents.add(student);
+                                        studentProgrammeMap.put(student.getId(), programme.getProgrammeId().getId());
+                                        studentSemesterMap.put(student.getId(), semester);
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    ModuleAssignmentData assignmentData = new ModuleAssignmentData(
+                        ModuleAssignmentData assignmentData = new ModuleAssignmentData(
                             subject,
                             module,
                             programmesOfferingModule,
                             eligibleStudents
-                    );
+                        );
 
-                    assignmentDataList.add(assignmentData);
+                        assignmentDataList.add(assignmentData);
+                    }
                 }
-            }
             
+
+                // Logging the semester grouping after processing each semester
+            //     logger.info("=== Semester-wise Module Assignment Data ===");
+            //     logger.info("Semester {}", semester);
+            //     for (ModuleSem moduleSem : modulesInSem) {
+            //         String moduleId = moduleSem.getModuleId();
+
+            //         List<ModuleAssignmentData> dataForModule = assignmentDataList.stream()
+            //             .filter(d -> d.getModule().getId().equals(moduleId))
+            //             .collect(Collectors.toList());
+
+            //         for (ModuleAssignmentData data : dataForModule) {
+            //             logger.info("  Module: {}", moduleId);
+            //             String studentsList = data.getEligibleStudents().stream()
+            //                 .map(student -> String.valueOf(student.getId()))
+            //                 .sorted()
+            //                 .collect(Collectors.joining(", "));
+            //             logger.info("    Students: {}", studentsList);
+            //         }
+            //     }
+            //     logger.info("-----------------------------------------------------------------------------------------------------------");
+            }
+
         } catch (Exception e) {
             logger.error("Error reading Excel file: {}", e.getMessage());
             e.printStackTrace();
         }
-        
 
-        // logger.info("=== Module Assignment Data Details ===");
-        // for (ModuleAssignmentData data : assignmentDataList) {
-        //     logger.info("SubjectPlanInfo: {}", data.getSubjectPlanInfo());
-        //     logger.info("Module: {}", data.getModule().getId());
-            
-        //     String programmeCodes = data.getProgrammeOfferingModules().stream()
-        //         .map(p -> p.getProgrammeId().getId())
-        //         .collect(Collectors.joining(", "));
-        //     logger.info("Programmes: {}", programmeCodes);
-
-        //     String studentIds = data.getEligibleStudents().stream()
-        //         .map(s -> s.getId().toString())
-        //         .collect(Collectors.joining(", "));
-        //     logger.info("Eligible Students: {}", studentIds);
-
-        //     logger.info("--------------------------------------------------");
-        // }
         return new PreprocessingResult(assignmentDataList, studentProgrammeMap, studentSemesterMap);
-        
     }
+
 
     private int findSemesterForModule(Map<Integer, List<ModuleSem>> moduleSemMap, String moduleCode) {
         for (Map.Entry<Integer, List<ModuleSem>> entry : moduleSemMap.entrySet()) {

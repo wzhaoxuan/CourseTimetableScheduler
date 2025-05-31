@@ -23,6 +23,7 @@ import com.sunway.course.timetable.util.FilterUtil;
 
 import javafx.util.Pair;
 
+
 /**
  * Service class responsible for processing module assignments by:
  * - Grouping students based on intake months.
@@ -39,7 +40,8 @@ public class ModuleAssignmentProcessor {
     private final LecturerServiceImpl lecturerService;
     private final ConstraintEngine constraintEngine;
     private final ProgrammeDistributionClustering clustering;
-    
+    private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
+    private Map<Long, Integer> studentSemesterMap = new HashMap<>();
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                       ConstraintEngine constraintEngine,
@@ -49,29 +51,58 @@ public class ModuleAssignmentProcessor {
         this.clustering = clustering;
         this.creditTracker = new CreditHourTracker();
     }
-
+    
     /**
      * Main entry point to process and assign sessions based on module data.
      *
      * @param moduleDataList List of ModuleAssignmentData containing module, subject plan, and programmes.
-     * @return List of generated sessions (lectures, tutorials, etc.)
+     * @param studentSemesterMap Mapping of student ID to semester
+     * @return  Map of semester -> (module ID -> list of generated sessions)
      */
-    public List<Session> processAssignments(List<ModuleAssignmentData> moduleDataList) {
-        List<Session> sessions = new ArrayList<>();
+    public Map<Integer, Map<String, List<Session>>> processAssignments(List<ModuleAssignmentData> moduleDataList,
+                                                                    Map<Long, Integer> studentSemesterMap) {
+        this.studentSemesterMap = studentSemesterMap; // Store for use in session grouping
+        sessionBySemesterAndModule.clear(); // Reset
 
-        for(ModuleAssignmentData data : moduleDataList) {
-            sessions.addAll(processSingleModuleAssignment(data));
+        for (ModuleAssignmentData data : moduleDataList) {
+            processSingleModuleAssignment(data);
         }
 
-        System.out.println("Total sessions created: " + sessions.size());
+        // Debug output
+        System.out.println("=== Session Assignment Results ===");
+        for (Map.Entry<Integer, Map<String, List<Session>>> semEntry : sessionBySemesterAndModule.entrySet()) {
+            Integer semester = semEntry.getKey();
+            System.out.println("Semester " + semester);
+
+            Map<String, List<Session>> moduleMap = semEntry.getValue();
+            for (Map.Entry<String, List<Session>> modEntry : moduleMap.entrySet()) {
+                String moduleId = modEntry.getKey();
+                System.out.println("  Module (" + moduleId + ")");
+
+                List<Session> sessions = modEntry.getValue();
+                System.out.println("  Sessions size:" + sessions.size());
+                for (Session session : sessions) {
+                    String sessionInfo = String.format(
+                        "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
+                        session.getType(),
+                        session.getType_group(),
+                        session.getStudent() != null ? session.getStudent().getId() : "N/A",
+                        session.getLecturer() != null ? session.getLecturer().getName() : "N/A"
+                    );
+                    System.out.println(sessionInfo);
+                }
+            }
+            System.out.println(); // extra newline between semesters
+        }
+
         // Apply constraints to the sessions
         // System.out.println("Engine started");
         // constraintEngine.scheduleSessions(sessions);
-        
-        return sessions;
 
+        return sessionBySemesterAndModule;
     }
 
+    
     /**
      * Process module assignments, create sessions, and perform clustering
      * to identify programme distribution per module.
@@ -84,6 +115,8 @@ public class ModuleAssignmentProcessor {
     public Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
                                                                                                             Map<Long, String> studentProgrammeMap,
                                                                                                             Map<Long, Integer> studentSemesterMap) {
+        sessionBySemesterAndModule.clear(); // Reset
+        
         List<Session> sessions = new ArrayList<>();
         for (ModuleAssignmentData data : moduleDataList) {
             sessions.addAll(processSingleModuleAssignment(data));
@@ -97,12 +130,18 @@ public class ModuleAssignmentProcessor {
         return new Pair<>(sessions, distribution);
     }
 
-
+    /**
+     * Processes a single module assignment, creating sessions based on the subject plan and eligible students.
+     *
+     * @param data ModuleAssignmentData containing module, subject plan, and eligible students
+     * @return List of created sessions for the module
+     */
     private List<Session> processSingleModuleAssignment(ModuleAssignmentData data){
         List<Session> sessions = new ArrayList<>();
 
         SubjectPlanInfo plan = data.getSubjectPlanInfo();
         Module module = data.getModule();
+        String moduleId = module.getId();
         Set<Student> eligibleStudents = data.getEligibleStudents();
         List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
 
@@ -111,6 +150,21 @@ public class ModuleAssignmentProcessor {
 
         List<List<Student>> groups = assignStudentsToGroups(filteredStudents, module, totalStudentsAllowed, groupCount);
         createSessionsForGroups(sessions, groups, plan, groupCount);
+
+        // ➕ GROUP BY SEMESTER AND MODULE
+        for (Session session : sessions) {
+            Student student = session.getStudent();
+            Integer semester = null;
+            if (studentSemesterMap != null) {
+                semester = studentSemesterMap.get(student.getId());
+            }
+            if (semester == null) continue; // skip if no semester info
+
+            sessionBySemesterAndModule
+                .computeIfAbsent(semester, k -> new HashMap<>())
+                .computeIfAbsent(moduleId, k -> new ArrayList<>())
+                .add(session);
+        }
 
         return sessions;
     }
@@ -213,10 +267,13 @@ public class ModuleAssignmentProcessor {
             session.setLecturer(lecturer.orElse(null));
             groupSessions.add(session);
             
-            // System.out.println(session);
         }
 
         return groupSessions;
+    }
+
+    public void setStudentSemesterMap(Map<Long, Integer> studentSemesterMap) {
+        this.studentSemesterMap = studentSemesterMap;
     }
 
     private static record SessionTypeInfo(String type, boolean hasType, String tutor) {}  

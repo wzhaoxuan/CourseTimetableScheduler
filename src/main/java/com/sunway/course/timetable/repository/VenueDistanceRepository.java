@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.repository;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,5 +13,6 @@ public interface VenueDistanceRepository extends JpaRepository<VenueDistance, Ve
     // Custom query methods can be defined here if needed
 
     Optional<VenueDistance> findById(VenueDistanceId id);
+    List<VenueDistance> findByVenueDistanceId_VenueFrom(String venueFrom);
 
 }
