@@ -35,7 +35,16 @@ public class Venue {
         // Default constructor
     }
 
-    public Venue(String type, String name, int capacity, String floorType, String floor) {
+    public Venue(Long id, String type, String name, int capacity, String floorType, String floor){
+        this.id = id;
+        this.type = type;
+        this.name = name;
+        this.capacity = capacity;
+        this.floorType = floorType;
+        this.floor = floor;
+    }
+
+    public Venue(String type, String name, int capacity, String floorType, String floor){
         this.type = type;
         this.name = name;
         this.capacity = capacity;

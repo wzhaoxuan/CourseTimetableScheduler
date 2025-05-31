@@ -41,21 +41,4 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
     public void deleteAssignment(VenueAssignmentId key) {
         venueAssignmentRepository.deleteById(key);
     }
-
-//     // Assign a venue asynchronously using Akka and then save it
-//     public CompletionStage<AssignmentResult> assignVenue(Session session,
-//                                                      ActorRef<SubjectLecturerActor.Command> lecturerActor) {
-//     CompletableFuture<AssignmentResult> future = new CompletableFuture<>();
-
-//     // Use actorSystem to spawn a temporary actor for collecting the reply
-//     ActorRef<StatusReply<AssignmentResult>> replyCollectorRef =
-//         actorSystem.systemActorOf(ReplyCollector.create(future), "replyCollector-" + session.getId(), Props.empty());
-
-//     // Send request to venue coordinator
-//     venueCoordinatorActor.tell(
-//         new VenueCoordinatorActor.RequestVenue(session, lecturerActor, replyCollectorRef)
-//     );
-
-//     return future;
-// }
 }

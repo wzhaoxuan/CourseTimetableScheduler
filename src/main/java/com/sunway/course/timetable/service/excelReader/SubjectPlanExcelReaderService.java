@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Row;
@@ -19,10 +21,10 @@ import com.sunway.course.timetable.service.generator.ModuleGenerator;
 import com.sunway.course.timetable.util.ExcelUtil;
 
 @Service
-public class ModuleExcelReaderService {
+public class SubjectPlanExcelReaderService {
     private final ModuleGenerator moduleGenerator;
 
-    public ModuleExcelReaderService(ModuleGenerator moduleGenerator) {
+    public SubjectPlanExcelReaderService(ModuleGenerator moduleGenerator) {
         this.moduleGenerator = moduleGenerator;
     }
 
@@ -50,9 +52,9 @@ public class ModuleExcelReaderService {
                 int totalStudents = ModuleExcelHelper.parseInt(ExcelUtil.getCellValue(row, headerMap.get("Total Estimated Students")));
                 
                 String mainlecturer = ExcelUtil.getCellValue(row, headerMap.get("Lecturer"));
-                String practicalTutor = ExcelUtil.getCellValue(row, headerMap.get("PracticalTutor"));
-                String tutorialTutor = ExcelUtil.getCellValue(row, headerMap.get("TutorialTutor"));
-                String workshopTutor = ExcelUtil.getCellValue(row, headerMap.get("WorkshopTutor"));
+                List<String> practicalTutor = splitByComma(ExcelUtil.getCellValue(row, headerMap.get("PracticalTutor")));
+                List<String> tutorialTutor = splitByComma(ExcelUtil.getCellValue(row, headerMap.get("TutorialTutor")));
+                List<String> workshopTutor = splitByComma(ExcelUtil.getCellValue(row, headerMap.get("WorkshopTutor")));
 
                 SubjectPlanInfo subjectPlanInfo = new SubjectPlanInfo(subjectCode, subjectName, lecture, practical, tutorial, workshop,
                         totalStudents, mainlecturer, practicalTutor, tutorialTutor, workshopTutor);
@@ -63,5 +65,13 @@ public class ModuleExcelReaderService {
         }
 
         return subjectPlanInfos;
+    }
+
+    private List<String> splitByComma(String input) {
+        if (input == null || input.isBlank()) return Collections.emptyList();
+        return Arrays.stream(input.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
     }
 }

@@ -19,7 +19,6 @@ import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClusteri
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
-import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 
 
 @Configuration
@@ -102,28 +101,28 @@ public class RunnerUtil {
                 System.out.println(preprocessingResult.getStudentSemesterMap());
 
                 // Output results for verification
-                for(Map.Entry<Integer, Map<String, List<Session>>> semEntry : session.entrySet()) {
-                    Integer semester = semEntry.getKey();
-                    Map<String, List<Session>> moduleMap = semEntry.getValue();
-                    System.out.println("Semester: " + semester);
-                    for (Map.Entry<String, List<Session>> modEntry : moduleMap.entrySet()) {
-                        String moduleId = modEntry.getKey();
-                        System.out.println("  Module (" + moduleId + ")");
+                // for(Map.Entry<Integer, Map<String, List<Session>>> semEntry : session.entrySet()) {
+                //     Integer semester = semEntry.getKey();
+                //     Map<String, List<Session>> moduleMap = semEntry.getValue();
+                //     System.out.println("Semester: " + semester);
+                //     for (Map.Entry<String, List<Session>> modEntry : moduleMap.entrySet()) {
+                //         String moduleId = modEntry.getKey();
+                //         System.out.println("  Module (" + moduleId + ")");
 
-                        List<Session> sessions = modEntry.getValue();
-                        System.out.println("  Sessions size:" + sessions.size());
-                        for(Session sessionItem : sessions) {
-                            String sessionInfo = String.format(
-                                "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
-                                sessionItem.getType(),
-                                sessionItem.getType_group(),
-                                sessionItem.getStudent() != null ? sessionItem.getStudent().getId() : "N/A",
-                                sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A"
-                            );
-                            System.out.println(sessionInfo);
-                        }
-                    }
-                }
+                //         List<Session> sessions = modEntry.getValue();
+                //         System.out.println("  Sessions size:" + sessions.size());
+                //         for(Session sessionItem : sessions) {
+                //             String sessionInfo = String.format(
+                //                 "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
+                //                 sessionItem.getType(),
+                //                 sessionItem.getType_group(),
+                //                 sessionItem.getStudent() != null ? sessionItem.getStudent().getId() : "N/A",
+                //                 sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A"
+                //             );
+                //             System.out.println(sessionInfo);
+                //         }
+                //     }
+                // }
 
 
             } catch (Exception e) {
@@ -165,19 +164,17 @@ public class RunnerUtil {
     //     };
     // }
 
-    @Bean
-    public CommandLineRunner venueMatrix(VenueAvailabilityMatrix venueAvailabilityMatrix) {
-        return args -> {
-            logger.info(">>> Venue Matrix <<<");
-            venueAvailabilityMatrix.printAvailability(); 
-        };
-    }
+    // @Bean
+    // public CommandLineRunner venueMatrix(VenueAvailabilityMatrix venueAvailabilityMatrix) {
+    //     return args -> {
+    //         logger.info(">>> Venue Matrix <<<");
+    //     };
+    // }
 
     @Bean
     public CommandLineRunner akkaRun(FullActorTest fullActorTest) {
         return args -> {
             logger.info(">>> Running Venue Actor Test <<<");
-            // Run the VenueActorTest
             fullActorTest.runTest();
         };
     }

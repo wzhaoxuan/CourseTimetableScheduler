@@ -1,10 +1,13 @@
 package com.sunway.course.timetable.akka.actor;
 
+import com.sunway.course.timetable.model.Venue;
+
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.*;
-
-import com.sunway.course.timetable.model.Venue;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 
 public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentActor.SessionAssignmentCommand> {
 
@@ -13,14 +16,16 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     public static final class AssignSession implements SessionAssignmentCommand {
         public final int durationHours;
         public final int minCapacity;
-        public final ActorRef<SessionAssignmentCommand> replyTo;  // Actor expects commands here
+        public final String lecturerId;
+        public final ActorRef<SessionAssignmentCommand> replyTo;
         public final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator;
 
-        public AssignSession(int durationHours, int minCapacity,
-                             ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
-                             ActorRef<SessionAssignmentCommand> replyTo) {
+        public AssignSession(int durationHours, int minCapacity, String lecturerId,
+                            ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
+                            ActorRef<SessionAssignmentCommand> replyTo) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
+            this.lecturerId = lecturerId;
             this.coordinator = coordinator;
             this.replyTo = replyTo;
         }
@@ -43,10 +48,12 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
     public static final class SessionAssignmentFailed implements SessionAssignmentCommand {
         public final String reason;
+
         public SessionAssignmentFailed(String reason) { this.reason = reason; }
     }
 
     private final ActorContext<SessionAssignmentCommand> context;
+    private ActorRef<SessionAssignmentCommand> originalRequester;
 
     public static Behavior<SessionAssignmentCommand> create() {
         return Behaviors.setup(SessionAssignmentActor::new);
@@ -67,25 +74,39 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
     private Behavior<SessionAssignmentCommand> onAssignSession(AssignSession msg) {
+        // Save original requester to forward results later
+        this.originalRequester = msg.replyTo;
+
+        context.getLog().info("Received AssignSession request: duration={} hours, minCapacity={}, lecturer={}",
+                msg.durationHours, msg.minCapacity, msg.lecturerId);
+
         // Forward the request to the VenueCoordinatorActor, passing self as replyTo
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
-            msg.durationHours, msg.minCapacity, context.getSelf()));
+            msg.durationHours, msg.minCapacity, msg.lecturerId, context.getSelf()));
+
         return this;
     }
 
     private Behavior<SessionAssignmentCommand> onSessionAssigned(SessionAssigned msg) {
         context.getLog().info("Session assigned: Venue={} Day={} StartSlot={}",
                               msg.venue.getName(), msg.dayIndex, msg.startIndex);
-        // Notify whoever asked for assignment - if you saved ActorRef for this, tell it
-        // For example:
-        // msg.replyTo.tell(msg); // if you kept track of who asked
+
+        if (originalRequester != null) {
+            originalRequester.tell(msg); // Notify original requester
+        }
+        // Reset for next request (if any)
+        originalRequester = null;
 
         return this;
     }
 
     private Behavior<SessionAssignmentCommand> onSessionAssignmentFailed(SessionAssignmentFailed msg) {
         context.getLog().warn("Session assignment failed: {}", msg.reason);
-        // Notify requester if you saved ActorRef
+
+        if (originalRequester != null) {
+            originalRequester.tell(msg); // Notify original requester
+        }
+        originalRequester = null;
 
         return this;
     }

@@ -11,6 +11,6 @@ public class AkkaConfig {
 
     @Bean
     public ActorSystem<Void> actorSystem() {
-        return ActorSystem.create(Behaviors.empty(), "VenueActorTest");
+        return ActorSystem.create(Behaviors.empty(), "FullActorTest");
     }
 }

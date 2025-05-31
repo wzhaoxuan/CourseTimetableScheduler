@@ -1,8 +1,7 @@
 package com.sunway.course.timetable.util;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 import com.sunway.course.timetable.config.TitleConfig;
 

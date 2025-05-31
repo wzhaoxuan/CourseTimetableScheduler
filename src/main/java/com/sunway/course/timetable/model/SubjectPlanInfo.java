@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.model;
+import java.util.List;
 
 public class SubjectPlanInfo {
     private String subjectCode;
@@ -9,15 +10,15 @@ public class SubjectPlanInfo {
     private boolean workshop;
     private int totalStudents;
     private String mainLecturer;
-    private String practicalTutor;
-    private String tutorialTutor;
-    private String workshopTutor;
+    private List<String> practicalTutor;
+    private List<String> tutorialTutor;
+    private List<String> workshopTutor;
 
     public SubjectPlanInfo(){}
 
     public SubjectPlanInfo(String subjectCode, String subjectName, boolean lecture, boolean practical, boolean tutorial, boolean workshop,
-                            int totalStudents, String mainLecturer, String practicalTutor, String tutorialTutor, 
-                            String workshopTutor) {
+                            int totalStudents, String mainLecturer, List<String> practicalTutor, List<String> tutorialTutor, 
+                            List<String> workshopTutor) {
                                 
         this.subjectCode = subjectCode;
         this.subjectName = subjectName;
@@ -81,22 +82,22 @@ public class SubjectPlanInfo {
     public void setMainLecturer(String mainLecturer) {
         this.mainLecturer = mainLecturer;
     }
-    public String getPracticalTutor() {
+    public List<String> getPracticalTutor() {
         return practicalTutor;
     }
-    public void setPracticalTutor(String practicalTutor) {
+    public void setPracticalTutor(List<String> practicalTutor) {
         this.practicalTutor = practicalTutor;
     }
-    public String getTutorialTutor() {
+    public List<String> getTutorialTutor() {
         return tutorialTutor;
     }
-    public void setTutorialTutor(String tutorialTutor) {
+    public void setTutorialTutor(List<String> tutorialTutor) {
         this.tutorialTutor = tutorialTutor;
     }
-    public String getWorkshopTutor() {
+    public List<String> getWorkshopTutor() {
         return workshopTutor;
     }
-    public void setWorkshopTutor(String workshopTutor) {
+    public void setWorkshopTutor(List<String>  workshopTutor) {
         this.workshopTutor = workshopTutor;
     }
 

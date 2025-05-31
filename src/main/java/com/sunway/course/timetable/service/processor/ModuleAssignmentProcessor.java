@@ -83,11 +83,14 @@ public class ModuleAssignmentProcessor {
                 System.out.println("  Sessions size:" + sessions.size());
                 for (Session session : sessions) {
                     String sessionInfo = String.format(
-                        "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
+                        "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s | Day: %s | Start: %s | End: %s",
                         session.getType(),
                         session.getType_group(),
                         session.getStudent() != null ? session.getStudent().getId() : "N/A",
-                        session.getLecturer() != null ? session.getLecturer().getName() : "N/A"
+                        session.getLecturer() != null ? session.getLecturer().getName() : "N/A",
+                        session.getDay(),
+                        session.getStartTime(),
+                        session.getEndTime()
                     );
                     System.out.println(sessionInfo);
                 }
@@ -229,16 +232,31 @@ public class ModuleAssignmentProcessor {
             List<Student> groupStudents = groups.get(i);
             String groupSuffix = "-G" + (i + 1);
             List<SessionTypeInfo> sessionTypes = List.of(
-                new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getPracticalTutor()),
-                new SessionTypeInfo("Practical", plan.hasPractical(), plan.getTutorialTutor()),
+                new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getTutorialTutor()),
+                new SessionTypeInfo("Practical", plan.hasPractical(), plan.getPracticalTutor()),
                 new SessionTypeInfo("Workshop", plan.hasWorkshop(), plan.getWorkshopTutor())
             );
 
             for (SessionTypeInfo typeInfo : sessionTypes) {
                 if(!typeInfo.hasType) continue;
-                String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
-                List<Session> groupSessions = createSessions(groupStudents, typeInfo.tutor, typeInfo.type, sessionCode);
-                sessions.addAll(groupSessions);
+
+                List<String> lecturerNames = typeInfo.tutor; // e.g., ["John", "Mary"]
+
+                // One group or no tutors available
+                if (groupCount == 1 || lecturerNames.isEmpty()) {
+                    String firstLecturer = lecturerNames.isEmpty() ? null : lecturerNames.get(0);
+                    String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
+                    sessions.addAll(createSessions(groupStudents, firstLecturer, typeInfo.type, sessionCode));
+                } else {
+                    // Multiple groups → distribute lecturers round-robin
+                    String selectedLecturer = lecturerNames.get(i % lecturerNames.size());
+                    String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
+                    sessions.addAll(createSessions(groupStudents, selectedLecturer, typeInfo.type, sessionCode));
+                }
+
+                // String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
+                // List<Session> groupSessions = createSessions(groupStudents, typeInfo.tutor, typeInfo.type, sessionCode);
+                // sessions.addAll(groupSessions);
                 // System.out.printf(" - Created %d %s sessions\n", groupSessions.size(), typeInfo.type());
             }
         }
@@ -276,7 +294,7 @@ public class ModuleAssignmentProcessor {
         this.studentSemesterMap = studentSemesterMap;
     }
 
-    private static record SessionTypeInfo(String type, boolean hasType, String tutor) {}  
+    private static record SessionTypeInfo(String type, boolean hasType, List<String> tutor) {}  
 
     // private void applyConstraintsScheduling(List<Session> sessions){
     //     // 1. Generate domain (valid time slots) for each session

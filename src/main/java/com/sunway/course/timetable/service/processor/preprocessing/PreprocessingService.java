@@ -25,7 +25,7 @@ import com.sunway.course.timetable.model.assignment.StudentSem;
 import com.sunway.course.timetable.model.programme.Programme;
 import com.sunway.course.timetable.repository.ModuleRepository;
 import com.sunway.course.timetable.repository.ProgrammeRepository;
-import com.sunway.course.timetable.service.excelReader.ModuleExcelReaderService;
+import com.sunway.course.timetable.service.excelReader.SubjectPlanExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.ModuleSemExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.ProgrammeExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.StudentSemExcelReaderService;
@@ -43,14 +43,14 @@ public class PreprocessingService {
 
     private static Logger logger = LoggerFactory.getLogger(ProgrammeExcelReaderService.class);
 
-    private final ModuleExcelReaderService moduleExcelReaderService;
+    private final SubjectPlanExcelReaderService moduleExcelReaderService;
     private final ModuleRepository moduleRepository;
     private final ProgrammeRepository programmeRepository;
     private final ModuleSemExcelReaderService moduleSemExcelReaderService;
     private final StudentSemExcelReaderService studentSemExcelReaderService;
 
 
-    public PreprocessingService(ModuleExcelReaderService moduleExcelReaderService,
+    public PreprocessingService(SubjectPlanExcelReaderService moduleExcelReaderService,
                                 ModuleSemExcelReaderService moduleSemExcelReaderService,
                                 StudentSemExcelReaderService studentSemExcelReaderService,
                                 ModuleRepository moduleRepository,
