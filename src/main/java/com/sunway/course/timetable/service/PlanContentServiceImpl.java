@@ -31,7 +31,16 @@ public class PlanContentServiceImpl implements PlanContentService{
 
     @Override
     public PlanContent savePlanContent(PlanContent planContent) {
-        return planContentRepository.save(planContent);
+        return planContentRepository.findByModuleAndSession(planContent.getModule(), planContent.getSession())
+            .map(existingPlanContent -> {
+                // Update fields of existing plan content if needed
+                existingPlanContent.setModule(planContent.getModule());
+                existingPlanContent.setSession(planContent.getSession());
+                // Add more fields to update as needed
+
+                return planContentRepository.save(existingPlanContent);
+            })
+            .orElseGet(() -> planContentRepository.save(planContent)); // Insert new if not found
     }
 
     @Override

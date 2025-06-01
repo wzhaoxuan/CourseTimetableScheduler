@@ -8,9 +8,6 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public class PlanContentId {
 
-    @Column(name = "id")
-    private Long id;
-
     @Column(name = "module_id")
     private String moduleId;
 
@@ -21,18 +18,9 @@ public class PlanContentId {
         // Default constructor
     }
 
-    public PlanContentId(Long id, String moduleId, Long sessionId) {
-        this.id = id;
+    public PlanContentId(String moduleId, Long sessionId) {
         this.moduleId = moduleId;
         this.sessionId = sessionId;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getModuleId() {
@@ -56,12 +44,12 @@ public class PlanContentId {
         if (this == o) return true;
         if (!(o instanceof PlanContentId)) return false;
         PlanContentId that = (PlanContentId) o;
-        return id.equals(that.id) && moduleId.equals(that.moduleId) && sessionId.equals(that.sessionId);
+        return moduleId.equals(that.moduleId) && sessionId.equals(that.sessionId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, moduleId, sessionId);
+        return Objects.hash(moduleId, sessionId);
     }
 
 }

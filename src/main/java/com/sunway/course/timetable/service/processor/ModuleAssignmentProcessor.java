@@ -25,7 +25,11 @@ import com.sunway.course.timetable.model.SubjectPlanInfo;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionAssignmentResult;
+import com.sunway.course.timetable.model.plancontent.PlanContent;
+import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.ModuleServiceImpl;
+import com.sunway.course.timetable.service.PlanContentServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.tracker.CreditHourTracker;
@@ -56,6 +60,8 @@ public class ModuleAssignmentProcessor {
     private final CreditHourTracker creditTracker;
     private final LecturerServiceImpl lecturerService;
     private final SessionServiceImpl sessionService;
+    private final PlanContentServiceImpl planContentService;
+    private final ModuleServiceImpl moduleService;
     private final ConstraintEngine constraintEngine;
     private final ProgrammeDistributionClustering clustering;
     private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
@@ -78,7 +84,9 @@ public class ModuleAssignmentProcessor {
                                       VenueAvailabilityMatrix venueMatrix,
                                       LecturerAvailabilityMatrix lecturerMatrix,
                                       ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
-                                      SessionServiceImpl sessionService) {
+                                      SessionServiceImpl sessionService,
+                                      PlanContentServiceImpl planContentService,
+                                      ModuleServiceImpl moduleService) {
         this.lecturerService = lecturerService;
         this.constraintEngine = constraintEngine;
         this.clustering = clustering;
@@ -88,6 +96,8 @@ public class ModuleAssignmentProcessor {
         this.lecturerMatrix = lecturerMatrix;
         this.venueCoordinatorActor = venueCoordinatorActor;
         this.sessionService = sessionService;
+        this.planContentService = planContentService;
+        this.moduleService = moduleService;
         this.creditTracker = new CreditHourTracker();
     }
  
@@ -169,7 +179,26 @@ public class ModuleAssignmentProcessor {
                         session.setEndTime(result.getEndTime());
 
                         System.out.println( "Scheduled session " + session);
-                        sessionService.saveSession(session);
+                        Session savedSession = sessionService.saveSession(session); // Persist session
+
+                        String moduleId = moduleEntry.getKey();
+                        Optional<Module> optionalModule = moduleService.getModuleById(moduleId);
+                        if (optionalModule.isEmpty()) {
+                            log.warn("Module {} not found in DB, skipping PlanContent saving.", moduleId);
+                            continue;
+                        }
+                        Module module = optionalModule.get();
+
+                        // Save plan_content
+                        PlanContent planContent = new PlanContent();
+                        PlanContentId planContentId = new PlanContentId();
+                        planContentId.setModuleId(module.getId());
+                        planContentId.setSessionId(savedSession.getId());
+                        planContent.setPlanContentId(planContentId);
+                        planContent.setModule(module);
+                        planContent.setSession(savedSession);
+
+                        planContentService.savePlanContent(planContent); // Persist to plan_content
                     }
                 }
             }

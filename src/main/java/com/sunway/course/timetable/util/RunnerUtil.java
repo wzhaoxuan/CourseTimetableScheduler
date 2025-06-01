@@ -15,6 +15,8 @@ import com.sunway.course.timetable.engine.ConstraintEngine;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.ModuleServiceImpl;
+import com.sunway.course.timetable.service.PlanContentServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
@@ -26,6 +28,7 @@ import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import javafx.util.Pair;
 
 
 
@@ -88,7 +91,9 @@ public class RunnerUtil {
                                                  VenueAvailabilityMatrix venueMatrix,
                                                  LecturerAvailabilityMatrix lecturerMatrix,
                                                  ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
-                                                 SessionServiceImpl sessionService) {
+                                                 SessionServiceImpl sessionService,
+                                                 PlanContentServiceImpl planContentService,
+                                                 ModuleServiceImpl  moduleService) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -106,43 +111,20 @@ public class RunnerUtil {
                                                                                    venueMatrix,
                                                                                    lecturerMatrix,
                                                                                    venueCoordinatorActor,
-                                                                                   sessionService);
+                                                                                   sessionService,
+                                                                                   planContentService,
+                                                                                   moduleService);
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentSemesterMap());
-                processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
+                Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterSession = processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
                                                         preprocessingResult.getStudentProgrammeMap(), 
                                                         preprocessingResult.getStudentSemesterMap());
 
                 System.out.println(preprocessingResult.getStudentProgrammeMap());
                 System.out.println(preprocessingResult.getStudentSemesterMap());
 
-                // Output results for verification
-                // for(Map.Entry<Integer, Map<String, List<Session>>> semEntry : session.entrySet()) {
-                //     Integer semester = semEntry.getKey();
-                //     Map<String, List<Session>> moduleMap = semEntry.getValue();
-                //     System.out.println("Semester: " + semester);
-                //     for (Map.Entry<String, List<Session>> modEntry : moduleMap.entrySet()) {
-                //         String moduleId = modEntry.getKey();
-                //         System.out.println("  Module (" + moduleId + ")");
-
-                //         List<Session> sessions = modEntry.getValue();
-                //         System.out.println("  Sessions size:" + sessions.size());
-                //         for(Session sessionItem : sessions) {
-                //             String sessionInfo = String.format(
-                //                 "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s | Day: %d | Start: %d | End: %d",
-                //                 sessionItem.getType(),
-                //                 sessionItem.getType_group(),
-                //                 sessionItem.getStudent() != null ? sessionItem.getStudent().getId() : "N/A",
-                //                 sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A",
-                //                 sessionItem.getDay(),
-                //                 sessionItem.getStartTime(),
-                //                 sessionItem.getEndTime()
-                //             );
-                //             System.out.println(sessionInfo);
-                //         }
-                //     }
-                // }
+                
 
 
             } catch (Exception e) {

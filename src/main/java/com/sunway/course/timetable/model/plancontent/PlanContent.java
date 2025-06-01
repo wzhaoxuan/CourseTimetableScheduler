@@ -18,12 +18,12 @@ public class PlanContent {
 
     @ManyToOne
     @MapsId("moduleId") // Maps moduleId from the embedded composite key
-    @JoinColumn(name = "module_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "module_id", referencedColumnName = "id")
     private Module module;
 
     @ManyToOne
     @MapsId("sessionId") // Maps sessionId from the embedded composite key
-    @JoinColumn(name = "session_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "session_id", referencedColumnName = "id")
     private Session session;
 
     public PlanContent() {
@@ -40,6 +40,22 @@ public class PlanContent {
 
     public void setPlanContentId(PlanContentId planContentId) {
         this.planContentId = planContentId;
+    }
+
+    public Module getModule() {
+        return module;
+    }
+
+    public void setModule(Module module) {
+        this.module = module;
+    }
+
+    public Session getSession() {
+        return session;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
     }
 
 }

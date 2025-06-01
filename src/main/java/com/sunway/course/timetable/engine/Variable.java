@@ -13,7 +13,7 @@ public class Variable {
     public Variable(Session session, List<TimeSlot> domain) {
         this.session = session;
         this.domain = domain;
-        this.id = session.getId() != null ? session.getId().toString() : "N/A";
+        this.id = session.getId() != null ? session.getId().toString() : session.getTempId();
     }
 
     public Session getSession() {
@@ -50,8 +50,8 @@ public class Variable {
         if (obj == null || getClass() != obj.getClass()) return false;
         Variable other = (Variable) obj;
 
-        String thisId = session.getId() != null ? session.getId().toString() : "N/A";
-        String otherId = other.session.getId() != null ? other.session.getId().toString() : "N/A";
+        String thisId = session.getId() != null ? session.getId().toString() : session.getTempId();
+        String otherId = other.session.getId() != null ? other.session.getId().toString() : session.getTempId();
 
         return Objects.equals(thisId, otherId);
     }

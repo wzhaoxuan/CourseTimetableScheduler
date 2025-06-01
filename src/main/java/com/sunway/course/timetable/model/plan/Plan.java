@@ -22,10 +22,9 @@ public class Plan {
     @JoinColumn(name = "satisfaction_id", referencedColumnName = "id", unique = true)
     private Satisfaction satisfaction;
 
-    @MapsId("plancontentId")  // Maps the plancontentId part of the composite key (Only if PlanContent uses @EmbeddedId that includes planId)
     @ManyToOne
+    @MapsId("plancontentId")  // Maps the plancontentId part of the composite key (Only if PlanContent uses @EmbeddedId that includes planId)
     @JoinColumns({
-        @JoinColumn(name = "plancontent_id", referencedColumnName = "id"),
         @JoinColumn(name = "session_id", referencedColumnName = "session_id"),
         @JoinColumn(name = "module_id", referencedColumnName = "module_id")
     })
