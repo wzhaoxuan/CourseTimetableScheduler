@@ -21,11 +21,11 @@ public class Session {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "student_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "student_id", referencedColumnName = "id", nullable=false)
     private Student student;
 
     @ManyToOne
-    @JoinColumn(name = "lecturer_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "lecturer_id", referencedColumnName = "id", nullable = false)
     private Lecturer lecturer;
 
     @Column(nullable = false)
@@ -40,21 +40,21 @@ public class Session {
     @Column(nullable = false)
     private String type;
 
-    @Column
-    private String type_group;
+    @Column(name = "type_group", nullable = false)
+    private String typeGroup;
 
     public Session() {
         // Default constructor
     }
 
-    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String type_group) {
+    public Session(Student student, Lecturer lecturer, String day, LocalTime startTime, LocalTime endTime, String type, String typeGroup) {
         this.student = student;
         this.lecturer = lecturer;
         this.day = day;
         this.startTime = startTime;
         this.endTime = endTime;
         this.type = type;
-        this.type_group = type_group;
+        this.typeGroup = typeGroup;
     }
 
     public String getTempId() {
@@ -103,11 +103,11 @@ public class Session {
     public void setType(String type) {
         this.type = type;
     }
-    public String getType_group() {
-        return type_group;
+    public String getTypeGroup() {
+        return typeGroup;
     }
-    public void setType_group(String type_group) {
-        this.type_group = type_group;
+    public void setTypeGroup(String typeGroup) {
+        this.typeGroup = typeGroup;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class Session {
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 ", type='" + type + '\'' +
-                ", type_group='" + type_group + '\'' +
+                ", type_group='" + typeGroup + '\'' +
                 '}';
     }
 }

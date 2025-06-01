@@ -10,15 +10,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import com.sunway.course.timetable.FullActorTest;
+import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.engine.ConstraintEngine;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
+import com.sunway.course.timetable.service.venue.VenueSorterService;
+import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
+
 
 
 @Configuration
@@ -74,7 +82,13 @@ public class RunnerUtil {
     public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
                                                  LecturerServiceImpl lecturerService,
                                                  ConstraintEngine constraintEngine,
-                                                 ProgrammeDistributionClustering clustering) {
+                                                 ProgrammeDistributionClustering clustering,
+                                                 ActorSystem<Void> actorSystem,
+                                                 VenueSorterService venueSorterService,
+                                                 VenueAvailabilityMatrix venueMatrix,
+                                                 LecturerAvailabilityMatrix lecturerMatrix,
+                                                 ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
+                                                 SessionServiceImpl sessionService) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -83,15 +97,18 @@ public class RunnerUtil {
 
                 PreprocessingResult preprocessingResult = preprocessingService
                         .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
-
-
                 // Manually create the processor
                 ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
                                                                                    constraintEngine,
-                                                                                   clustering);
+                                                                                   clustering,
+                                                                                   actorSystem,
+                                                                                   venueSorterService,
+                                                                                   venueMatrix,
+                                                                                   lecturerMatrix,
+                                                                                   venueCoordinatorActor,
+                                                                                   sessionService);
 
                 // Run the assignment
-                // processor.setStudentSemesterMap(preprocessingResult.getStudentSemesterMap());
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentSemesterMap());
                 processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
                                                         preprocessingResult.getStudentProgrammeMap(), 
@@ -113,11 +130,14 @@ public class RunnerUtil {
                 //         System.out.println("  Sessions size:" + sessions.size());
                 //         for(Session sessionItem : sessions) {
                 //             String sessionInfo = String.format(
-                //                 "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s",
+                //                 "    - Type: %-10s | Group: %-5s | Student: %-8s | Lecturer: %s | Day: %d | Start: %d | End: %d",
                 //                 sessionItem.getType(),
                 //                 sessionItem.getType_group(),
                 //                 sessionItem.getStudent() != null ? sessionItem.getStudent().getId() : "N/A",
-                //                 sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A"
+                //                 sessionItem.getLecturer() != null ? sessionItem.getLecturer().getName() : "N/A",
+                //                 sessionItem.getDay(),
+                //                 sessionItem.getStartTime(),
+                //                 sessionItem.getEndTime()
                 //             );
                 //             System.out.println(sessionInfo);
                 //         }
@@ -171,11 +191,11 @@ public class RunnerUtil {
     //     };
     // }
 
-    @Bean
-    public CommandLineRunner akkaRun(FullActorTest fullActorTest) {
-        return args -> {
-            logger.info(">>> Running Venue Actor Test <<<");
-            fullActorTest.runTest();
-        };
-    }
+    // @Bean
+    // public CommandLineRunner akkaRun(FullActorTest fullActorTest) {
+    //     return args -> {
+    //         logger.info(">>> Running Venue Actor Test <<<");
+    //         fullActorTest.runTest();
+    //     };
+    // }
 }

@@ -16,7 +16,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     public static final class AssignSession implements SessionAssignmentCommand {
         public final int durationHours;
         public final int minCapacity;
-        public final String lecturerId;
+        public final String lecturerId; 
         public final ActorRef<SessionAssignmentCommand> replyTo;
         public final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator;
 
@@ -77,8 +77,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         // Save original requester to forward results later
         this.originalRequester = msg.replyTo;
 
-        context.getLog().info("Received AssignSession request: duration={} hours, minCapacity={}, lecturer={}",
-                msg.durationHours, msg.minCapacity, msg.lecturerId);
+        // context.getLog().info("Received AssignSession request: duration={} hours, minCapacity={}, lecturer={}",
+        //         msg.durationHours, msg.minCapacity, msg.lecturerId);
 
         // Forward the request to the VenueCoordinatorActor, passing self as replyTo
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
@@ -88,8 +88,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
     private Behavior<SessionAssignmentCommand> onSessionAssigned(SessionAssigned msg) {
-        context.getLog().info("Session assigned: Venue={} Day={} StartSlot={}",
-                              msg.venue.getName(), msg.dayIndex, msg.startIndex);
+        // context.getLog().info("Session assigned: Venue={} Day={} StartSlot={}",
+        //                       msg.venue.getName(), msg.dayIndex, msg.startIndex);
 
         if (originalRequester != null) {
             originalRequester.tell(msg); // Notify original requester

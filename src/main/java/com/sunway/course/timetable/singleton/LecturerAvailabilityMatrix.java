@@ -20,6 +20,7 @@ public class LecturerAvailabilityMatrix {
         availability.computeIfAbsent(lecturerId, id -> {
             boolean[][] schedule = new boolean[DAYS][TIME_SLOTS_PER_DAY];
             for (boolean[] day : schedule) Arrays.fill(day, false);
+            // System.out.printf("[LecturerMatrix] Registered lecturer %s%n", lecturerId);
             return schedule;
         });
     }
@@ -28,8 +29,25 @@ public class LecturerAvailabilityMatrix {
     public boolean isAvailable(String lecturerId, int day, int start, int end) {
         lock.readLock().lock();
         try {
+
+            if (!isValidRange(day, start, end)) {
+                System.err.printf("[LecturerMatrix] Invalid range: day=%d, start=%d, end=%d%n", day, start, end);
+                return false;
+            }
             boolean[][] schedule = availability.get(lecturerId);
-            if (schedule == null) return false;
+            if (schedule == null) {
+                // System.out.printf("[LecturerMatrix] Auto-registering unregistered lecturer: %s%n", lecturerId);
+                lock.readLock().unlock(); // unlock read lock before write
+                lock.writeLock().lock();
+                try {
+                    registerLecturer(lecturerId);
+                } finally {
+                    lock.readLock().lock(); // re-acquire read lock
+                    lock.writeLock().unlock();
+                }
+                schedule = availability.get(lecturerId);
+            }
+
             for (int i = start; i < end; i++) {
                 if (schedule[day][i]) return false;
             }
@@ -43,13 +61,21 @@ public class LecturerAvailabilityMatrix {
     public void assign(String lecturerId, int day, int start, int end) {
         lock.writeLock().lock();
         try {
-            boolean[][] schedule = availability.get(lecturerId);
-            if (schedule == null) {
-                throw new IllegalStateException("Lecturer not registered: " + lecturerId);
+            if (!isValidRange(day, start, end)) {
+                throw new IllegalArgumentException("Invalid slot range: day=" + day + ", start=" + start + ", end=" + end);
             }
+
+            boolean[][] schedule = availability.computeIfAbsent(lecturerId, id -> {
+                System.out.printf("[LecturerMatrix] Auto-registering during assign: %s%n", id);
+                boolean[][] newSchedule = new boolean[DAYS][TIME_SLOTS_PER_DAY];
+                for (boolean[] row : newSchedule) Arrays.fill(row, false);
+                return newSchedule;
+            });
+
             for (int i = start; i < end; i++) {
                 schedule[day][i] = true;
             }
+            // System.out.printf("[LecturerMatrix] Assigned %s on day=%d from %d to %d%n", lecturerId, day, start, end);
         } finally {
             lock.writeLock().unlock();
         }
@@ -73,5 +99,10 @@ public class LecturerAvailabilityMatrix {
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    // Range validation
+    private boolean isValidRange(int day, int start, int end) {
+        return day >= 0 && day < DAYS && start >= 0 && end <= TIME_SLOTS_PER_DAY && start < end;
     }
 }

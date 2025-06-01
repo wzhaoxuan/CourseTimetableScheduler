@@ -27,12 +27,24 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session saveSession(Session session) {
-        return sessionRepository.save(session);
-    }
+        return sessionRepository.findByDayAndStartTimeAndTypeAndTypeGroupAndLecturerIdAndStudentId(
+            session.getDay(), session.getStartTime(), session.getType(), session.getTypeGroup(), session.getLecturer().getId(), session.getStudent().getId())
+            .map(existingSession -> {
+                // Update fields of existing session if needed
+                existingSession.setDay(session.getDay());
+                existingSession.setStartTime(session.getStartTime());
+                existingSession.setEndTime(session.getEndTime());
+                existingSession.setType(session.getType());
+                existingSession.setTypeGroup(session.getTypeGroup());
+                // Add more fields to update as needed
+
+                return sessionRepository.save(existingSession);
+            })
+            .orElseGet(() -> sessionRepository.save(session)); // Insert new if not found
+        }
 
     @Override
     public void deleteSession(Long id) {
         sessionRepository.deleteById(id);
     }
-
 }

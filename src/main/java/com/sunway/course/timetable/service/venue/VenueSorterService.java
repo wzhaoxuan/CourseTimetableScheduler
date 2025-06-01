@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-
 import com.sunway.course.timetable.model.Venue;
 
 @Service
@@ -44,7 +43,7 @@ public class VenueSorterService {
 
         // Take first 5 venues from each list (or fewer if not enough)
         List<Venue> result = new ArrayList<>();
-        result.addAll(smallVenues.subList(0, Math.min(7, smallVenues.size())));
+        result.addAll(smallVenues.subList(0, Math.min(9, smallVenues.size())));
         result.addAll(largeVenues.subList(0, Math.min(3, largeVenues.size())));
 
         return Collections.unmodifiableList(result);

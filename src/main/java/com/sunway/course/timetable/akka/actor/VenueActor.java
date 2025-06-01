@@ -1,6 +1,4 @@
 package com.sunway.course.timetable.akka.actor;
-import java.util.Arrays;
-
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
@@ -11,7 +9,6 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-
 
 public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
 
@@ -74,7 +71,8 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
             Venue venue,
             VenueAvailabilityMatrix venueAvailability,
             LecturerAvailabilityMatrix lecturerAvailability) {
-        Integer venueIndex = venueAvailability.getIndexForVenue(venue);
+            Integer venueIndex = venueAvailability.getIndexForVenue(venue);
+
         if (venueIndex == null) {
             throw new IllegalArgumentException("Venue not found in availability matrix: " + venue.getId());
         }
@@ -89,12 +87,34 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
             LecturerAvailabilityMatrix lecturerAvailability) {
         super(context);
         this.venue = venue;
-        this.venueIndex = venueAvailability.getIndexForVenue(venue);
+        this.venueIndex = venueIndex;
         this.venueAvailability = venueAvailability;
         this.lecturerAvailability = lecturerAvailability;
-        this.availability = new boolean[DAYS][TIME_SLOTS_PER_DAY];
-        for (boolean[] daySlots : availability) {
-            Arrays.fill(daySlots, false);
+        this.availability = new boolean[TIME_SLOTS_PER_DAY][DAYS];
+
+        boolean[][][] globalAvailability = venueAvailability.getAvailability();
+
+        int venueCount = globalAvailability.length;
+        if (venueIndex < 0 || venueIndex >= venueCount) {
+            throw new IllegalStateException("venueIndex out of range: " + venueIndex);
+        }
+
+        int slotCount = globalAvailability[venueIndex].length;
+        int dayCount = globalAvailability[venueIndex][0].length; // assume all slots have same day length
+
+        // System.out.println("globalAvailability[venueIndex] dimensions: slots=" + slotCount + ", days=" + dayCount);
+
+        if (slotCount < TIME_SLOTS_PER_DAY) {
+            throw new IllegalStateException("Time slots dimension smaller than expected: " + slotCount);
+        }
+        if (dayCount < DAYS) {
+            throw new IllegalStateException("Day dimension smaller than expected: " + dayCount);
+        }
+
+        for (int day = 0; day < DAYS; day++) {
+            for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+                availability[slot][day] = globalAvailability[venueIndex][slot][day];
+            }
         }
     }
 
@@ -107,7 +127,20 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
 
     private Behavior<VenueCommand> onCheckAndAssignSlot(CheckAndAssignSlot msg) {
 
-        getContext().getLog().info("Checking venue '{}' day {} slots {}-{}", venue.getName(), msg.dayIndex, msg.startIndex, msg.endIndex);
+        // getContext().getLog().info("Checking venue '{}' day {} slots {}-{}", venue.getName(), msg.dayIndex, msg.startIndex, msg.endIndex);
+
+        if (msg.dayIndex < 0 || msg.dayIndex >= DAYS || msg.startIndex < 0 || msg.endIndex > TIME_SLOTS_PER_DAY || msg.startIndex >= msg.endIndex) {
+            msg.replyTo.tell(new VenueRejected(venue, "Invalid day or time slots"));
+            return this;
+        }
+
+        if (!lecturerAvailability.isAvailable(msg.lecturerId, msg.dayIndex, msg.startIndex, msg.endIndex)) {
+            getContext().getLog().warn("Lecturer {} unavailable at day {} slots {}-{}", 
+                msg.lecturerId, msg.dayIndex, msg.startIndex, msg.endIndex);
+            lecturerAvailability.printAvailability(msg.lecturerId);
+            msg.replyTo.tell(new VenueRejected(venue, "Lecturer unavailable"));
+            return this;
+        }
 
         // Check local availability
         for (int slot = msg.startIndex; slot < msg.endIndex; slot++) {
@@ -115,7 +148,7 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
                 msg.replyTo.tell(new VenueRejected(venue, "Invalid time slot/day"));
                 return this;
             }
-            if (availability[msg.dayIndex][slot]) {
+            if (availability[slot][msg.dayIndex]) {
                 msg.replyTo.tell(new VenueRejected(venue, "Venue already booked for requested slots"));
                 return this;
             }
@@ -130,16 +163,11 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
             }
         }
 
-        // Check lecturer availability
-        if (!lecturerAvailability.isAvailable(msg.lecturerId, msg.dayIndex, msg.startIndex, msg.endIndex)) {
-            msg.replyTo.tell(new VenueRejected(venue, "Lecturer unavailable"));
-            return this;
+        // Mark booked locally and globally
+        for (int slot = msg.startIndex; slot < msg.endIndex; slot++) {
+            availability[slot][msg.dayIndex] = true;
         }
 
-        // All checks passed, assign booking
-        for (int slot = msg.startIndex; slot < msg.endIndex; slot++) {
-            availability[msg.dayIndex][slot] = true;
-        }
 
         // Update global singleton matrix
         venueAvailability.assign(venue, msg.startIndex, msg.endIndex, msg.dayIndex);
@@ -149,8 +177,6 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
 
         int durationSlots = msg.endIndex - msg.startIndex;
         msg.replyTo.tell(new VenueAccepted(venue, msg.dayIndex, msg.startIndex, durationSlots));
-
-        getContext().getLog().info("Assigned venue '{}' day {} slots {}-{}", venue.getName(), msg.dayIndex, msg.startIndex, msg.endIndex);
         return this;
     }
 }

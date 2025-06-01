@@ -11,7 +11,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Venue;
-import com.sunway.course.timetable.service.venue.VenueSorterService;
+
+import jakarta.annotation.PostConstruct;
 
 
 /**
@@ -31,17 +32,26 @@ public class VenueAvailabilityMatrix {
     private List<Venue> sortedVenues;
     private Map<Long, Integer> venueIndexMap; // venueId -> index
 
-    public VenueAvailabilityMatrix(VenueSorterService sorterService) {
-        // get sorted 10 venues (5 small, 5 large) from service
-        this.sortedVenues = sorterService.sortByAscendingCapacity();
+    public VenueAvailabilityMatrix(List<Venue> sortedVenues) {
+        this.sortedVenues = sortedVenues;
+    }
 
+    /**
+     * Must be called after application context startup to initialize matrix.
+     */
+    @PostConstruct
+    public void initialize() {
         int venueCount = sortedVenues.size();
-        availability = new boolean[venueCount][TIME_SLOTS_PER_DAY][DAYS]; // false = available, true = occupied
+        this.availability = new boolean[venueCount][TIME_SLOTS_PER_DAY][DAYS];
+        this.venueIndexMap = new HashMap<>();
 
-        venueIndexMap = new HashMap<>();
         for (int i = 0; i < venueCount; i++) {
             venueIndexMap.put(sortedVenues.get(i).getId(), i);
         }
+
+        // for (Venue v : sortedVenues) {
+        //     System.out.println("[INIT] Venue: " + v.getName() + " cap=" + v.getCapacity());
+        // }
     }
 
     /**
@@ -49,6 +59,7 @@ public class VenueAvailabilityMatrix {
      */
     public boolean isAvailable(Venue venue, int startIndex, int endIndex, int dayIndex) {
         lock.readLock().lock();
+
         try {
             Integer venueIndex = venueIndexMap.get(venue.getId());
             if (venueIndex == null) return false;
@@ -79,6 +90,7 @@ public class VenueAvailabilityMatrix {
         } finally {
             lock.writeLock().unlock();
         }
+        
     }
 
     /**
