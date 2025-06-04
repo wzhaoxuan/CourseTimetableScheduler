@@ -165,7 +165,7 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
 
         // Mark booked locally and globally
         for (int slot = msg.startIndex; slot < msg.endIndex; slot++) {
-            availability[slot][msg.dayIndex] = true;
+            availability[slot][msg.dayIndex] = false; // mark as booked
         }
 
 

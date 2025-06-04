@@ -18,6 +18,8 @@ import jakarta.annotation.PostConstruct;
 /**
  * Singleton class to manage venue assignments for sessions across different days and time slots.
  * The availability boolean array is indexed as [venue][timeSlot][day].
+ *  This class provides methods to check availability, assign venues,
+ * 
  */
 @Component
 public class VenueAvailabilityMatrix {
@@ -62,14 +64,14 @@ public class VenueAvailabilityMatrix {
 
         try {
             Integer venueIndex = venueIndexMap.get(venue.getId());
-            if (venueIndex == null) return false;
+            if (venueIndex == null) return true;
 
             for (int i = startIndex; i < endIndex; i++) {
-                if (availability[venueIndex][i][dayIndex]) {
-                    return false;
+                if (!availability[venueIndex][i][dayIndex]) {
+                    return true; 
                 }
             }
-            return true;
+            return false;
         } finally {
             lock.readLock().unlock();
         }
@@ -85,7 +87,7 @@ public class VenueAvailabilityMatrix {
             if (venueIndex == null) return;
 
             for (int i = startIndex; i < endIndex; i++) {
-                availability[venueIndex][i][dayIndex] = true;
+                availability[venueIndex][i][dayIndex] = true; // mark as occupied
             }
         } finally {
             lock.writeLock().unlock();

@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import com.sunway.course.timetable.service.tracker.CreditHourTracker;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
 
@@ -57,7 +60,7 @@ import akka.actor.typed.javadsl.AskPattern;
 @Service
 public class ModuleAssignmentProcessor {
     private static final Logger log = LoggerFactory.getLogger(ModuleAssignmentProcessor.class);
-    private final int MAX_GROUP_SIZE = 35;
+    // private final int MAX_GROUP_SIZE = 35;
     private final CreditHourTracker creditTracker;
     private final LecturerServiceImpl lecturerService;
     private final SessionServiceImpl sessionService;
@@ -68,6 +71,7 @@ public class ModuleAssignmentProcessor {
     private final ProgrammeDistributionClustering clustering;
     private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
     private Map<Long, Integer> studentSemesterMap = new HashMap<>();
+    private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
     private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
@@ -79,7 +83,7 @@ public class ModuleAssignmentProcessor {
     private final VenueSorterService venueSorterService;
     private final VenueAvailabilityMatrix venueMatrix;
     private final LecturerAvailabilityMatrix lecturerMatrix;
-    // private final StudentAvailabilityMatrix studentMatrix;
+    private final StudentAvailabilityMatrix studentMatrix;
     private final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor;
 
     @Autowired
@@ -93,6 +97,7 @@ public class ModuleAssignmentProcessor {
                                       VenueSorterService venueSorterService,
                                       VenueAvailabilityMatrix venueMatrix,
                                       LecturerAvailabilityMatrix lecturerMatrix,
+                                      StudentAvailabilityMatrix studentMatrix,
                                       ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                       SessionServiceImpl sessionService,
                                       PlanContentServiceImpl planContentService,
@@ -105,6 +110,7 @@ public class ModuleAssignmentProcessor {
         this.venueSorterService = venueSorterService;
         this.venueMatrix = venueMatrix;
         this.lecturerMatrix = lecturerMatrix;
+        this.studentMatrix = studentMatrix;
         this.venueCoordinatorActor = venueCoordinatorActor;
         this.sessionService = sessionService;
         this.planContentService = planContentService;
@@ -132,9 +138,23 @@ public class ModuleAssignmentProcessor {
 
         List<SessionGroupMetaData> allMetaData = new ArrayList<>();
         Map<SessionGroupMetaData, Module> metaToModuleMap = new HashMap<>();
+        
 
         for (ModuleAssignmentData data : moduleDataList) {
             Module module = data.getModule();
+            List<Student> eligibleStudents = creditTracker.filterEligible(
+                new ArrayList<>(data.getEligibleStudents()), module.getCreditHour());
+
+            // Cache Students by module ID
+            moduleIdToStudentsMap.put(module.getId(), eligibleStudents);
+
+            // Add this after the for-loop
+            Set<Student> allStudents = moduleIdToStudentsMap.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toSet());
+
+            studentMatrix.initializeStudents(new ArrayList<>(allStudents));
+
 
             // === 1. Generate SessionGroupMetaData without creating Session objects yet
             List<SessionGroupMetaData> metaList =
@@ -148,16 +168,18 @@ public class ModuleAssignmentProcessor {
 
         // === 2. Schedule each session group via actor-based scheduling
         Map<Session, String> sessionToModuleIdMap = new HashMap<>();
+
         for (SessionGroupMetaData meta : allMetaData) {
-            
+            List<Student> assignedStudents;
             // System.out.println("Student List: " + meta.getAssignedStudents() + "Module ID: " + meta.getModuleId() +
             //     "Type: " + meta.getType() + "Group: " + meta.getTypeGroup() +
             //     "Total Students: " + meta.getTotalStudents() + "Lecturer: " + meta.getLecturerName());
-
+            List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
+            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
             SessionAssignmentResult result = scheduleSessionViaActors(
                 meta.getSemester(), meta.getModuleId(), meta.getType(),
-                meta.getTypeGroup(), meta.getTotalStudents(), meta.getLecturerName(),
-                meta.getAssignedStudents(), 0, 0
+                meta.getTypeGroup(), meta.getTotalStudents(), lecturerName,
+                eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
             );
 
             if (result == null) {
@@ -166,9 +188,10 @@ public class ModuleAssignmentProcessor {
             }
 
             // === 3. Create dummy sessions with scheduled data (students not assigned yet)
-            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+            assignedStudents = result.getAssignedStudents();
+            // String lecturerName = FilterUtil.extractName(meta.getLecturerName());
 
-            for (Student student : meta.getAssignedStudents()) {
+            for (Student student : assignedStudents) {
                 Session s = new Session();
                 s.setType(meta.getType());
                 s.setTypeGroup(meta.getTypeGroup());
@@ -243,7 +266,7 @@ public class ModuleAssignmentProcessor {
      */
     private SessionAssignmentResult scheduleSessionViaActors(int semester,
         String moduleId, String type, String typeGroup, int totalStudents, String lecturerName,
-        List<Student> eligibleStudents, int groupIndex, int groupCount) {
+        List<Student> eligibleStudent, int groupIndex, int groupCount) {
 
         Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
         Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
@@ -278,7 +301,7 @@ public class ModuleAssignmentProcessor {
             replyTo -> new SessionAssignmentActor.AssignSession(
                     durationHours, totalStudents, lecturerName, 
                     module,
-                    eligibleStudents,
+                    eligibleStudent,
                     type,
                     groupIndex,
                     groupCount,
@@ -304,7 +327,7 @@ public class ModuleAssignmentProcessor {
 
             LocalTime start = LocalTime.of(8, 0).plusMinutes(assigned.startIndex * 30L);
             LocalTime end = start.plusMinutes(assigned.durationSlots * 30L);
-            return new SessionAssignmentResult(day, start, end, assigned.venue);
+            return new SessionAssignmentResult(day, start, end, assigned.venue, assigned.getAssignedStudents());
         }
 
         if (response instanceof SessionAssignmentActor.SessionAssignmentFailed failed) {
@@ -436,9 +459,9 @@ public class ModuleAssignmentProcessor {
      * @param totalStudentsAllowed Max number of students allowed to attend the session
      * @return Number of student groups required
      */
-    private int splitGroup(int totalStudentsAllowed) {
-        return (int) Math.ceil((double) totalStudentsAllowed / MAX_GROUP_SIZE);
-    }
+    // private int splitGroup(int totalStudentsAllowed) {
+    //     return (int) Math.ceil((double) totalStudentsAllowed / MAX_GROUP_SIZE);
+    // }
 
 
     /**

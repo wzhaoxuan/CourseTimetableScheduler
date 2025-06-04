@@ -1,7 +1,5 @@
 package com.sunway.course.timetable.model.assignment;
-import java.util.List;
 
-import com.sunway.course.timetable.model.Student;
 
 public class SessionGroupMetaData {
     private int semester;
@@ -10,7 +8,8 @@ public class SessionGroupMetaData {
     private final String typeGroup;
     private final String lecturerName;
     private final int totalStudents;
-    private List<Student> assignedStudents;
+    private final int groupIndex;
+    private final int groupCount;
 
     /**
      * Constructor for SessionGroupMetaData.
@@ -21,16 +20,20 @@ public class SessionGroupMetaData {
      * @param typeGroup     The group type for the session.
      * @param lecturerName    The ID of the lecturer assigned to the session.
      * @param totalStudents The total number of students in the session group.
+     *  @param assignedStudents The list of students assigned to this session group.
+     *  @param groupIndex   The index of this group within the total groups.
+     *  @param groupCount   The total number of groups for this session type.
      */
     public SessionGroupMetaData(int semester, String moduleId, String type, String typeGroup, String lecturerName, int totalStudents, 
-                               List<Student> assignedStudents) {
+                                int groupIndex, int groupCount) {
         this.semester = semester;
         this.moduleId = moduleId;
         this.type = type;
         this.typeGroup = typeGroup;
         this.lecturerName = lecturerName;
         this.totalStudents = totalStudents;
-        this.assignedStudents = assignedStudents;
+        this.groupIndex = groupIndex;
+        this.groupCount = groupCount;
 }
 
     public int getSemester() { return semester; }
@@ -39,13 +42,8 @@ public class SessionGroupMetaData {
     public String getTypeGroup() { return typeGroup; }
     public String getLecturerName() { return lecturerName; }
     public int getTotalStudents() { return totalStudents; }
-    public void setAssignedStudents(List<Student> students) {
-        this.assignedStudents = students;
-    }
-
-    public List<Student> getAssignedStudents() {
-        return this.assignedStudents;
-    }
+    public int getGroupIndex() { return groupIndex; }
+    public int getGroupCount() { return groupCount; }
 
     @Override
     public String toString() {
@@ -55,8 +53,7 @@ public class SessionGroupMetaData {
                 ", type='" + type + '\'' +
                 ", typeGroup='" + typeGroup + '\'' +
                 ", lecturerName='" + lecturerName + '\'' +
-                ", totalStudents=" + totalStudents +
-                ", assignedStudents=" + assignedStudents +
+                ", totalStudents=" + totalStudents  +
                 '}';
     }
 }

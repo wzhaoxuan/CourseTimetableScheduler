@@ -6,6 +6,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.springframework.stereotype.Component;
 
+/**
+ *  Singleton class to manage lecturer availability matrix.
+ *  This class maintains a schedule matrix for each lecturer,
+ *   where each matrix is a 2D array representing days and time slots.
+ *  *  Each cell in the matrix indicates whether the lecturer is available (false) or busy (true)
+ *  *  The matrix has 5 days (0-4) and 20 time slots per day (0-19).
+ */
 @Component
 public class LecturerAvailabilityMatrix {
     private final int DAYS = 5;
@@ -19,7 +26,7 @@ public class LecturerAvailabilityMatrix {
     public void registerLecturer(String lecturerId) {
         availability.computeIfAbsent(lecturerId, id -> {
             boolean[][] schedule = new boolean[DAYS][TIME_SLOTS_PER_DAY];
-            for (boolean[] day : schedule) Arrays.fill(day, false);
+            for (boolean[] day : schedule) Arrays.fill(day, false); // initialize to false (available)
             // System.out.printf("[LecturerMatrix] Registered lecturer %s%n", lecturerId);
             return schedule;
         });
@@ -29,7 +36,6 @@ public class LecturerAvailabilityMatrix {
     public boolean isAvailable(String lecturerId, int day, int start, int end) {
         lock.readLock().lock();
         try {
-
             if (!isValidRange(day, start, end)) {
                 System.err.printf("[LecturerMatrix] Invalid range: day=%d, start=%d, end=%d%n", day, start, end);
                 return false;
@@ -46,6 +52,8 @@ public class LecturerAvailabilityMatrix {
                     lock.writeLock().unlock();
                 }
                 schedule = availability.get(lecturerId);
+                System.out.printf("[LECTURER AVAIL DEBUG] %s day %d slots %d-%d\n",
+                        lecturerId, day, start, end);
             }
 
             for (int i = start; i < end; i++) {
@@ -73,7 +81,7 @@ public class LecturerAvailabilityMatrix {
             });
 
             for (int i = start; i < end; i++) {
-                schedule[day][i] = true;
+                schedule[day][i] = true; // mark as busy
             }
             // System.out.printf("[LecturerMatrix] Assigned %s on day=%d from %d to %d%n", lecturerId, day, start, end);
         } finally {

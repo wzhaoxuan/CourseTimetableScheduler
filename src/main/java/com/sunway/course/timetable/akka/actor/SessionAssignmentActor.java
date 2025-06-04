@@ -21,7 +21,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         public final int minCapacity;
         public final String lecturerName; 
         public final Module module;
-        public final List<Student> eligibleStudents;
+        public final List<Student> eligibleStudents; // List of students to assign to this session
         public final String sessionType;
         public final int groupIndex;
         public final int groupCount;
@@ -30,7 +30,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         public final List<String> preferredVenues;
 
         public AssignSession(int durationHours, int minCapacity, String lecturerName,
-                            Module module, List<Student> eligibleStudentIds,
+                            Module module, List<Student> eligibleStudents,
                             String sessionType, int groupIndex, int groupCount,
                             ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
                             ActorRef<SessionAssignmentResult> replyTo,
@@ -39,7 +39,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             this.minCapacity = minCapacity;
             this.lecturerName = lecturerName;
             this.module = module;
-            this.eligibleStudents = eligibleStudentIds;
+            this.eligibleStudents = eligibleStudents;
             this.sessionType = sessionType;
             this.groupIndex = groupIndex;
             this.groupCount = groupCount;
@@ -51,25 +51,30 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
     public interface SessionAssignmentResult extends SessionAssignmentCommand {}
 
-
     // Responses from VenueCoordinatorActor come in as commands here:
     public static final class SessionAssigned implements SessionAssignmentResult {
         public final Venue venue;
         public final int dayIndex;
         public final int startIndex;
         public final int durationSlots;
-        public final List<Long> assignedStudentIds;
+        public final List<Student> assignedStudents;
+
 
         public SessionAssigned(Venue venue, int dayIndex, int startIndex, int durationSlots,
-                               List<Long> assignedStudentIds) {
+                               List<Student> assignedStudents) {
             this.venue = venue;
             this.dayIndex = dayIndex;
             this.startIndex = startIndex;
             this.durationSlots = durationSlots;
-            this.assignedStudentIds = assignedStudentIds;
+            this.assignedStudents = assignedStudents;
             
         }
+
+        public List<Student> getAssignedStudents() {
+            return assignedStudents;
+        }
     }
+
 
     public static final class SessionAssignmentFailed implements SessionAssignmentResult {
         public final String reason;
@@ -78,7 +83,6 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
     private final ActorContext<SessionAssignmentCommand> context;
-
     private ActorRef<SessionAssignmentResult> originalRequester;
 
     public static Behavior<SessionAssignmentCommand> create() {
@@ -137,5 +141,6 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
         return this;
     }
+    
 }
 

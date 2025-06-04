@@ -26,6 +26,7 @@ import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupP
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
@@ -91,6 +92,7 @@ public class RunnerUtil {
                                                  VenueSorterService venueSorterService,
                                                  VenueAvailabilityMatrix venueMatrix,
                                                  LecturerAvailabilityMatrix lecturerMatrix,
+                                                 StudentAvailabilityMatrix studentMatrix,
                                                  ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                                  SessionServiceImpl sessionService,
                                                  PlanContentServiceImpl planContentService,
@@ -112,6 +114,7 @@ public class RunnerUtil {
                                                                                    venueSorterService,
                                                                                    venueMatrix,
                                                                                    lecturerMatrix,
+                                                                                   studentMatrix,
                                                                                    venueCoordinatorActor,
                                                                                    sessionService,
                                                                                    planContentService,
