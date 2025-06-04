@@ -211,16 +211,16 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             int venueIdx = currentAssignment.venueIndex;
             var req = currentAssignment.request;
 
-            log.info("[TRY] Module={} Type={} Group=G{} Day={} Slot={}-{} VenueIndex={}",
-                req.module.getId(), req.sessionType, (req.groupIndex + 1), day, start, start + durationSlots - 1, venueIdx);
+            // log.info("[TRY] Module={} Type={} Group=G{} Day={} Slot={}-{} VenueIndex={}",
+            //     req.module.getId(), req.sessionType, (req.groupIndex + 1), day, start, start + durationSlots - 1, venueIdx);
 
             if (venueIdx >= venues.size()) {
-                log.info("[NEXT SLOT] All venues tried at slot {}, moving to next slot", start);
+                // log.info("[NEXT SLOT] All venues tried at slot {}, moving to next slot", start);
                 start++;
                 venueIdx = 0;
 
                 if (start + durationSlots > MAX_SLOTS_PER_DAY) {
-                    log.info("[SKIP] Start {} + duration {} exceeds max slots", start, durationSlots);
+                    // log.info("[SKIP] Start {} + duration {} exceeds max slots", start, durationSlots);
                     day++;
                     start = 0;
 
@@ -237,12 +237,12 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             }
 
             Venue venue = venues.get(venueIdx);
-            log.info("[CHECK] Venue={} Capacity={} MinRequired={}", venue.getName(), venue.getCapacity(), req.minCapacity);
+            // log.info("[CHECK] Venue={} Capacity={} MinRequired={}", venue.getName(), venue.getCapacity(), req.minCapacity);
 
             boolean lecturerOk = lecturerAvailability.isAvailable(req.lecturerName, day, start, start + durationSlots);
             boolean venueOk = venueAvailability.isAvailable(venue, start, start + durationSlots, day);
 
-            log.info("[AVAIL] Lecturer={} Available={} VenueAvailable={}", req.lecturerName, lecturerOk, venueOk);
+            // log.info("[AVAIL] Lecturer={} Available={} VenueAvailable={}", req.lecturerName, lecturerOk, venueOk);
 
             final int filterDay = day;
             final int filterStart = start;
@@ -253,10 +253,10 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                 .filter(id -> studentAvailability.isAvailable(id, filterDay, filterStart, filterEnd))
                 .toList();
 
-            log.info("[STUDENT CHECK] Eligible={} Available={} Type={}", req.eligibleStudents.size(), availableStudents.size(), req.sessionType);
+            // log.info("[STUDENT CHECK] Eligible={} Available={} Type={}", req.eligibleStudents.size(), availableStudents.size(), req.sessionType);
 
             if (!lecturerOk || !venueOk || venue.getCapacity() < req.minCapacity || availableStudents.isEmpty()) {
-                log.info("[SKIP] Constraints not met. Trying next venue.");
+                // log.info("[SKIP] Constraints not met. Trying next venue.");
                 currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
                 continue;
             }
@@ -298,10 +298,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                     ))
                     .toList();
 
-                for(Student student : assignedStudents) {
-                    System.out.println("Assigned Student: " + student.getId() + " for Lecture on Day " +
-                        accepted.dayIndex + " at Slot " + accepted.startIndex);
-                }
             } else {
                 // Assign group of students for practical/tutorial/workshop
                 int groupSize = (int) Math.ceil((double) allEligible.size() / req.groupCount);

@@ -3,6 +3,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,56 +131,58 @@ public class ModuleAssignmentProcessor {
      */
     public Map<Integer, Map<String, List<Session>>> processAssignments(
         List<ModuleAssignmentData> moduleDataList,
+        Map<Long, String> studentProgrammeMap,
         Map<Long, Integer> studentSemesterMap) {
 
         this.studentSemesterMap = studentSemesterMap;
-        // this.programmeDistribution = programmeDistribution;
         sessionBySemesterAndModule.clear();
+        moduleIdToStudentsMap.clear();
 
+        // 1. Prepare student availability
+        Set<Student> allStudents = moduleDataList.stream()
+            .flatMap(data -> data.getEligibleStudents().stream())
+            .collect(Collectors.toSet());
+        studentMatrix.initializeStudents(new ArrayList<>(allStudents));
+
+        // 2. Prepare metadata
         List<SessionGroupMetaData> allMetaData = new ArrayList<>();
-        Map<SessionGroupMetaData, Module> metaToModuleMap = new HashMap<>();
-        
-
         for (ModuleAssignmentData data : moduleDataList) {
             Module module = data.getModule();
             List<Student> eligibleStudents = creditTracker.filterEligible(
                 new ArrayList<>(data.getEligibleStudents()), module.getCreditHour());
-
-            // Cache Students by module ID
             moduleIdToStudentsMap.put(module.getId(), eligibleStudents);
 
-            // Add this after the for-loop
-            Set<Student> allStudents = moduleIdToStudentsMap.values().stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toSet());
-
-            studentMatrix.initializeStudents(new ArrayList<>(allStudents));
-
-
-            // === 1. Generate SessionGroupMetaData without creating Session objects yet
             List<SessionGroupMetaData> metaList =
                 sessionGroupPreprocessorService.prepareSessionGroupMetadata(data, studentSemesterMap);
-
             allMetaData.addAll(metaList);
-            for (SessionGroupMetaData meta : metaList) {
-                metaToModuleMap.put(meta, module);
-            }
         }
 
-        // === 2. Schedule each session group via actor-based scheduling
-        Map<Session, String> sessionToModuleIdMap = new HashMap<>();
+        // 3. Compute majority programme distribution
+        var distResult = clustering.clusterProgrammeDistribution(
+            allMetaData, moduleIdToStudentsMap, studentProgrammeMap, studentSemesterMap
+        );
+        this.programmeDistribution = distResult.percentageMap();
+        Map<SessionGroupMetaData, String> majorityMap = distResult.majorityProgrammeByGroup();
 
+        // 4. Sort session groups: semester → programme → type
+        allMetaData.sort(Comparator
+            .comparingInt(SessionGroupMetaData::getSemester)
+            .thenComparing(meta -> majorityMap.getOrDefault(meta, "ZZZ"))
+            .thenComparing(meta -> switch (meta.getType().toLowerCase()) {
+                case "lecture" -> 0;
+                case "practical" -> 1;
+                case "tutorial" -> 2;
+                default -> 3;
+            }));
+
+        // 5. Schedule each group
+        Map<Session, String> sessionToModuleIdMap = new HashMap<>();
         for (SessionGroupMetaData meta : allMetaData) {
-            List<Student> assignedStudents;
-            // System.out.println("Student List: " + meta.getAssignedStudents() + "Module ID: " + meta.getModuleId() +
-            //     "Type: " + meta.getType() + "Group: " + meta.getTypeGroup() +
-            //     "Total Students: " + meta.getTotalStudents() + "Lecturer: " + meta.getLecturerName());
             List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
             String lecturerName = FilterUtil.extractName(meta.getLecturerName());
             SessionAssignmentResult result = scheduleSessionViaActors(
-                meta.getSemester(), meta.getModuleId(), meta.getType(),
-                meta.getTypeGroup(), meta.getTotalStudents(), lecturerName,
-                eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
+                meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
+                meta.getTotalStudents(), lecturerName, eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
             );
 
             if (result == null) {
@@ -187,22 +190,18 @@ public class ModuleAssignmentProcessor {
                 continue;
             }
 
-            // === 3. Create dummy sessions with scheduled data (students not assigned yet)
-            assignedStudents = result.getAssignedStudents();
-            // String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+            for (Student student : result.getAssignedStudents()) {
+                Session session = new Session();
+                session.setType(meta.getType());
+                session.setTypeGroup(meta.getTypeGroup());
+                session.setLecturer(lecturerService.getLecturerByName(lecturerName).orElse(null));
+                session.setDay(result.getDay());
+                session.setStartTime(result.getStartTime());
+                session.setEndTime(result.getEndTime());
+                session.setStudent(student);
 
-            for (Student student : assignedStudents) {
-                Session s = new Session();
-                s.setType(meta.getType());
-                s.setTypeGroup(meta.getTypeGroup());
-                s.setLecturer(lecturerService.getLecturerByName(lecturerName).orElse(null));
-                s.setDay(result.getDay());
-                s.setStartTime(result.getStartTime());
-                s.setEndTime(result.getEndTime());
-                s.setStudent(student); // per-student assignment
-
-                sessionToModuleIdMap.put(s, meta.getModuleId());
-                sessionVenueMap.put(s, result.getVenue()); // Track the assigned venue here
+                sessionToModuleIdMap.put(session, meta.getModuleId());
+                sessionVenueMap.put(session, result.getVenue());
             }
         }
 
@@ -210,7 +209,7 @@ public class ModuleAssignmentProcessor {
         printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
 
         // === 4. Persist and group sessions (with placeholder student, to be updated later)
-        // persistAndGroupSessions(sessionToModuleIdMap);
+        persistAndGroupSessions(sessionToModuleIdMap);
 
         actorSystem.terminate();
         return sessionBySemesterAndModule;
@@ -338,7 +337,6 @@ public class ModuleAssignmentProcessor {
         throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
     }
 
-
     private void printFinalizedSchedule(Map<Session, String> sessionToModuleIdMap, Map<Session, Venue> sessionVenueMap) {
         Map<String, Map<String, Map<String, Map<String, List<Session>>>>> categorized = new TreeMap<>();
 
@@ -388,300 +386,6 @@ public class ModuleAssignmentProcessor {
             }
         }
     }
-
-    
-    /**
-     * Process module assignments, create sessions, and perform clustering
-     * to identify programme distribution per module.
-     *
-     * @param moduleDataList List of module assignment data
-     * @return Pair containing:
-     *         - List of created sessions (not saved to DB yet)
-     *         - Map of module code -> (programme name -> percentage of students)
-     */
-    // public Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterProgrammeDistribution(List<ModuleAssignmentData> moduleDataList,
-    //                                                                                                         Map<Long, String> studentProgrammeMap,
-    //                                                                                                         Map<Long, Integer> studentSemesterMap) {
-    //     sessionBySemesterAndModule.clear(); // Reset
-        
-    //     List<Session> sessions = new ArrayList<>();
-    //     for (ModuleAssignmentData data : moduleDataList) {
-    //         sessions.addAll(processSingleModuleAssignment(data,studentSemesterMap));
-    //     }
-
-    //     List<SessionGroupMetaData> allMetaData = new ArrayList<>();
-    //     Map<SessionGroupMetaData, Module> metaToModuleMap = new HashMap<>();
-
-    //     for (ModuleAssignmentData data : moduleDataList) {
-    //         Module module = data.getModule();
-
-    //         // === 1. Generate SessionGroupMetaData without creating Session objects yet
-    //         List<SessionGroupMetaData> metaList =
-    //             sessionGroupPreprocessorService.prepareSessionGroupMetadata(data, studentSemesterMap);
-
-    //         allMetaData.addAll(metaList);
-    //         for (SessionGroupMetaData meta : metaList) {
-    //             metaToModuleMap.put(meta, module);
-    //         }
-    //     }
-
-    //     // Compute the percentage distribution of students’ programmes by semester
-    //     Map<Integer, Map<String, Map<String, Double>>> distribution =
-    //             clustering.calculateProgrammePercentageDistributionBySemester(sessions, studentProgrammeMap, studentSemesterMap);
-
-    //     // Return both sessions and clustering result
-    //     return new Pair<>(sessions, distribution);
-    // }
-
-    /**
-     * Processes a single module assignment, creating sessions based on the subject plan and eligible students.
-     *
-     * @param data ModuleAssignmentData containing module, subject plan, and eligible students
-     * @return List of created sessions for the module
-     */
-    // private List<SessionGroupMetaData> processSingleModuleAssignment(ModuleAssignmentData data, 
-    //                                                     Map<Long, Integer> studentSemesterMap) {
-    //     SubjectPlanInfo plan = data.getSubjectPlanInfo();
-    //     Module module = data.getModule();
-    //     String moduleId = module.getId();
-    //     Set<Student> eligibleStudents = data.getEligibleStudents();
-    //     List<Student> filteredStudents = creditTracker.filterEligible(new ArrayList<>(eligibleStudents), module.getCreditHour());
-
-    //     int groupCount = splitGroup(filteredStudents.size());
-
-    //     return sessionGroupPreprocessorService.prepareSessionGroupMetadata(data, studentSemesterMap);
-    // }
-
-
-    /**
-     * Calculates the number of groups required based on total allowed students and max group size.
-     *
-     * @param totalStudentsAllowed Max number of students allowed to attend the session
-     * @return Number of student groups required
-     */
-    // private int splitGroup(int totalStudentsAllowed) {
-    //     return (int) Math.ceil((double) totalStudentsAllowed / MAX_GROUP_SIZE);
-    // }
-
-
-    /**
-     * Groups sessions by semester, module, and type+group key.
-     *
-     * @return Map of semester -> (module ID -> (type+group key -> list of sessions))
-     */
-    // private Map<Integer, Map<String, Map<String, List<Session>>>> groupSessionsByTypeGroup() {
-    //     Map<Integer, Map<String, Map<String, List<Session>>>> grouped = new HashMap<>();
-    //     for (var semEntry : sessionBySemesterAndModule.entrySet()) {
-    //         Integer semester = semEntry.getKey();
-    //         for (var modEntry : semEntry.getValue().entrySet()) {
-    //             String moduleId = modEntry.getKey();
-    //             for (Session session : modEntry.getValue()) {
-    //                 String key = session.getType() + "||" + session.getTypeGroup();
-    //                 grouped
-    //                     .computeIfAbsent(semester, k -> new HashMap<>())
-    //                     .computeIfAbsent(moduleId, k -> new HashMap<>())
-    //                     .computeIfAbsent(key, k -> new ArrayList<>())
-    //                     .add(session);
-    //             }
-    //         }
-    //     }
-    //     return grouped;
-    // }
-
-
-    /**
-     *  Schedules sessions by iterating through the grouped sessions,
-     * @param grouped  Map of semester -> (module ID -> (type+group key -> list of sessions))
-     */
-    // private void scheduleSessions(Map<Integer, Map<String, Map<String, List<Session>>>> grouped) {
-    //     for (var semesterEntry : grouped.entrySet()) {
-    //         int semester = semesterEntry.getKey();
-    //         for (var moduleEntry : semesterEntry.getValue().entrySet()) {
-    //             String moduleEntryId = moduleEntry.getKey();
-    //             for (var tgEntry : moduleEntry.getValue().entrySet()) {
-    //                 List<Session> sessions = tgEntry.getValue();
-    //                 if (sessions.isEmpty()) continue;
-
-    //                 Session sample = sessions.get(0);
-    //                 String lecturerId = sample.getLecturer().getId().toString();
-
-    //                 SessionAssignmentResult result = scheduleSessionViaActors(
-    //                     semester, moduleEntryId, sample.getType(), sample.getTypeGroup(), sessions.size(), lecturerId);
-
-    //                 if (result == null) {
-    //                     log.warn("Skipping session group {} due to scheduling failure.", tgEntry.getKey());
-    //                     continue;
-    //                 }
-
-    //                 for (Session session : sessions) {
-    //                     session.setDay(result.getDay());
-    //                     session.setStartTime(result.getStartTime());
-    //                     session.setEndTime(result.getEndTime());
-
-
-    //                     // System.out.println( "Scheduled session " + session);
-    //                     Session savedSession = sessionService.saveSession(session); // Persist session
-
-    //                     String moduleId = moduleEntry.getKey();
-    //                     Optional<Module> optionalModule = moduleService.getModuleById(moduleId);
-    //                     if (optionalModule.isEmpty()) {
-    //                         log.warn("Module {} not found in DB, skipping PlanContent saving.", moduleId);
-    //                         continue;
-    //                     }
-    //                     Module module = optionalModule.get();
-
-    //                     // Save plan_content
-    //                     PlanContent planContent = new PlanContent();
-    //                     PlanContentId planContentId = new PlanContentId();
-    //                     planContentId.setModuleId(module.getId());
-    //                     planContentId.setSessionId(savedSession.getId());
-    //                     planContent.setPlanContentId(planContentId);
-    //                     planContent.setModule(module);
-    //                     planContent.setSession(savedSession);
-
-    //                     planContentService.savePlanContent(planContent); // Persist to plan_content
-
-
-    //                     // For debug, print assigned session details:
-    //                     System.out.printf("Assigned session: Semester %d, Module %s, Type %s, Group %s, Day %s, Start %s, End %s, Venue %s Lecturer%s Student %d%n",
-    //                         semester,
-    //                         moduleEntryId,
-    //                         session.getType(),
-    //                         session.getTypeGroup(),
-    //                         session.getDay(),
-    //                         session.getStartTime(),
-    //                         session.getEndTime(),
-    //                         result.getVenue().getName(),
-    //                         session.getLecturer().getName()
-    //                         // session.getStudent().getId()
-    //                     );
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    /**
-     *  Assigns students to groups based on the total number of students and the number of groups.
-     * 
-     * @param students 
-     * @param module
-     * @param totalStudents
-     * @param groupCount
-     * @return
-     */
-    // private List<List<Student>> assignStudentsToGroups(
-    //         List<Student> students, 
-    //         Module module,
-    //         int totalStudents,
-    //         int groupCount) {
-
-    //     List<List<Student>> groups = new ArrayList<>();
-    //     for (int i = 0; i < groupCount; i++) {
-    //         groups.add(new ArrayList<>());
-    //     }
-
-
-    //     int totalAssigned = 0;
-    //     int currentGroupIndex = 0;
-
-    //      for (Student student : students) {
-    //         if (totalAssigned >= totalStudents) {
-    //             break;
-    //         }
-    //         creditTracker.deductCredits(student, module.getCreditHour());
-
-    //         groups.get(currentGroupIndex).add(student);
-    //         totalAssigned++;
-    //         currentGroupIndex = (currentGroupIndex + 1) % groupCount;
-    //     }
-
-    //     return groups;
-    // }
-
-    /**
-     *  Creates sessions for each group based on the subject plan and session types.
-     *  Creates a lecture session for all students, then creates tutorial, practical, and workshop sessions for each group.
-     *   This method handles the case where there is only one group or no tutors available.
-     *   If there are multiple groups, it creates sessions for each group with the respective tutor.
-     *   This method also handles the case where there are no students in a group.
-     * 
-     *   @param sessions List to accumulate created sessions
-     *   @param groups List of student groups
-     *   @param plan Subject plan containing session info and tutors
-     *   @param groupCount Total number of student groups
-     */
-    // private void createSessionsForGroups(List<Session> sessions, List<List<Student>> groups, SubjectPlanInfo plan, int groupCount) {
-
-    //     if (plan.hasLecture()) {
-    //             List<Student> allStudents = groups.stream().flatMap(List::stream).collect(Collectors.toList());
-    //             sessions.addAll(createSessions(allStudents, plan.getMainLecturer(), "Lecture", plan.getSubjectCode() + "-Lecture-G1"));
-    //             // System.out.println(" - Created " + allStudents.size() + " Lecture sessions");
-    //         }
-
-    //     for (int i = 0; i < groupCount; i++) {
-    //         List<Student> groupStudents = groups.get(i);
-    //         String groupSuffix = "-G" + (i + 1);
-    //         List<SessionTypeInfo> sessionTypes = List.of(
-    //             new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getTutorialTutor()),
-    //             new SessionTypeInfo("Practical", plan.hasPractical(), plan.getPracticalTutor()),
-    //             new SessionTypeInfo("Workshop", plan.hasWorkshop(), plan.getWorkshopTutor())
-    //         );
-
-    //         for (SessionTypeInfo typeInfo : sessionTypes) {
-    //             if(!typeInfo.hasType) continue;
-
-    //             List<String> lecturerNames = typeInfo.tutor; // e.g., ["John", "Mary"]
-
-    //             // One group or no tutors available
-    //             if (groupCount == 1 || lecturerNames.isEmpty()) {
-    //                 String firstLecturer = lecturerNames.isEmpty() ? null : lecturerNames.get(0);
-    //                 String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
-    //                 sessions.addAll(createSessions(groupStudents, firstLecturer, typeInfo.type, sessionCode));
-    //             } else {
-    //                 // Multiple groups → distribute lecturers round-robin
-    //                 String selectedLecturer = lecturerNames.get(i % lecturerNames.size());
-    //                 String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
-    //                 sessions.addAll(createSessions(groupStudents, selectedLecturer, typeInfo.type, sessionCode));
-    //             }
-
-    //             // String sessionCode = plan.getSubjectCode() + "-" + typeInfo.type + groupSuffix;
-    //             // List<Session> groupSessions = createSessions(groupStudents, typeInfo.tutor, typeInfo.type, sessionCode);
-    //             // sessions.addAll(groupSessions);
-    //             // System.out.printf(" - Created %d %s sessions\n", groupSessions.size(), typeInfo.type());
-    //         }
-    //     }
-    // }
-
-    // /**
-    //  * Creates sessions for all groups based on the subject plan and session types.
-    //  *
-    //  * @param sessions    List to accumulate created sessions
-    //  * @param groups      List of student groups
-    //  * @param plan        Subject plan containing session info and tutors
-    //  * @param groupCount  Total number of student groups
-    //  */
-    // private List<Session> createSessions(List<Student> students, String lecturerName, String type, String groupName) {
-    //     List<Session> groupSessions = new ArrayList<>();
-    //     String name = FilterUtil.extractName(lecturerName);
-    //     Optional<Lecturer> lecturer = lecturerService.getLecturerByName(name);
-
-    //     if (students.isEmpty()) return groupSessions;
-
-    //     for (Student student : students) {
-    //         Session session = new Session();
-    //         session.setStudent(student);
-    //         session.setType(type);
-    //         session.setTypeGroup(groupName);
-    //         session.setLecturer(lecturer.orElse(null));
-    //         groupSessions.add(session);
-            
-    //     }
-
-    //     return groupSessions;
-    // }
-
-    // private static record SessionTypeInfo(String type, boolean hasType, List<String> tutor) {}
 
     private int getDurationHours(String type) {
         return switch (type.toUpperCase()) {

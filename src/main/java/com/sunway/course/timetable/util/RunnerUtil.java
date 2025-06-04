@@ -126,7 +126,7 @@ public class RunnerUtil {
                 // Map<Integer, Map<String, Map<String, Double>>> distanceMap = clusterSession.getValue();
 
                 // Run the assignment
-                Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentSemesterMap());
+                Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
                 
 
                 // System.out.println(preprocessingResult.getStudentProgrammeMap());
