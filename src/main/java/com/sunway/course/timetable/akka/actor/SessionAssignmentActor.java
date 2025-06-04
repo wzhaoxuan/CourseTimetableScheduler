@@ -1,5 +1,8 @@
 package com.sunway.course.timetable.akka.actor;
+import java.util.List;
 
+import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 
 import akka.actor.typed.ActorRef;
@@ -16,44 +19,67 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     public static final class AssignSession implements SessionAssignmentCommand {
         public final int durationHours;
         public final int minCapacity;
-        public final String lecturerId; 
-        public final ActorRef<SessionAssignmentCommand> replyTo;
+        public final String lecturerName; 
+        public final Module module;
+        public final List<Student> eligibleStudents;
+        public final String sessionType;
+        public final int groupIndex;
+        public final int groupCount;
+        public final ActorRef<SessionAssignmentResult> replyTo;
         public final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator;
+        public final List<String> preferredVenues;
 
-        public AssignSession(int durationHours, int minCapacity, String lecturerId,
+        public AssignSession(int durationHours, int minCapacity, String lecturerName,
+                            Module module, List<Student> eligibleStudentIds,
+                            String sessionType, int groupIndex, int groupCount,
                             ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
-                            ActorRef<SessionAssignmentCommand> replyTo) {
+                            ActorRef<SessionAssignmentResult> replyTo,
+                            List<String> preferredVenues) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
-            this.lecturerId = lecturerId;
+            this.lecturerName = lecturerName;
+            this.module = module;
+            this.eligibleStudents = eligibleStudentIds;
+            this.sessionType = sessionType;
+            this.groupIndex = groupIndex;
+            this.groupCount = groupCount;
             this.coordinator = coordinator;
             this.replyTo = replyTo;
+            this.preferredVenues = preferredVenues;
         }
     }
 
+    public interface SessionAssignmentResult extends SessionAssignmentCommand {}
+
+
     // Responses from VenueCoordinatorActor come in as commands here:
-    public static final class SessionAssigned implements SessionAssignmentCommand {
+    public static final class SessionAssigned implements SessionAssignmentResult {
         public final Venue venue;
         public final int dayIndex;
         public final int startIndex;
         public final int durationSlots;
+        public final List<Long> assignedStudentIds;
 
-        public SessionAssigned(Venue venue, int dayIndex, int startIndex, int durationSlots) {
+        public SessionAssigned(Venue venue, int dayIndex, int startIndex, int durationSlots,
+                               List<Long> assignedStudentIds) {
             this.venue = venue;
             this.dayIndex = dayIndex;
             this.startIndex = startIndex;
             this.durationSlots = durationSlots;
+            this.assignedStudentIds = assignedStudentIds;
+            
         }
     }
 
-    public static final class SessionAssignmentFailed implements SessionAssignmentCommand {
+    public static final class SessionAssignmentFailed implements SessionAssignmentResult {
         public final String reason;
 
         public SessionAssignmentFailed(String reason) { this.reason = reason; }
     }
 
     private final ActorContext<SessionAssignmentCommand> context;
-    private ActorRef<SessionAssignmentCommand> originalRequester;
+
+    private ActorRef<SessionAssignmentResult> originalRequester;
 
     public static Behavior<SessionAssignmentCommand> create() {
         return Behaviors.setup(SessionAssignmentActor::new);
@@ -78,11 +104,12 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         this.originalRequester = msg.replyTo;
 
         // context.getLog().info("Received AssignSession request: duration={} hours, minCapacity={}, lecturer={}",
-        //         msg.durationHours, msg.minCapacity, msg.lecturerId);
+        //         msg.durationHours, msg.minCapacity, msg.lecturerName);
 
         // Forward the request to the VenueCoordinatorActor, passing self as replyTo
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
-            msg.durationHours, msg.minCapacity, msg.lecturerId, context.getSelf()));
+            msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
+            msg.sessionType, msg.groupIndex, msg.groupCount, context.getSelf()));
 
         return this;
     }

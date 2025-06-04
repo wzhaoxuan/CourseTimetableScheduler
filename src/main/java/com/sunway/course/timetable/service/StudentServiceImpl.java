@@ -1,8 +1,8 @@
 package com.sunway.course.timetable.service;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.exception.IdNotFoundException;
@@ -48,5 +48,10 @@ public class StudentServiceImpl implements StudentService {
             throw new IdNotFoundException("Student not found with id: " + id);
         }
     }
+
+    public List<Student> getStudentsByIds(Set<Long> ids) {
+        return studentRepository.findAllById(ids);
+    }
+
 
 }

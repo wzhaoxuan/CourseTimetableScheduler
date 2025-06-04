@@ -3,18 +3,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.model.venuedistance.VenueDistance;
 
 @Service
 public class VenueSorterService {
 
     private final VenueServiceImpl venueService;
+    private final VenueDistanceServiceImpl venueDistanceService;
 
-    public VenueSorterService(VenueServiceImpl venueService) {
+    public VenueSorterService(VenueServiceImpl venueService,
+                               VenueDistanceServiceImpl  venueDistanceService) {
         this.venueService = venueService;
+        this.venueDistanceService = venueDistanceService;
     }
 
     /**
@@ -47,6 +54,23 @@ public class VenueSorterService {
         result.addAll(largeVenues.subList(0, Math.min(3, largeVenues.size())));
 
         return Collections.unmodifiableList(result);
+    }
+
+    public List<Venue> findNearestVenues(String fromVenueName){
+        // Get all venues
+        List<VenueDistance> venueDistances = venueDistanceService.getAllDistanceFromVenue(fromVenueName);
+
+        // Map venue names to Venue objects
+        Map<String, Venue> venueMap = venueService.getAllVenues().stream()
+                .collect(Collectors.toMap(Venue::getName, v -> v));
+
+        // Filter and sort by distance
+        return venueDistances.stream()
+                .filter(dist -> !dist.getVenueDistanceId().getVenueTo().equalsIgnoreCase(fromVenueName))
+                .sorted(Comparator.comparingDouble(VenueDistance::getDistance))
+                .map(dist -> venueMap.get(dist.getVenueDistanceId().getVenueTo()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }
 

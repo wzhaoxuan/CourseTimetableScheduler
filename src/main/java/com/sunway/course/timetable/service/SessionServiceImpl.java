@@ -1,11 +1,11 @@
 package com.sunway.course.timetable.service;
-import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.repository.SessionRepository;
-import com.sunway.course.timetable.interfaces.services.SessionService;
-
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+
+import com.sunway.course.timetable.interfaces.services.SessionService;
+import com.sunway.course.timetable.model.Session;
+import com.sunway.course.timetable.repository.SessionRepository;
 
 @Service
 public class SessionServiceImpl implements SessionService {
@@ -27,8 +27,8 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session saveSession(Session session) {
-        return sessionRepository.findByDayAndStartTimeAndTypeAndTypeGroupAndLecturerIdAndStudentId(
-            session.getDay(), session.getStartTime(), session.getType(), session.getTypeGroup(), session.getLecturer().getId(), session.getStudent().getId())
+        return sessionRepository.findByTypeAndTypeGroupAndLecturerIdAndStudentId(
+            session.getType(), session.getTypeGroup(), session.getLecturer().getId(), session.getStudent().getId())
             .map(existingSession -> {
                 // Update fields of existing session if needed
                 existingSession.setDay(session.getDay());

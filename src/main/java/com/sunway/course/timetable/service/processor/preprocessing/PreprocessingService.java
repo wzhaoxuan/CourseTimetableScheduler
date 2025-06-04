@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -25,10 +24,10 @@ import com.sunway.course.timetable.model.assignment.StudentSem;
 import com.sunway.course.timetable.model.programme.Programme;
 import com.sunway.course.timetable.repository.ModuleRepository;
 import com.sunway.course.timetable.repository.ProgrammeRepository;
-import com.sunway.course.timetable.service.excelReader.SubjectPlanExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.ModuleSemExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.ProgrammeExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.StudentSemExcelReaderService;
+import com.sunway.course.timetable.service.excelReader.SubjectPlanExcelReaderService;
 
 
 
@@ -104,6 +103,7 @@ public class PreprocessingService {
                         Set<String> programmeCodes = programmesOfferingModule.stream()
                             .map(p -> p.getProgrammeId().getId())
                             .collect(Collectors.toSet());
+                        
 
                         Set<Student> eligibleStudents = new HashSet<>();
                         for (StudentSem studentSem : studentsInSemester) {
@@ -119,6 +119,10 @@ public class PreprocessingService {
                                 }
                             }
                         }
+
+                        // for (Student student : eligibleStudents) {
+                        //     System.out.println("Eligible student: " + student.getId() + " for module: " + moduleCode);
+                        // }
 
                         ModuleAssignmentData assignmentData = new ModuleAssignmentData(
                             subject,

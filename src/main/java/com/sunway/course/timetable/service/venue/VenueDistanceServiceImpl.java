@@ -3,10 +3,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.sunway.course.timetable.interfaces.services.VenueDistanceService;
 import com.sunway.course.timetable.model.venuedistance.VenueDistance;
 import com.sunway.course.timetable.model.venuedistance.VenueDistanceId;
 import com.sunway.course.timetable.repository.VenueDistanceRepository;
-import com.sunway.course.timetable.interfaces.services.VenueDistanceService;
 
 @Service
 public class VenueDistanceServiceImpl implements VenueDistanceService {
@@ -35,5 +35,13 @@ public class VenueDistanceServiceImpl implements VenueDistanceService {
     @Override
     public void deleteVenueDistance(VenueDistanceId id) {
         venueDistanceRepository.deleteById(id);
+    }
+
+    public List<VenueDistance> getAllDistanceFromVenue(String venueFrom){
+        List<VenueDistance> distances = venueDistanceRepository.findByVenueDistanceId_VenueFrom(venueFrom);
+        if (distances.isEmpty()) {
+            return null; // or throw an exception if preferred
+        }
+        return distances; // Assuming you want the first match
     }
 }

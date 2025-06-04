@@ -12,6 +12,7 @@ import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
@@ -53,14 +54,16 @@ public class AkkaConfig {
             List<Venue> venueList,
             List<ActorRef<VenueCommand>> venueActors,
             LecturerAvailabilityMatrix lecturerMatrix,
-            VenueAvailabilityMatrix venueAvailabilityMatrix
+            VenueAvailabilityMatrix venueAvailabilityMatrix,
+            StudentAvailabilityMatrix studentAvailability
     ) {
         return actorSystem.systemActorOf(
                 VenueCoordinatorActor.create(
                         venueList,
                         venueActors,
                         lecturerMatrix,
-                        venueAvailabilityMatrix
+                        venueAvailabilityMatrix,
+                        studentAvailability
                 ),
                 "venueCoordinator",
                 Props.empty()

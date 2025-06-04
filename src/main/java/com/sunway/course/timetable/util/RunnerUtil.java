@@ -22,6 +22,7 @@ import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClusteri
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
+import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
@@ -93,7 +94,8 @@ public class RunnerUtil {
                                                  ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                                  SessionServiceImpl sessionService,
                                                  PlanContentServiceImpl planContentService,
-                                                 ModuleServiceImpl  moduleService) {
+                                                 ModuleServiceImpl  moduleService,
+                                                 SessionGroupPreprocessorService sessionGroupPreprocessorService) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -113,16 +115,19 @@ public class RunnerUtil {
                                                                                    venueCoordinatorActor,
                                                                                    sessionService,
                                                                                    planContentService,
-                                                                                   moduleService);
+                                                                                   moduleService,
+                                                                                   sessionGroupPreprocessorService);
+                // Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterSession = processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
+                //                                                                                                                             preprocessingResult.getStudentProgrammeMap(), 
+                //                                                                                                                             preprocessingResult.getStudentSemesterMap());
+                // Map<Integer, Map<String, Map<String, Double>>> distanceMap = clusterSession.getValue();
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentSemesterMap());
-                Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterSession = processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
-                                                        preprocessingResult.getStudentProgrammeMap(), 
-                                                        preprocessingResult.getStudentSemesterMap());
+                
 
-                System.out.println(preprocessingResult.getStudentProgrammeMap());
-                System.out.println(preprocessingResult.getStudentSemesterMap());
+                // System.out.println(preprocessingResult.getStudentProgrammeMap());
+                // System.out.println(preprocessingResult.getStudentSemesterMap());
 
                 
 

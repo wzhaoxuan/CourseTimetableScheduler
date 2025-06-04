@@ -1,4 +1,6 @@
 package com.sunway.course.timetable.akka.actor.record;
+import java.util.List;
+
 import com.sunway.course.timetable.akka.actor.interfaces.SessionAssignmentCommand;
 import com.sunway.course.timetable.akka.actor.interfaces.SessionAssignmentResponse;
 import com.sunway.course.timetable.akka.actor.interfaces.VenueCoordinatorCommand;
@@ -11,5 +13,6 @@ public record AssignSession(
     int minCapacity,
     String lecturerId,
     ActorRef<VenueCoordinatorCommand> coordinator,
-    ActorRef<SessionAssignmentResponse> replyTo
+    ActorRef<SessionAssignmentResponse> replyTo,
+    List<String> preferredVenues 
 ) implements SessionAssignmentCommand {}

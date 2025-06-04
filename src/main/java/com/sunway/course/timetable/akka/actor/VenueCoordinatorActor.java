@@ -5,8 +5,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
@@ -40,14 +43,28 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     public static final class RequestVenueAssignment implements VenueCoordinatorCommand {
         public final int durationHours;
         public final int minCapacity;
-        public final String lecturerId;
+        public final String lecturerName;
+        public final Module module;
+        public final List<Student> eligibleStudents;
+        public final String sessionType;
+        public final int groupIndex;
+        public final int groupCount;
         public final ActorRef<SessionAssignmentActor.SessionAssignmentCommand> replyTo;
 
-        public RequestVenueAssignment(int durationHours, int minCapacity, String lecturerId,
+        public RequestVenueAssignment(int durationHours, int minCapacity, String lecturerName,
+                                        Module module, List<Student> eligibleStudents,
+                                        String sessionType, 
+                                        int groupIndex,
+                                        int groupCount,
                                   ActorRef<SessionAssignmentActor.SessionAssignmentCommand> replyTo) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
-            this.lecturerId = lecturerId;
+            this.lecturerName = lecturerName;
+            this.module = module;
+            this.eligibleStudents = eligibleStudents;
+            this.sessionType = sessionType;
+            this.groupIndex = groupIndex;
+            this.groupCount = groupCount;
             this.replyTo = replyTo;
         }
     }
@@ -90,6 +107,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     private final List<Venue> venues; // parallel list
     private final LecturerAvailabilityMatrix lecturerAvailability;
     private final VenueAvailabilityMatrix venueAvailability;
+    private final StudentAvailabilityMatrix studentAvailability;
     private final ActorRef<VenueActor.VenueResponse> venueResponseAdapter;
     private AssignmentState currentAssignment;
 
@@ -103,12 +121,14 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     public static Behavior<VenueCoordinatorCommand> create(List<Venue> venues,
                                                            List<ActorRef<VenueActor.VenueCommand>> venueActors,
                                                            LecturerAvailabilityMatrix lecturerAvailability,
-                                                           VenueAvailabilityMatrix venueAvailability) {
+                                                           VenueAvailabilityMatrix venueAvailability,
+                                                           StudentAvailabilityMatrix studentAvailability) {
         return Behaviors.setup(context -> new VenueCoordinatorActor(context,
             venues,
             venueActors,
             lecturerAvailability,
-            venueAvailability));
+            venueAvailability,
+            studentAvailability));
     }
 
 
@@ -116,12 +136,14 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                                   List<Venue> venues,
                                   List<ActorRef<VenueActor.VenueCommand>> venueActors,
                                   LecturerAvailabilityMatrix lecturerAvailability,
-                                  VenueAvailabilityMatrix venueAvailability) {
+                                  VenueAvailabilityMatrix venueAvailability,
+                                  StudentAvailabilityMatrix studentAvailability) {
         super(context);
         this.venues = venues;
         this.venueActors = venueActors;
         this.lecturerAvailability = lecturerAvailability;
         this.venueAvailability = venueAvailability;
+        this.studentAvailability = studentAvailability;
 
         // Message adapter: converts VenueResponse to VenueCoordinatorCommand
         this.venueResponseAdapter = context.messageAdapter(
@@ -179,27 +201,19 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         while (currentAssignment != null) {
             int day = currentAssignment.dayIndex;
             int start = currentAssignment.startIndex;
-            int venueIdx = currentAssignment.venueIndex;
             int durationSlots = currentAssignment.durationSlots;
+            int venueIdx = currentAssignment.venueIndex;
             var req = currentAssignment.request;
-
-            // getContext().getLog().warn("Day {}, Max Days {}", day, MAX_DAYS);
-            // getContext().getLog().warn("Start {}, Max Slots {}", start, MAX_SLOTS_PER_DAY);
-            // getContext().getLog().warn("VenueIdx {}, Total Venues {}", venueIdx, venues.size());
-            // getContext().getLog().warn("Duration Slots {}, Total Slots {}", durationSlots, MAX_SLOTS_PER_DAY);
-            // getContext().getLog().info("Trying to assign: {} hours, min capacity {}, lecturer {}",
-            //         req.durationHours, req.minCapacity, req.lecturerId);
-
-            if (day >= MAX_DAYS) {
-                getContext().getLog().warn("Day {} exceeds maximum {}", day, MAX_DAYS);
-                req.replyTo.tell(new SessionAssignmentActor.SessionAssignmentFailed("No days available"));
-                currentAssignment = null;
-                return;
-            }
 
             if (start + durationSlots > MAX_SLOTS_PER_DAY) {
                 // Move to next day if current start + duration exceeds slots per day
                 day++;
+                if (day >= MAX_DAYS) {
+                    getContext().getLog().warn("Day {} exceeds maximum {}", day, MAX_DAYS);
+                    req.replyTo.tell(new SessionAssignmentActor.SessionAssignmentFailed("No days available"));
+                    currentAssignment = null;
+                    return;
+                }
                 start = 0;
                 venueIdx = 0;
                 currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx);
@@ -215,16 +229,17 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             }
 
             Venue venue = venues.get(venueIdx);
-            if (venue.getCapacity() < req.minCapacity) {
-                getContext().getLog().info("Skippping venue '{}' (capacity{}) < required {}",
-                        venue.getName(), venue.getCapacity(), req.minCapacity);
-                currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
-                continue;
-            }
+            if (venue.getCapacity() < req.minCapacity ||
+            !lecturerAvailability.isAvailable(req.lecturerName, day, start, start + durationSlots) ||
+            !venueAvailability.isAvailable(venue, start, start + durationSlots, day)) {
 
-            if (!lecturerAvailability.isAvailable(req.lecturerId, day, start, start + durationSlots)) {
+            currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
+            continue;
+        }
+
+            if (!lecturerAvailability.isAvailable(req.lecturerName, day, start, start + durationSlots)) {
                 // getContext().getLog().info("Lecturer '{}' not available on day {} from slot {}-{}",
-                //         req.lecturerId, day, start, start + durationSlots);
+                //         req.lecturerName, day, start, start + durationSlots);
                 currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
                 continue;
             }
@@ -235,11 +250,46 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                 continue;
             }
 
+            final int filterDay = day;
+            final int filterStart = start;
+            final int filterEnd = start + durationSlots;
+
+            // Check student availability at this day/time BEFORE asking venue to assign
+            List<Long> availableStudents = req.eligibleStudents.stream()
+                .map(Student::getId)
+                .filter(id -> studentAvailability.isAvailable(id, filterDay, filterStart, filterEnd))
+                .toList();
+
+            if (req.sessionType.equalsIgnoreCase("Lecture")) {
+                if (availableStudents.size() < req.eligibleStudents.size() * 0.8) { // e.g. less than 80% available
+                    currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
+                    continue;
+                }
+            } else {
+                // Only care about the group range
+                int groupSize = (int) Math.ceil((double) req.eligibleStudents.size() / req.groupCount);
+                int startIdx = req.groupIndex * groupSize;
+                int endIdx = Math.min(startIdx + groupSize, req.eligibleStudents.size());
+                List<Student> group = req.eligibleStudents.subList(startIdx, endIdx);
+
+                long clashCount = group.stream()
+                    .map(Student::getId)
+                    .filter(id -> !studentAvailability.isAvailable(id, filterDay, filterStart, filterEnd))
+                    .count();
+
+                if (clashCount > group.size() * 0.3) { // e.g. >30% can't attend
+                    currentAssignment = new AssignmentState(req, day, start, durationSlots, venueIdx + 1);
+                    continue;
+                }
+            }
+
+
             // getContext().getLog().info("Trying venue '{}' on day {} from slot {} to {}",
             //         venue.getName(), day, start, start + durationSlots);
 
+            
             venueActors.get(venueIdx).tell(new VenueActor.CheckAndAssignSlot(
-                day, start, start + durationSlots, req.lecturerId, venueResponseAdapter
+                day, start, start + durationSlots, req.lecturerName, venueResponseAdapter
             ));
 
             // Wait for venue response before continuing
@@ -253,20 +303,102 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         var accepted = msg.accepted;
         var req = currentAssignment.request;
 
-         // Update availability matrices
-        lecturerAvailability.assign(req.lecturerId,
+        // Update availability matrices
+        lecturerAvailability.assign(req.lecturerName,
             accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots);
         venueAvailability.assign(
             accepted.venue,
             accepted.startIndex, accepted.startIndex + accepted.durationSlots, accepted.dayIndex);
 
+        List<Student> allEligible = req.eligibleStudents;
+        List<Long> assignedStudentIds;
+
+        if (req.sessionType.equalsIgnoreCase("lecture")) {
+            // Assign all students for lecture
+            assignedStudentIds = allEligible.stream()
+                .map(Student::getId)
+                .toList();
+        } else {
+            // Assign group of students for practical/tutorial/workshop
+            int groupSize = (int) Math.ceil((double) allEligible.size() / req.groupCount);
+            int startIdx = req.groupIndex * groupSize;
+            int endIdx = Math.min(startIdx + groupSize, allEligible.size());
+
+            assignedStudentIds = allEligible.subList(startIdx, endIdx).stream()
+                .map(Student::getId)
+                .toList();
+        }
+
+        final int filterDay = accepted.dayIndex;
+        final int filterStart = accepted.startIndex;
+        final int filterEnd = accepted.startIndex + accepted.durationSlots;
+
+        // Filter by student availability
+        assignedStudentIds = assignedStudentIds.stream()
+            .filter(studentId -> studentAvailability.isAvailable(
+                studentId,
+                filterDay,
+                filterStart,
+                filterEnd
+            ))
+            .toList();
+
+        if (assignedStudentIds.isEmpty()) {
+            req.replyTo.tell(new SessionAssignmentActor.SessionAssignmentFailed("No available students for this slot"));
+            currentAssignment = null;
+            return this;
+        } 
+
+        // Determine how many students we need
+        int expectedMinimum = switch (req.sessionType.toLowerCase()) {
+            case "lecture" -> (int) (req.eligibleStudents.size() * 1); // 80% of all
+            default -> {
+                int groupSize = (int) Math.ceil((double) req.eligibleStudents.size() / req.groupCount);
+                yield (int) (groupSize * 0.8); // 70% of this group
+            }
+        };
+
+        if (assignedStudentIds.size() < expectedMinimum) {
+            int nextStart = currentAssignment.startIndex + 1;
+            int nextDay = currentAssignment.dayIndex;
+
+            if (nextStart + currentAssignment.durationSlots > MAX_SLOTS_PER_DAY) {
+                nextStart = 0;
+                nextDay++;
+            }
+
+            if (nextDay >= MAX_DAYS) {
+                req.replyTo.tell(new SessionAssignmentActor.SessionAssignmentFailed("No days available"));
+                currentAssignment = null;
+                return this;
+            }
+
+            // Try next day/slot, restart the venue index
+            currentAssignment = new AssignmentState(req, nextDay, nextStart, currentAssignment.durationSlots, 0);
+            tryNextAssignment();
+            return this;
+    }
+
+        // Mark students as unavailable for the assigned session time
+        for (Long studentId : assignedStudentIds) {
+            studentAvailability.markUnavailable(studentId, filterDay, filterStart, filterEnd);
+        }
+
         // Reply to session actor
         req.replyTo.tell(new SessionAssignmentActor.SessionAssigned(
-            accepted.venue, accepted.dayIndex, accepted.startIndex, accepted.durationSlots));
+            accepted.venue,
+            accepted.dayIndex,
+            accepted.startIndex,
+            accepted.durationSlots,
+            assignedStudentIds
+        ));
         
 
-        // getContext().getLog().info("Assigned venue '{}' on day {} from slot {} to {}",
-        //     accepted.venue.getName(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots);
+       log.info("Assigned {} {} on Day {}, Time {}. Venue {}, Students: {}",
+            req.module.getId(), req.sessionType,
+            accepted.dayIndex, accepted.startIndex,
+            accepted.venue.getName(),
+            assignedStudentIds.size());
 
         currentAssignment = null;
         return this;
