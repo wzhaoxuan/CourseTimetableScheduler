@@ -1,9 +1,15 @@
 package com.sunway.course.timetable.akka.actor;
 import java.util.List;
 
+import com.sunway.course.timetable.engine.AC3DomainPruner;
+import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -19,22 +25,30 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     public static final class AssignSession implements SessionAssignmentCommand {
         public final int durationHours;
         public final int minCapacity;
-        public final String lecturerName; 
+        public final String lecturerName;
         public final Module module;
-        public final List<Student> eligibleStudents; // List of students to assign to this session
+        public final List<Student> eligibleStudents;
         public final String sessionType;
         public final int groupIndex;
         public final int groupCount;
         public final ActorRef<SessionAssignmentResult> replyTo;
         public final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator;
         public final List<String> preferredVenues;
+        public final LecturerAvailabilityMatrix lecturerMatrix;
+        public final VenueAvailabilityMatrix venueMatrix;
+        public final StudentAvailabilityMatrix studentMatrix;
+        public final List<Venue> allVenues;
 
         public AssignSession(int durationHours, int minCapacity, String lecturerName,
-                            Module module, List<Student> eligibleStudents,
-                            String sessionType, int groupIndex, int groupCount,
-                            ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
-                            ActorRef<SessionAssignmentResult> replyTo,
-                            List<String> preferredVenues) {
+                              Module module, List<Student> eligibleStudents,
+                              String sessionType, int groupIndex, int groupCount,
+                              ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> coordinator,
+                              ActorRef<SessionAssignmentResult> replyTo,
+                              List<String> preferredVenues,
+                              LecturerAvailabilityMatrix lecturerMatrix,
+                              VenueAvailabilityMatrix venueMatrix,
+                              StudentAvailabilityMatrix studentMatrix,
+                              List<Venue> allVenues) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
             this.lecturerName = lecturerName;
@@ -46,19 +60,21 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             this.coordinator = coordinator;
             this.replyTo = replyTo;
             this.preferredVenues = preferredVenues;
+            this.lecturerMatrix = lecturerMatrix;
+            this.venueMatrix = venueMatrix;
+            this.studentMatrix = studentMatrix;
+            this.allVenues = allVenues;
         }
     }
 
     public interface SessionAssignmentResult extends SessionAssignmentCommand {}
 
-    // Responses from VenueCoordinatorActor come in as commands here:
     public static final class SessionAssigned implements SessionAssignmentResult {
         public final Venue venue;
         public final int dayIndex;
         public final int startIndex;
         public final int durationSlots;
         public final List<Student> assignedStudents;
-
 
         public SessionAssigned(Venue venue, int dayIndex, int startIndex, int durationSlots,
                                List<Student> assignedStudents) {
@@ -67,14 +83,12 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             this.startIndex = startIndex;
             this.durationSlots = durationSlots;
             this.assignedStudents = assignedStudents;
-            
         }
 
         public List<Student> getAssignedStudents() {
             return assignedStudents;
         }
     }
-
 
     public static final class SessionAssignmentFailed implements SessionAssignmentResult {
         public final String reason;
@@ -104,30 +118,42 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
     private Behavior<SessionAssignmentCommand> onAssignSession(AssignSession msg) {
-        // Save original requester to forward results later
         this.originalRequester = msg.replyTo;
 
-        // context.getLog().info("Received AssignSession request: duration={} hours, minCapacity={}, lecturer={}",
-        //         msg.durationHours, msg.minCapacity, msg.lecturerName);
+        // Build minimal metadata to pass to domain pruner
+        SessionGroupMetaData meta = new SessionGroupMetaData();
+        meta.setModuleId(msg.module.getId());
+        meta.setType(msg.sessionType);
+        meta.setTypeGroup("-G" + (msg.groupIndex + 1));
+        meta.setLecturerName(msg.lecturerName);
+        meta.setGroupIndex(msg.groupIndex);
+        meta.setGroupCount(msg.groupCount);
+        meta.setTotalStudents(msg.eligibleStudents.size());
 
-        // Forward the request to the VenueCoordinatorActor, passing self as replyTo
+        List<AssignmentOption> prunedDomain = AC3DomainPruner.pruneDomain(
+            msg.lecturerMatrix,
+            msg.venueMatrix,
+            msg.studentMatrix,
+            msg.allVenues,
+            meta,
+            msg.eligibleStudents
+        );
+
+        // Forward the request to the VenueCoordinatorActor
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
-            msg.sessionType, msg.groupIndex, msg.groupCount, context.getSelf()));
+            msg.sessionType, msg.groupIndex, msg.groupCount,
+            context.getSelf(), msg.preferredVenues, prunedDomain
+        ));
 
         return this;
     }
 
     private Behavior<SessionAssignmentCommand> onSessionAssigned(SessionAssigned msg) {
-        // context.getLog().info("Session assigned: Venue={} Day={} StartSlot={}",
-        //                       msg.venue.getName(), msg.dayIndex, msg.startIndex);
-
         if (originalRequester != null) {
-            originalRequester.tell(msg); // Notify original requester
+            originalRequester.tell(msg);
         }
-        // Reset for next request (if any)
         originalRequester = null;
-
         return this;
     }
 
@@ -135,12 +161,10 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         context.getLog().warn("Session assignment failed: {}", msg.reason);
 
         if (originalRequester != null) {
-            originalRequester.tell(msg); // Notify original requester
+            originalRequester.tell(msg);
         }
         originalRequester = null;
-
         return this;
     }
-    
 }
 

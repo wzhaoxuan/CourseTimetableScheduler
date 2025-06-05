@@ -50,10 +50,6 @@ public class VenueAvailabilityMatrix {
         for (int i = 0; i < venueCount; i++) {
             venueIndexMap.put(sortedVenues.get(i).getId(), i);
         }
-
-        // for (Venue v : sortedVenues) {
-        //     System.out.println("[INIT] Venue: " + v.getName() + " cap=" + v.getCapacity());
-        // }
     }
 
     /**

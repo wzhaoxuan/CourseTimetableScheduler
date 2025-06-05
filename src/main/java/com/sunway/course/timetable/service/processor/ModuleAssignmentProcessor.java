@@ -15,12 +15,10 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.engine.ConstraintEngine;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
@@ -60,41 +58,43 @@ import akka.actor.typed.javadsl.AskPattern;
 
 @Service
 public class ModuleAssignmentProcessor {
+
     private static final Logger log = LoggerFactory.getLogger(ModuleAssignmentProcessor.class);
-    // private final int MAX_GROUP_SIZE = 35;
+
+    // === Dependencies ===
     private final CreditHourTracker creditTracker;
     private final LecturerServiceImpl lecturerService;
     private final SessionServiceImpl sessionService;
     private final PlanContentServiceImpl planContentService;
     private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
     private final ModuleServiceImpl moduleService;
-    private final ConstraintEngine constraintEngine;
     private final ProgrammeDistributionClustering clustering;
+    private final VenueDistanceServiceImpl venueDistanceService;
+    private final VenueSorterService venueSorterService;
+
+    // === Singleton Matrices ===
+    private final VenueAvailabilityMatrix venueMatrix;
+    private final LecturerAvailabilityMatrix lecturerMatrix;
+    private final StudentAvailabilityMatrix studentMatrix;
+
+    // === Actor===
+    private final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor;
+    private final ActorSystem<Void> actorSystem;
+
+    // === Data Structures ===
     private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
     private Map<Long, Integer> studentSemesterMap = new HashMap<>();
     private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
     private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
-    
-
-
-    // Actor system and singletons for scheduling
-    private final ActorSystem<Void> actorSystem;
-    private final VenueSorterService venueSorterService;
-    private final VenueAvailabilityMatrix venueMatrix;
-    private final LecturerAvailabilityMatrix lecturerMatrix;
-    private final StudentAvailabilityMatrix studentMatrix;
-    private final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor;
-
-    @Autowired
-    private VenueDistanceServiceImpl venueDistanceService;
+    // private final int MAX_GROUP_SIZE = 35;
 
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
-                                      ConstraintEngine constraintEngine,
                                       ProgrammeDistributionClustering clustering,
                                       ActorSystem<Void> actorSystem,
+                                      VenueDistanceServiceImpl venueDistanceService,
                                       VenueSorterService venueSorterService,
                                       VenueAvailabilityMatrix venueMatrix,
                                       LecturerAvailabilityMatrix lecturerMatrix,
@@ -105,9 +105,9 @@ public class ModuleAssignmentProcessor {
                                       ModuleServiceImpl moduleService,
                                       SessionGroupPreprocessorService sessionGroupPreprocessorService) {
         this.lecturerService = lecturerService;
-        this.constraintEngine = constraintEngine;
         this.clustering = clustering;
         this.actorSystem = actorSystem;
+        this.venueDistanceService = venueDistanceService;
         this.venueSorterService = venueSorterService;
         this.venueMatrix = venueMatrix;
         this.lecturerMatrix = lecturerMatrix;
@@ -215,6 +215,103 @@ public class ModuleAssignmentProcessor {
         return sessionBySemesterAndModule;
     }
 
+    /**
+     * Call the actor model to schedule a session based on type, group and total student count,
+     * assigning day/start/end and best-fit venue.
+     *
+     * @param type         The session type (Lecture, Tutorial, Practical, etc)
+     * @param typeGroup    The group key for the session (e.g. MTH1114-Lecture-G1)
+     * @param totalStudents Number of students in this group
+     * @return SessionAssignmentResult containing day, startTime, endTime, and assigned Venue
+     */
+    private SessionAssignmentResult scheduleSessionViaActors(int semester,
+        String moduleId, String type, String typeGroup, int totalStudents, String lecturerName,
+        List<Student> eligibleStudent, int groupIndex, int groupCount) {
+
+        Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
+        Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
+
+        String majorityProgramme = progMap.entrySet().stream()
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .orElse("UNKNOWN");
+
+        TreeMap<LocalTime, String> venueTimeMap = lastAssignedVenuePerDay
+                .computeIfAbsent(semester, k -> new HashMap<>())
+                .computeIfAbsent(majorityProgramme, k -> new TreeMap<>());
+
+        String lastVenue = venueTimeMap.isEmpty() 
+                ? venueMatrix.getSortedVenues().stream().findFirst().map(Venue::getName).orElse(null) 
+                : venueTimeMap.lastEntry().getValue();
+
+        System.out.printf("Last venue for %s in semester %d: %s%n", typeGroup, semester, lastVenue);
+
+        List<String> preferredVenues = lastVenue != null
+            ? venueSorterService.findNearestVenues(lastVenue).stream()
+                .sorted(Comparator.comparingDouble(v -> venueDistanceService.getDistanceScore(lastVenue, v.getName())))
+                .map(v -> String.valueOf(v.getId()))
+                .toList()
+            : Collections.emptyList();
+
+        int durationHours = getDurationHours(type);
+        String actorName = "sessionAssigner-" + typeGroup.replaceAll("\\W+", "");
+
+        Module module = moduleService.getModuleById(moduleId)
+                .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
+
+        ActorRef<SessionAssignmentActor.SessionAssignmentCommand> sessionAssigner =
+                actorSystem.systemActorOf(SessionAssignmentActor.create(), actorName, Props.empty());
+
+        CompletionStage<SessionAssignmentActor.SessionAssignmentResult> futureResponse = AskPattern.ask(
+            sessionAssigner,
+            replyTo -> new SessionAssignmentActor.AssignSession(
+                    durationHours, totalStudents, lecturerName, 
+                    module,
+                    eligibleStudent,
+                    type,
+                    groupIndex,
+                    groupCount,
+                    venueCoordinatorActor, 
+                    replyTo, 
+                    preferredVenues,
+                    lecturerMatrix,
+                    venueMatrix,
+                    studentMatrix,
+                    venueMatrix.getSortedVenues()
+            ),
+            Duration.ofSeconds(100),
+            actorSystem.scheduler()
+        );
+
+        SessionAssignmentActor.SessionAssignmentCommand response = futureResponse.toCompletableFuture().join();
+
+        if (response instanceof SessionAssignmentActor.SessionAssigned assigned) {
+            String day = switch (assigned.dayIndex) {
+                case 0 -> "Monday";
+                case 1 -> "Tuesday";
+                case 2 -> "Wednesday";
+                case 3 -> "Thursday";
+                case 4 -> "Friday";
+                default -> throw new IllegalArgumentException("Invalid day index: " + assigned.dayIndex);
+            };
+
+            LocalTime start = LocalTime.of(8, 0).plusMinutes(assigned.startIndex * 30L);
+            LocalTime end = start.plusMinutes(assigned.durationSlots * 30L);
+
+            // Update preferred venue log
+            venueTimeMap.put(start, assigned.venue.getName());
+
+            return new SessionAssignmentResult(day, start, end, assigned.venue, assigned.getAssignedStudents());
+        }
+
+        if (response instanceof SessionAssignmentActor.SessionAssignmentFailed failed) {
+            log.warn("Session assignment failed for group {}: {}", typeGroup, failed.reason);
+            return null;
+        }
+
+        throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
+    }
+
     private void persistAndGroupSessions(Map<Session, String> sessionToModuleIdMap) {
         sessionBySemesterAndModule.clear();
 
@@ -252,89 +349,6 @@ public class ModuleAssignmentProcessor {
                 .computeIfAbsent(module.getId(), k -> new ArrayList<>())
                 .add(savedSession);
         }
-    }
-
-    /**
-     * Call the actor model to schedule a session based on type, group and total student count,
-     * assigning day/start/end and best-fit venue.
-     *
-     * @param type         The session type (Lecture, Tutorial, Practical, etc)
-     * @param typeGroup    The group key for the session (e.g. MTH1114-Lecture-G1)
-     * @param totalStudents Number of students in this group
-     * @return SessionAssignmentResult containing day, startTime, endTime, and assigned Venue
-     */
-    private SessionAssignmentResult scheduleSessionViaActors(int semester,
-        String moduleId, String type, String typeGroup, int totalStudents, String lecturerName,
-        List<Student> eligibleStudent, int groupIndex, int groupCount) {
-
-        Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
-        Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
-        
-        String majorityProgramme = progMap.entrySet().stream()
-            .max(Map.Entry.comparingByValue())
-            .map(Map.Entry::getKey)
-            .orElse("UNKNOWN");
-
-        // Get last assigned venue (if any) for this programme and day
-        TreeMap<LocalTime, String> venueTimeMap = lastAssignedVenuePerDay
-                .computeIfAbsent(semester, k -> new HashMap<>())
-                .computeIfAbsent(majorityProgramme, k -> new TreeMap<>());
-
-        String lastVenue = venueTimeMap.isEmpty() ? null : venueTimeMap.lastEntry().getValue();
-
-        List<String> preferredVenues = lastVenue != null
-                ? venueSorterService.findNearestVenues(lastVenue).stream().map(venue -> String.valueOf(venue.getId())).toList()
-                : Collections.emptyList();
-
-        int durationHours = getDurationHours(type);
-        String actorName = "sessionAssigner-" + typeGroup.replaceAll("\\W+", "");
-
-        Module module = moduleService.getModuleById(moduleId)
-                .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
-
-        ActorRef<SessionAssignmentActor.SessionAssignmentCommand> sessionAssigner =
-                actorSystem.systemActorOf(SessionAssignmentActor.create(), actorName, Props.empty());
-
-        CompletionStage<SessionAssignmentActor.SessionAssignmentResult> futureResponse = AskPattern.ask(
-            sessionAssigner,
-            replyTo -> new SessionAssignmentActor.AssignSession(
-                    durationHours, totalStudents, lecturerName, 
-                    module,
-                    eligibleStudent,
-                    type,
-                    groupIndex,
-                    groupCount,
-                    venueCoordinatorActor, 
-                    replyTo, 
-                    preferredVenues
-            ),
-            Duration.ofSeconds(100),
-            actorSystem.scheduler()
-        );
-
-        SessionAssignmentActor.SessionAssignmentCommand response = futureResponse.toCompletableFuture().join();
-
-        if (response instanceof SessionAssignmentActor.SessionAssigned assigned) {
-            String day = switch (assigned.dayIndex) {
-                case 0 -> "Monday";
-                case 1 -> "Tuesday";
-                case 2 -> "Wednesday";
-                case 3 -> "Thursday";
-                case 4 -> "Friday";
-                default -> throw new IllegalArgumentException("Invalid day index: " + assigned.dayIndex);
-            };
-
-            LocalTime start = LocalTime.of(8, 0).plusMinutes(assigned.startIndex * 30L);
-            LocalTime end = start.plusMinutes(assigned.durationSlots * 30L);
-            return new SessionAssignmentResult(day, start, end, assigned.venue, assigned.getAssignedStudents());
-        }
-
-        if (response instanceof SessionAssignmentActor.SessionAssignmentFailed failed) {
-            log.warn("Session assignment failed for group {}: {}", typeGroup, failed.reason);
-            return null;
-        }
-
-        throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
     }
 
     private void printFinalizedSchedule(Map<Session, String> sessionToModuleIdMap, Map<Session, Venue> sessionVenueMap) {

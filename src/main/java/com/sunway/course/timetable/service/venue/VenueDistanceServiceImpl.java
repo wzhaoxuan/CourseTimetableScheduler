@@ -44,4 +44,29 @@ public class VenueDistanceServiceImpl implements VenueDistanceService {
         }
         return distances; // Assuming you want the first match
     }
+
+    public double getDistanceScore(String fromVenue, String toVenue) {
+        VenueDistanceId id = new VenueDistanceId();
+        id.setVenueFrom(fromVenue);
+        id.setVenueTo(toVenue);
+
+        VenueDistance distance = venueDistanceRepository.findById(id).orElse(null);
+
+        if (distance != null) {
+            return distance.getDistance();
+        }
+
+        // Optional fallback: reverse direction
+        VenueDistanceId reverseId = new VenueDistanceId();
+        reverseId.setVenueFrom(toVenue);
+        reverseId.setVenueTo(fromVenue);
+
+        VenueDistance reverseDistance = venueDistanceRepository.findById(reverseId).orElse(null);
+        if (reverseDistance != null) {
+            return reverseDistance.getDistance();
+        }
+
+        // Default to a high value if no entry found
+        return Double.MAX_VALUE;
+    }
 }

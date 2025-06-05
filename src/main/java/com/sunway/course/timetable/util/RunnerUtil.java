@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.engine.ConstraintEngine;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
@@ -23,14 +22,14 @@ import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
-import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
-import javafx.util.Pair;
 
 
 
@@ -86,9 +85,9 @@ public class RunnerUtil {
     @Profile("!test")  // Exclude from tests
     public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
                                                  LecturerServiceImpl lecturerService,
-                                                 ConstraintEngine constraintEngine,
                                                  ProgrammeDistributionClustering clustering,
                                                  ActorSystem<Void> actorSystem,
+                                                 VenueDistanceServiceImpl venueDistanceService,
                                                  VenueSorterService venueSorterService,
                                                  VenueAvailabilityMatrix venueMatrix,
                                                  LecturerAvailabilityMatrix lecturerMatrix,
@@ -108,9 +107,9 @@ public class RunnerUtil {
                         .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
                 // Manually create the processor
                 ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
-                                                                                   constraintEngine,
                                                                                    clustering,
                                                                                    actorSystem,
+                                                                                   venueDistanceService,
                                                                                    venueSorterService,
                                                                                    venueMatrix,
                                                                                    lecturerMatrix,
@@ -127,10 +126,6 @@ public class RunnerUtil {
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
-                
-
-                // System.out.println(preprocessingResult.getStudentProgrammeMap());
-                // System.out.println(preprocessingResult.getStudentSemesterMap());
 
                 
 

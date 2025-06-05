@@ -3,13 +3,13 @@ package com.sunway.course.timetable.model.assignment;
 
 public class SessionGroupMetaData {
     private int semester;
-    private final String moduleId;
-    private final String type;
-    private final String typeGroup;
-    private final String lecturerName;
-    private final int totalStudents;
-    private final int groupIndex;
-    private final int groupCount;
+    private String moduleId;
+    private String type;
+    private String typeGroup;
+    private String lecturerName;
+    private int totalStudents;
+    private int groupIndex;
+    private int groupCount;
 
     /**
      * Constructor for SessionGroupMetaData.
@@ -20,9 +20,9 @@ public class SessionGroupMetaData {
      * @param typeGroup     The group type for the session.
      * @param lecturerName    The ID of the lecturer assigned to the session.
      * @param totalStudents The total number of students in the session group.
-     *  @param assignedStudents The list of students assigned to this session group.
-     *  @param groupIndex   The index of this group within the total groups.
-     *  @param groupCount   The total number of groups for this session type.
+     * @param assignedStudents The list of students assigned to this session group.
+     * @param groupIndex   The index of this group within the total groups.
+     * @param groupCount   The total number of groups for this session type.
      */
     public SessionGroupMetaData(int semester, String moduleId, String type, String typeGroup, String lecturerName, int totalStudents, 
                                 int groupIndex, int groupCount) {
@@ -34,7 +34,11 @@ public class SessionGroupMetaData {
         this.totalStudents = totalStudents;
         this.groupIndex = groupIndex;
         this.groupCount = groupCount;
-}
+    }
+
+    public SessionGroupMetaData() {
+        // Default constructor for serialization/deserialization
+    }
 
     public int getSemester() { return semester; }
     public String getModuleId() { return moduleId; }
@@ -44,6 +48,15 @@ public class SessionGroupMetaData {
     public int getTotalStudents() { return totalStudents; }
     public int getGroupIndex() { return groupIndex; }
     public int getGroupCount() { return groupCount; }
+
+    public void setSemester(int semester) { this.semester = semester; }
+    public void setModuleId(String moduleId) { this.moduleId = moduleId; }
+    public void setType(String type) { this.type = type; }
+    public void setTypeGroup(String typeGroup) { this.typeGroup = typeGroup; }
+    public void setLecturerName(String lecturerName) { this.lecturerName = lecturerName; }
+    public void setTotalStudents(int totalStudents) { this.totalStudents = totalStudents; }
+    public void setGroupIndex(int groupIndex) { this.groupIndex = groupIndex; }
+    public void setGroupCount(int groupCount) { this.groupCount = groupCount; }
 
     @Override
     public String toString() {

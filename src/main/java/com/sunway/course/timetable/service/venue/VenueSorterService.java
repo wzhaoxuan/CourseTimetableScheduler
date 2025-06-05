@@ -3,7 +3,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -60,17 +59,14 @@ public class VenueSorterService {
         // Get all venues
         List<VenueDistance> venueDistances = venueDistanceService.getAllDistanceFromVenue(fromVenueName);
 
-        // Map venue names to Venue objects
-        Map<String, Venue> venueMap = venueService.getAllVenues().stream()
-                .collect(Collectors.toMap(Venue::getName, v -> v));
+        // Sort by distance
+        venueDistances.sort(Comparator.comparingDouble(VenueDistance::getDistance));
 
-        // Filter and sort by distance
+        // Convert to Venue objects
         return venueDistances.stream()
-                .filter(dist -> !dist.getVenueDistanceId().getVenueTo().equalsIgnoreCase(fromVenueName))
-                .sorted(Comparator.comparingDouble(VenueDistance::getDistance))
-                .map(dist -> venueMap.get(dist.getVenueDistanceId().getVenueTo()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            .map(d -> venueService.getVenueByName(d.getVenueDistanceId().getVenueTo()).orElse(null))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 }
 
