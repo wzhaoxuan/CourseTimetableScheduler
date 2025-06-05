@@ -316,7 +316,7 @@ public class ModuleAssignmentProcessor {
 
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
-            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues
+            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, venueDistanceService
         );
 
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();

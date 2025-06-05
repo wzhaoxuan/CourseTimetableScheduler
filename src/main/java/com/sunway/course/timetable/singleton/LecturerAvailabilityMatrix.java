@@ -89,6 +89,20 @@ public class LecturerAvailabilityMatrix {
         }
     }
 
+    public void unassign(String lecturerId, int day, int start, int end) {
+        lock.writeLock().lock();
+        try {
+            boolean[][] schedule = availability.get(lecturerId);
+            if (schedule == null) return;
+
+            for (int i = start; i < end; i++) {
+                schedule[day][i] = false; // mark as free
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public void printAvailability(String lecturerId) {
         lock.readLock().lock();
         try {

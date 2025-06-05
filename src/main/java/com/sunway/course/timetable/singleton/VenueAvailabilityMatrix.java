@@ -91,6 +91,20 @@ public class VenueAvailabilityMatrix {
         
     }
 
+    public void unassign(Venue venue, int startIndex, int endIndex, int dayIndex) {
+        lock.writeLock().lock();
+        try {
+            Integer venueIndex = venueIndexMap.get(venue.getId());
+            if (venueIndex == null) return;
+
+            for (int i = startIndex; i < endIndex; i++) {
+                availability[venueIndex][i][dayIndex] = false; // mark as free
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /**
      * Converts DayOfWeek (MON-FRI) to day index 0-4.
      */

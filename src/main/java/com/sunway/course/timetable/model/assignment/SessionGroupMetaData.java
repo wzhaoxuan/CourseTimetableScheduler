@@ -13,7 +13,6 @@ public class SessionGroupMetaData {
     private int totalStudents;
     private int groupIndex;
     private int groupCount;
-
     private List<Student> eligibleStudents;
 
     /**
