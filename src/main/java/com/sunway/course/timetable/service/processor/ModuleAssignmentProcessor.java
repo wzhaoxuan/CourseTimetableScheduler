@@ -184,42 +184,79 @@ public class ModuleAssignmentProcessor {
             meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
         }
 
-        boolean useBacktracking = true; // Set to true to use backtracking scheduling
-
-        if (useBacktracking) {
-            // 4.1 Use backtracking to schedule sessions
-            scheduleWithBacktracking(allMetaData);
-        } else {
-            // 4.2 Use actor model for scheduling each session group
-            for (SessionGroupMetaData meta : allMetaData) {
-                List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
-                String lecturerName = FilterUtil.extractName(meta.getLecturerName());
-                SessionAssignmentResult result = scheduleSessionViaActors(
-                    meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
-                    meta.getTotalStudents(), lecturerName, eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
-                );
-
-                if (result == null) {
-                    log.warn("Skipping session group {} due to scheduling failure.", meta.getTypeGroup());
-                    continue;
-                }
-
-                Lecturer lecturer = lecturerService.getLecturerByName(lecturerName).orElse(null);
-                assignStudentsToSession(meta, result.getDay(), result.getStartTime(), result.getEndTime(), 
-                        lecturer, result.getVenue(), result.getAssignedStudents());
-
-            }
-
-            // === 3. Print or Export Final Schedule
-            printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
-
-            // === 4. Persist and group sessions (with placeholder student, to be updated later)
-            persistAndGroupSessions(sessionToModuleIdMap);
-        }
-
-        actorSystem.terminate();
+        processAssignmentsHybrid(allMetaData);
         return sessionBySemesterAndModule;
     }
+
+
+    /**
+     * Hybrid Scheduling
+     * 1. Attempt actor-based scheduling for each SessionGroupMetaData
+     * 2. If any session fails, collect the remaining unshceduled ones
+     * 3. Run backtracking only on those that failed.
+     * 
+     * @param allMetaData
+     */
+    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData) {
+        log.info("Running hybrid scheduling: actor-first, fallback to backtracking");
+
+        List<SessionGroupMetaData> failedMeta = new ArrayList<>();
+
+        for (SessionGroupMetaData meta : allMetaData) {
+            List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
+            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+
+            SessionAssignmentResult result = scheduleSessionViaActors(
+                meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
+                meta.getTotalStudents(), lecturerName, eligibleStudents,
+                meta.getGroupIndex(), meta.getGroupCount()
+            );
+
+            if (result == null) {
+                log.warn("[HYBRID] Actor scheduling failed for {}", meta.getTypeGroup());
+                failedMeta.add(meta);
+                continue;
+            }
+
+            Lecturer lecturer = lecturerService.getLecturerByName(lecturerName).orElse(null);
+            assignStudentsToSession(meta, result.getDay(), result.getStartTime(), result.getEndTime(),
+                    lecturer, result.getVenue(), result.getAssignedStudents());
+        }
+
+        if (!failedMeta.isEmpty()) {
+            log.info("[HYBRID] Falling back to backtracking for {} failed session groups", failedMeta.size());
+
+            List<Venue> allVenues = venueMatrix.getSortedVenues();
+            BacktrackingScheduler fallback = new BacktrackingScheduler(
+                failedMeta, lecturerMatrix, venueMatrix, studentMatrix, allVenues, venueDistanceService
+            );
+
+            Map<SessionGroupMetaData, AssignmentOption> result = fallback.solve();
+            Map<SessionGroupMetaData, List<Student>> studentAssignments = fallback.getStudentAssignments();
+
+            for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : result.entrySet()) {
+                SessionGroupMetaData meta = entry.getKey();
+                AssignmentOption opt = entry.getValue();
+
+                Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(FilterUtil.extractName(meta.getLecturerName()));
+                if (lecturerOpt.isEmpty()) continue;
+                Lecturer lecturer = lecturerOpt.get();
+
+                String day = getDayName(opt.day());
+                LocalTime start = LocalTime.of(8, 0).plusMinutes(opt.startSlot() * 30L);
+                LocalTime end = start.plusMinutes(4 * 30L); // 2 hours assumed
+
+                List<Student> assigned = studentAssignments.getOrDefault(meta, List.of());
+                assignStudentsToSession(meta, day, start, end, lecturer, opt.venue(), assigned);
+            }
+        }
+
+        log.info("[HYBRID] Final session count: {}", sessionToModuleIdMap.size());
+        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+        persistAndGroupSessions(sessionToModuleIdMap);
+        actorSystem.terminate();
+    }
+
 
     /**
      * Call the actor model to schedule a session based on type, group and total student count,
