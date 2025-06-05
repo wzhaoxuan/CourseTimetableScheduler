@@ -56,7 +56,8 @@ public class SessionGroupPreprocessorService {
                     plan.getMainLecturer(),
                     totalStudents,
                     0,
-                    1
+                    1,
+                    students
                 ));
             }
 
@@ -77,6 +78,11 @@ public class SessionGroupPreprocessorService {
                     String group = plan.getSubjectCode() + "-" + typeInfo.type() + "-G" + (i + 1);
                     String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
 
+                    // Slice out the group
+                    int startIdx = i * MAX_GROUP_SIZE;
+                    int endIdx = Math.min(startIdx + MAX_GROUP_SIZE, totalStudents);
+                    List<Student> groupStudents = students.subList(startIdx, endIdx);
+
                     SessionGroupMetaData metaData = new SessionGroupMetaData(
                         semester,
                         module.getId(),
@@ -85,7 +91,8 @@ public class SessionGroupPreprocessorService {
                         tutor,
                         MAX_GROUP_SIZE,
                         i,
-                        groupCount
+                        groupCount,
+                        groupStudents
                     );
                     metaDataList.add(metaData);
                 }

@@ -165,7 +165,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     }
 
     // === Message Handlers ===
-     @Override
+    @Override
     public Receive<VenueCoordinatorCommand> createReceive() {
         return newReceiveBuilder()
                 .onMessage(RequestVenueAssignment.class, this::onRequestVenueAssignment)

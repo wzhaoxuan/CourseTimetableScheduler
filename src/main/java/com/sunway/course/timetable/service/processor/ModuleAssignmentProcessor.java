@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
+import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.BacktrackingScheduler;
+import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
@@ -85,9 +88,10 @@ public class ModuleAssignmentProcessor {
     private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
     private Map<Long, Integer> studentSemesterMap = new HashMap<>();
     private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
-    private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
     private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
+    private Map<Session, String> sessionToModuleIdMap = new HashMap<>();
+    private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     // private final int MAX_GROUP_SIZE = 35;
 
 
@@ -175,41 +179,52 @@ public class ModuleAssignmentProcessor {
                 default -> 3;
             }));
 
-        // 5. Schedule each group
-        Map<Session, String> sessionToModuleIdMap = new HashMap<>();
+
         for (SessionGroupMetaData meta : allMetaData) {
-            List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
-            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
-            SessionAssignmentResult result = scheduleSessionViaActors(
-                meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
-                meta.getTotalStudents(), lecturerName, eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
-            );
-
-            if (result == null) {
-                log.warn("Skipping session group {} due to scheduling failure.", meta.getTypeGroup());
-                continue;
-            }
-
-            for (Student student : result.getAssignedStudents()) {
-                Session session = new Session();
-                session.setType(meta.getType());
-                session.setTypeGroup(meta.getTypeGroup());
-                session.setLecturer(lecturerService.getLecturerByName(lecturerName).orElse(null));
-                session.setDay(result.getDay());
-                session.setStartTime(result.getStartTime());
-                session.setEndTime(result.getEndTime());
-                session.setStudent(student);
-
-                sessionToModuleIdMap.put(session, meta.getModuleId());
-                sessionVenueMap.put(session, result.getVenue());
-            }
+            meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
         }
 
-        // === 3. Print or Export Final Schedule
-        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+        boolean useBacktracking = true; // Set to true to use backtracking scheduling
 
-        // === 4. Persist and group sessions (with placeholder student, to be updated later)
-        persistAndGroupSessions(sessionToModuleIdMap);
+        if (useBacktracking) {
+            // 4.1 Use backtracking to schedule sessions
+            scheduleWithBacktracking(allMetaData);
+        } else {
+            // 4.2 Use actor model for scheduling each session group
+            for (SessionGroupMetaData meta : allMetaData) {
+                List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
+                String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+                SessionAssignmentResult result = scheduleSessionViaActors(
+                    meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
+                    meta.getTotalStudents(), lecturerName, eligibleStudents, meta.getGroupIndex(), meta.getGroupCount()
+                );
+
+                if (result == null) {
+                    log.warn("Skipping session group {} due to scheduling failure.", meta.getTypeGroup());
+                    continue;
+                }
+
+                for (Student student : result.getAssignedStudents()) {
+                    Session session = new Session();
+                    session.setType(meta.getType());
+                    session.setTypeGroup(meta.getTypeGroup());
+                    session.setLecturer(lecturerService.getLecturerByName(lecturerName).orElse(null));
+                    session.setDay(result.getDay());
+                    session.setStartTime(result.getStartTime());
+                    session.setEndTime(result.getEndTime());
+                    session.setStudent(student);
+
+                    sessionToModuleIdMap.put(session, meta.getModuleId());
+                    sessionVenueMap.put(session, result.getVenue());
+                }
+            }
+
+            // === 3. Print or Export Final Schedule
+            printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+
+            // === 4. Persist and group sessions (with placeholder student, to be updated later)
+            persistAndGroupSessions(sessionToModuleIdMap);
+        }
 
         actorSystem.terminate();
         return sessionBySemesterAndModule;
@@ -312,8 +327,72 @@ public class ModuleAssignmentProcessor {
         throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
     }
 
+    private void scheduleWithBacktracking(List<SessionGroupMetaData> allMetaData) {
+        log.info("Starting backtracking scheduling for {} session groups", allMetaData.size());
+
+        List<Venue> allVenues = venueMatrix.getSortedVenues();
+        BacktrackingScheduler scheduler = new BacktrackingScheduler(
+            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues
+        );
+
+        Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
+        Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
+
+        for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : result.entrySet()) {
+            SessionGroupMetaData meta = entry.getKey();
+            AssignmentOption opt = entry.getValue();
+
+            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+            Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(lecturerName);
+            if (lecturerOpt.isEmpty()) {
+                log.warn("Lecturer {} not found in DB, skipping session creation.", lecturerName);
+                continue;
+            }
+            Lecturer lecturer = lecturerOpt.get();
+
+            String day = switch (opt.day()) {
+                case 0 -> "Monday";
+                case 1 -> "Tuesday";
+                case 2 -> "Wednesday";
+                case 3 -> "Thursday";
+                case 4 -> "Friday";
+                default -> throw new IllegalArgumentException("Invalid day index: " + opt.day());
+            };
+
+            LocalTime start = LocalTime.of(8, 0).plusMinutes(opt.startSlot() * 30L);
+            LocalTime end = start.plusMinutes(4 * 30L); // 2 hours assumed
+
+            // Assign eligible + available students
+            List<Student> assignedStudents = studentAssignments.getOrDefault(meta, List.of());
+
+            for (Student student : assignedStudents) {
+                Session session = new Session();
+                session.setType(meta.getType());
+                session.setTypeGroup(meta.getTypeGroup());
+                session.setLecturer(lecturer);
+                session.setDay(day);
+                session.setStartTime(start);
+                session.setEndTime(end);
+                session.setStudent(student);
+
+                sessionToModuleIdMap.put(session, meta.getModuleId());
+                sessionVenueMap.put(session, opt.venue());
+                sessionBySemesterAndModule
+                    .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
+                    .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())
+                    .add(session);
+            }
+        }
+
+        log.info("Backtracking scheduling completed. Total sessions created: {}", sessionToModuleIdMap.size());
+        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+        persistAndGroupSessions(sessionToModuleIdMap);
+        actorSystem.terminate();
+    }
+
+
     private void persistAndGroupSessions(Map<Session, String> sessionToModuleIdMap) {
-        sessionBySemesterAndModule.clear();
+        // sessionBySemesterAndModule.clear();
 
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
             Session session = entry.getKey();
@@ -410,6 +489,7 @@ public class ModuleAssignmentProcessor {
             default -> 1;
         };
     }
+
 
     // private void applyConstraintsScheduling(List<Session> sessions){
     //     // 1. Generate domain (valid time slots) for each session

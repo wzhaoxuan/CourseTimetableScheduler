@@ -1,5 +1,8 @@
 package com.sunway.course.timetable.model.assignment;
 
+import java.util.List;
+
+import com.sunway.course.timetable.model.Student;
 
 public class SessionGroupMetaData {
     private int semester;
@@ -10,6 +13,8 @@ public class SessionGroupMetaData {
     private int totalStudents;
     private int groupIndex;
     private int groupCount;
+
+    private List<Student> eligibleStudents;
 
     /**
      * Constructor for SessionGroupMetaData.
@@ -25,7 +30,7 @@ public class SessionGroupMetaData {
      * @param groupCount   The total number of groups for this session type.
      */
     public SessionGroupMetaData(int semester, String moduleId, String type, String typeGroup, String lecturerName, int totalStudents, 
-                                int groupIndex, int groupCount) {
+                                int groupIndex, int groupCount, List<Student> eligibleStudents) {
         this.semester = semester;
         this.moduleId = moduleId;
         this.type = type;
@@ -34,6 +39,7 @@ public class SessionGroupMetaData {
         this.totalStudents = totalStudents;
         this.groupIndex = groupIndex;
         this.groupCount = groupCount;
+        this.eligibleStudents = eligibleStudents;
     }
 
     public SessionGroupMetaData() {
@@ -48,6 +54,7 @@ public class SessionGroupMetaData {
     public int getTotalStudents() { return totalStudents; }
     public int getGroupIndex() { return groupIndex; }
     public int getGroupCount() { return groupCount; }
+    public List<Student> getEligibleStudents() { return eligibleStudents; }
 
     public void setSemester(int semester) { this.semester = semester; }
     public void setModuleId(String moduleId) { this.moduleId = moduleId; }
@@ -57,6 +64,9 @@ public class SessionGroupMetaData {
     public void setTotalStudents(int totalStudents) { this.totalStudents = totalStudents; }
     public void setGroupIndex(int groupIndex) { this.groupIndex = groupIndex; }
     public void setGroupCount(int groupCount) { this.groupCount = groupCount; }
+    public void setEligibleStudents(List<Student> eligibleStudents) {
+        this.eligibleStudents = eligibleStudents;
+    }
 
     @Override
     public String toString() {
