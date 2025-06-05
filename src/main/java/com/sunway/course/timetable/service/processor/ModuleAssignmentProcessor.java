@@ -204,19 +204,10 @@ public class ModuleAssignmentProcessor {
                     continue;
                 }
 
-                for (Student student : result.getAssignedStudents()) {
-                    Session session = new Session();
-                    session.setType(meta.getType());
-                    session.setTypeGroup(meta.getTypeGroup());
-                    session.setLecturer(lecturerService.getLecturerByName(lecturerName).orElse(null));
-                    session.setDay(result.getDay());
-                    session.setStartTime(result.getStartTime());
-                    session.setEndTime(result.getEndTime());
-                    session.setStudent(student);
+                Lecturer lecturer = lecturerService.getLecturerByName(lecturerName).orElse(null);
+                assignStudentsToSession(meta, result.getDay(), result.getStartTime(), result.getEndTime(), 
+                        lecturer, result.getVenue(), result.getAssignedStudents());
 
-                    sessionToModuleIdMap.put(session, meta.getModuleId());
-                    sessionVenueMap.put(session, result.getVenue());
-                }
             }
 
             // === 3. Print or Export Final Schedule
@@ -301,14 +292,7 @@ public class ModuleAssignmentProcessor {
         SessionAssignmentActor.SessionAssignmentCommand response = futureResponse.toCompletableFuture().join();
 
         if (response instanceof SessionAssignmentActor.SessionAssigned assigned) {
-            String day = switch (assigned.dayIndex) {
-                case 0 -> "Monday";
-                case 1 -> "Tuesday";
-                case 2 -> "Wednesday";
-                case 3 -> "Thursday";
-                case 4 -> "Friday";
-                default -> throw new IllegalArgumentException("Invalid day index: " + assigned.dayIndex);
-            };
+            String day = getDayName(assigned.dayIndex);
 
             LocalTime start = LocalTime.of(8, 0).plusMinutes(assigned.startIndex * 30L);
             LocalTime end = start.plusMinutes(assigned.durationSlots * 30L);
@@ -348,16 +332,9 @@ public class ModuleAssignmentProcessor {
                 log.warn("Lecturer {} not found in DB, skipping session creation.", lecturerName);
                 continue;
             }
-            Lecturer lecturer = lecturerOpt.get();
 
-            String day = switch (opt.day()) {
-                case 0 -> "Monday";
-                case 1 -> "Tuesday";
-                case 2 -> "Wednesday";
-                case 3 -> "Thursday";
-                case 4 -> "Friday";
-                default -> throw new IllegalArgumentException("Invalid day index: " + opt.day());
-            };
+            Lecturer lecturer = lecturerOpt.get();
+            String day = getDayName(opt.day());
 
             LocalTime start = LocalTime.of(8, 0).plusMinutes(opt.startSlot() * 30L);
             LocalTime end = start.plusMinutes(4 * 30L); // 2 hours assumed
@@ -365,23 +342,7 @@ public class ModuleAssignmentProcessor {
             // Assign eligible + available students
             List<Student> assignedStudents = studentAssignments.getOrDefault(meta, List.of());
 
-            for (Student student : assignedStudents) {
-                Session session = new Session();
-                session.setType(meta.getType());
-                session.setTypeGroup(meta.getTypeGroup());
-                session.setLecturer(lecturer);
-                session.setDay(day);
-                session.setStartTime(start);
-                session.setEndTime(end);
-                session.setStudent(student);
-
-                sessionToModuleIdMap.put(session, meta.getModuleId());
-                sessionVenueMap.put(session, opt.venue());
-                sessionBySemesterAndModule
-                    .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
-                    .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())
-                    .add(session);
-            }
+            assignStudentsToSession(meta, day, start, end, lecturer, opt.venue(), assignedStudents);
         }
 
         log.info("Backtracking scheduling completed. Total sessions created: {}", sessionToModuleIdMap.size());
@@ -480,6 +441,40 @@ public class ModuleAssignmentProcessor {
         }
     }
 
+    private void assignStudentsToSession(SessionGroupMetaData meta, String day, LocalTime start, LocalTime end, 
+                                     Lecturer lecturer, Venue venue, List<Student> assignedStudents) {
+        for (Student student : assignedStudents) {
+            Session session = new Session();
+            session.setType(meta.getType());
+            session.setTypeGroup(meta.getTypeGroup());
+            session.setLecturer(lecturer);
+            session.setDay(day);
+            session.setStartTime(start);
+            session.setEndTime(end);
+            session.setStudent(student);
+
+            sessionToModuleIdMap.put(session, meta.getModuleId());
+            sessionVenueMap.put(session, venue);
+            sessionBySemesterAndModule
+                .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
+                .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())
+                .add(session);
+        }
+    }
+
+
+    private String getDayName(int index) {
+        return switch (index) {
+            case 0 -> "Monday";
+            case 1 -> "Tuesday";
+            case 2 -> "Wednesday";
+            case 3 -> "Thursday";
+            case 4 -> "Friday";
+            default -> throw new IllegalArgumentException("Invalid day index: " + index);
+        };
+    }
+
+
     private int getDurationHours(String type) {
         return switch (type.toUpperCase()) {
             case "LECTURE" -> 2;
@@ -489,51 +484,6 @@ public class ModuleAssignmentProcessor {
             default -> 1;
         };
     }
-
-
-    // private void applyConstraintsScheduling(List<Session> sessions){
-    //     // 1. Generate domain (valid time slots) for each session
-    //     List<TimeSlot> domain = TimeSlotFactory.generateValidTimeSlots();
-
-    //     // 2.  Wrap sessions as CSP variables
-    //     List<Variable> variables = sessions.stream()
-    //             .map(session -> new Variable(session, new ArrayList<>(domain)))
-    //             .collect(Collectors.toList());
-
-    //     // 3. Create a constraint group
-    //     ConstraintGroup constraintGroup = new ConstraintGroup();
-    //     constraintGroup.addConstraint(new LecturerClashConstraint(variables));
-    //     constraintGroup.addConstraint(new StudentClashConstraint(variables));
-    //     constraintGroup.addConstraint(new ModuleConflictConstraint(variables));
-    //     constraintGroup.addConstraint(new UniqueTypePerWeekConstraint(variables));
-
-    //     // 4. Solve using AC-3 preprocessing and Backtracking
-    //     AC3 ac3 = new AC3();
-    //     if(!ac3.runAC3(variables, List.of(constraintGroup))) {
-    //         throw new IllegalStateException("No valid schedule possible under constraints.");
-    //     }
-
-    //     // Create and pass in empty assignment map
-    //     Map<Variable, TimeSlot> assignment = new HashMap<>();
-    //     BacktrackingSolver solver = new BacktrackingSolver();
-
-    //     boolean success = solver.solve(assignment, variables, List.of(constraintGroup));
-    //     if (!success) {
-    //         System.out.println("Backtracking failed: No solution found.");
-    //         return;
-    //     }
-
-    //     // 5. Assign time slot back to sessions
-    //     for (Map.Entry<Variable, TimeSlot> entry : assignment.entrySet()) {
-    //         Session session = entry.getKey().getSession();
-    //         TimeSlot timeSlot = entry.getValue();
-    //         session.setDay(timeSlot.getDay().toString());
-    //         session.setStartTime(timeSlot.getStartTime());
-    //         session.setEndTime(timeSlot.getEndTime());
-    //     }
-
-    //     System.out.println("Time slots successfully assigned to sessions");
-    // }
 }
 
 
