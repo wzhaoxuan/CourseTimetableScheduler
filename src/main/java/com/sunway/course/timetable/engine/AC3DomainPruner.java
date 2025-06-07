@@ -2,16 +2,20 @@ package com.sunway.course.timetable.engine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 public class AC3DomainPruner {
     private static final Logger log = LoggerFactory.getLogger(AC3DomainPruner.class);
@@ -24,15 +28,40 @@ public class AC3DomainPruner {
             StudentAvailabilityMatrix studentMatrix,
             List<Venue> allVenues,
             SessionGroupMetaData meta,
-            List<Student> eligibleStudents
+            List<Student> eligibleStudents,
+            LecturerServiceImpl lecturerService,
+            LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
     ) {
         List<AssignmentOption> domain = new ArrayList<>();
 
         int durationSlots = meta.getType().equalsIgnoreCase("Lecture") ? 4 : 4; // 2 hours (4 * 30-min)
         int maxDay = 5, maxSlot = 20;
         int requiredCapacity;
+        
+         Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(meta.getLecturerName());
+        if (lecturerOpt.isEmpty()) {
+            log.warn("Lecturer {} not found, skipping pruning.", meta.getLecturerName());
+            return domain;
+        }
+
+        Long lecturerId = lecturerOpt.get().getId();
 
         for (int day = 0; day < maxDay; day++) {
+
+            // Skip days where lecturer is marked unavailable (e.g., from weekday constraint)
+            String dayName = switch (day) {
+                        case 0 -> "Monday";
+                        case 1 -> "Tuesday";
+                        case 2 -> "Wednesday";
+                        case 3 -> "Thursday";
+                        case 4 -> "Friday";
+                        default -> "Unknown";
+            };
+
+            if (lecturerDayAvailabilityUtil.isUnavailable(lecturerId, dayName)) {
+                continue;
+            }
+
             for (int start = 0; start <= maxSlot - durationSlots; start++) {
                 int end = start + durationSlots;
                 for (Venue venue : allVenues) {

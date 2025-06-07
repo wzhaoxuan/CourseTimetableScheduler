@@ -53,7 +53,6 @@ public class VenueAssignment {
     public Session getSession(){
         return session;
     }
-    
     public void setSession(Session session){
         this.session = session;
     }

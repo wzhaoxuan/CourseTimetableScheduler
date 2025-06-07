@@ -11,13 +11,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
+import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
+import com.sunway.course.timetable.service.WeekDayConstraintServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
+import com.sunway.course.timetable.service.excelReader.LecturerAvailablityExcelReaderService;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
@@ -83,6 +86,22 @@ public class RunnerUtil {
     // }
 
     @Bean
+    public CommandLineRunner readlecturerUnavailableExcel(LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService) {
+        return args -> {
+            String filePath = "src/main/resources/file/LecturerUnavailable.xlsx";
+            try {
+                // Read the Lecturer Availability Excel file
+
+                lecturerAvailablityExcelReaderService.readLecturerAvailabilityExcelFile(filePath);
+                System.out.println("Lecturer availability processed successfully.");
+            } catch (Exception e) {
+                System.err.println("Error reading Lecturer Availability Excel file: " + e.getMessage());
+                e.printStackTrace();
+            }
+        };
+    }
+
+    @Bean
     @Profile("!test")  // Exclude from tests
     public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
                                                     LecturerServiceImpl lecturerService,
@@ -99,7 +118,8 @@ public class RunnerUtil {
                                                     ActorSystem<Void> actorSystem,
                                                     ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                                     ProgrammeDistributionClustering clustering,
-                                                    TimetableExcelExporter timetableExcelExporter) {
+                                                    TimetableExcelExporter timetableExcelExporter,
+                                                    LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -141,7 +161,8 @@ public class RunnerUtil {
                                                                                     actorSystem,
                                                                                     venueCoordinatorActor,
                                                                                     clustering,
-                                                                                    timetableExcelExporter);
+                                                                                    timetableExcelExporter,
+                                                                                    lecturerDayAvailabilityUtil);
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
@@ -185,18 +206,6 @@ public class RunnerUtil {
     //     };
     // }
 
-    // @Bean
-    // public CommandLineRunner venueMatrix(VenueAvailabilityMatrix venueAvailabilityMatrix) {
-    //     return args -> {
-    //         logger.info(">>> Venue Matrix <<<");
-    //     };
-    // }
 
-    // @Bean
-    // public CommandLineRunner akkaRun(FullActorTest fullActorTest) {
-    //     return args -> {
-    //         logger.info(">>> Running Venue Actor Test <<<");
-    //         fullActorTest.runTest();
-    //     };
-    // }
+
 }

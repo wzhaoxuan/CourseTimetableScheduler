@@ -46,5 +46,6 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     public Optional<VenueAssignment> getVenueBySession(Session session){
         return venueAssignmentRepository.findBySession(session);
+
     }
 }

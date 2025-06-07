@@ -16,10 +16,12 @@ import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 public class BacktrackingScheduler {
     private static final Logger log = LoggerFactory.getLogger(BacktrackingScheduler.class);
@@ -32,6 +34,8 @@ public class BacktrackingScheduler {
     private final Map<SessionGroupMetaData, AssignmentOption> assignment;
     private final Map<SessionGroupMetaData, List<Student>> studentAssignments;
     private final VenueDistanceServiceImpl venueDistanceService;
+    public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
+    public final LecturerServiceImpl lecturerService;
     private final Map<Long, Integer> studentAssignmentCount = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>(); // Map<studentId, Set<module-type>> e.g., "CSC1024-PRACTICAL"
 
@@ -44,19 +48,25 @@ public class BacktrackingScheduler {
                                   VenueAvailabilityMatrix venueMatrix,
                                   StudentAvailabilityMatrix studentMatrix,
                                   List<Venue> venues,
-                                  VenueDistanceServiceImpl venueDistanceService) {
+                                  VenueDistanceServiceImpl venueDistanceService,
+                                  LecturerServiceImpl lecturerService,
+                                  LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+                                  ) {
         this.lecturerMatrix = lecturerMatrix;
         this.venueMatrix = venueMatrix;
         this.studentMatrix = studentMatrix;
         this.sessions = sessions;
         this.venueDistanceService = venueDistanceService;
+         this.lecturerService = lecturerService;
+        this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.domains = new HashMap<>();
         this.assignment = new HashMap<>();
         this.studentAssignments = new HashMap<>();
 
         for (SessionGroupMetaData meta : sessions) {
             List<AssignmentOption> pruned = AC3DomainPruner.pruneDomain(
-                lecturerMatrix, venueMatrix, studentMatrix, venues, meta, meta.getEligibleStudents()
+                lecturerMatrix, venueMatrix, studentMatrix, venues, meta, meta.getEligibleStudents(),
+                lecturerService, lecturerDayAvailabilityUtil
             );
 
             if (pruned.isEmpty()) {

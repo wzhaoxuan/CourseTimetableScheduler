@@ -7,9 +7,11 @@ import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -38,6 +40,9 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         public final VenueAvailabilityMatrix venueMatrix;
         public final StudentAvailabilityMatrix studentMatrix;
         public final List<Venue> allVenues;
+        public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
+        public final LecturerServiceImpl lecturerService;
+
 
         public AssignSession(int durationHours, int minCapacity, String lecturerName,
                               Module module, List<Student> eligibleStudents,
@@ -48,7 +53,10 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                               LecturerAvailabilityMatrix lecturerMatrix,
                               VenueAvailabilityMatrix venueMatrix,
                               StudentAvailabilityMatrix studentMatrix,
-                              List<Venue> allVenues) {
+                              List<Venue> allVenues,
+                              LecturerServiceImpl lecturerService,
+                              LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+                              ) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
             this.lecturerName = lecturerName;
@@ -64,6 +72,9 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             this.venueMatrix = venueMatrix;
             this.studentMatrix = studentMatrix;
             this.allVenues = allVenues;
+            this.lecturerService = lecturerService;
+            this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
+            
         }
     }
 
@@ -136,7 +147,9 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             msg.studentMatrix,
             msg.allVenues,
             meta,
-            msg.eligibleStudents
+            msg.eligibleStudents,
+            msg.lecturerService,
+            msg.lecturerDayAvailabilityUtil
         );
 
         // Forward the request to the VenueCoordinatorActor

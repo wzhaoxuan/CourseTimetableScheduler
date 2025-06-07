@@ -48,6 +48,7 @@ import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
+import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 import com.sunway.course.timetable.util.tracker.CreditHourTracker;
 import com.sunway.course.timetable.util.TimetableExcelExporter;
 
@@ -82,6 +83,7 @@ public class ModuleAssignmentProcessor {
     private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
     private final VenueSorterService venueSorterService;
     private final TimetableExcelExporter timetableExcelExporter;
+    public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
 
     // === Singleton Matrices ===
     private final VenueAvailabilityMatrix venueMatrix;
@@ -118,7 +120,8 @@ public class ModuleAssignmentProcessor {
                                       ActorSystem<Void> actorSystem,
                                       ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                       ProgrammeDistributionClustering clustering,
-                                      TimetableExcelExporter timetableExcelExporter
+                                      TimetableExcelExporter timetableExcelExporter,
+                                      LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -135,6 +138,7 @@ public class ModuleAssignmentProcessor {
         this.venueCoordinatorActor = venueCoordinatorActor;
         this.clustering = clustering;
         this.timetableExcelExporter = timetableExcelExporter;
+        this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.creditTracker = new CreditHourTracker();
     }
  
@@ -323,7 +327,9 @@ public class ModuleAssignmentProcessor {
                     lecturerMatrix,
                     venueMatrix,
                     studentMatrix,
-                    venueMatrix.getSortedVenues()
+                    venueMatrix.getSortedVenues(),
+                    lecturerService,
+                    lecturerDayAvailabilityUtil
             ),
             Duration.ofSeconds(100),
             actorSystem.scheduler()
@@ -356,7 +362,8 @@ public class ModuleAssignmentProcessor {
 
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
-            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, venueDistanceService
+            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
+            venueDistanceService, lecturerService, lecturerDayAvailabilityUtil
         );
 
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
