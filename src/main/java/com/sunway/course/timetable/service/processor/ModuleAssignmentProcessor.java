@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
@@ -31,19 +33,23 @@ import com.sunway.course.timetable.model.assignment.SessionAssignmentResult;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
+import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
+import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
-import com.sunway.course.timetable.service.tracker.CreditHourTracker;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
+import com.sunway.course.timetable.util.tracker.CreditHourTracker;
+import com.sunway.course.timetable.util.TimetableExcelExporter;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
@@ -69,11 +75,13 @@ public class ModuleAssignmentProcessor {
     private final LecturerServiceImpl lecturerService;
     private final SessionServiceImpl sessionService;
     private final PlanContentServiceImpl planContentService;
-    private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
+    private final VenueDistanceServiceImpl venueDistanceService;
+    private final VenueAssignmentServiceImpl venueAssignmentService;
     private final ModuleServiceImpl moduleService;
     private final ProgrammeDistributionClustering clustering;
-    private final VenueDistanceServiceImpl venueDistanceService;
+    private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
     private final VenueSorterService venueSorterService;
+    private final TimetableExcelExporter timetableExcelExporter;
 
     // === Singleton Matrices ===
     private final VenueAvailabilityMatrix venueMatrix;
@@ -92,35 +100,41 @@ public class ModuleAssignmentProcessor {
     private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
     private Map<Session, String> sessionToModuleIdMap = new HashMap<>();
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
-    // private final int MAX_GROUP_SIZE = 35;
+    private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
+
 
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
-                                      ProgrammeDistributionClustering clustering,
-                                      ActorSystem<Void> actorSystem,
+                                     ModuleServiceImpl moduleService,
+                                      SessionServiceImpl sessionService,
+                                      PlanContentServiceImpl planContentService,
                                       VenueDistanceServiceImpl venueDistanceService,
+                                      VenueAssignmentServiceImpl venueAssignmentService,
                                       VenueSorterService venueSorterService,
+                                      SessionGroupPreprocessorService sessionGroupPreprocessorService,
                                       VenueAvailabilityMatrix venueMatrix,
                                       LecturerAvailabilityMatrix lecturerMatrix,
                                       StudentAvailabilityMatrix studentMatrix,
+                                      ActorSystem<Void> actorSystem,
                                       ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
-                                      SessionServiceImpl sessionService,
-                                      PlanContentServiceImpl planContentService,
-                                      ModuleServiceImpl moduleService,
-                                      SessionGroupPreprocessorService sessionGroupPreprocessorService) {
+                                      ProgrammeDistributionClustering clustering,
+                                      TimetableExcelExporter timetableExcelExporter
+                                      ) {
         this.lecturerService = lecturerService;
-        this.clustering = clustering;
-        this.actorSystem = actorSystem;
+        this.moduleService = moduleService;
+        this.sessionService = sessionService;
+        this.planContentService = planContentService;
         this.venueDistanceService = venueDistanceService;
+        this.venueAssignmentService = venueAssignmentService;
         this.venueSorterService = venueSorterService;
+        this.sessionGroupPreprocessorService = sessionGroupPreprocessorService;
         this.venueMatrix = venueMatrix;
         this.lecturerMatrix = lecturerMatrix;
         this.studentMatrix = studentMatrix;
+        this.actorSystem = actorSystem;
         this.venueCoordinatorActor = venueCoordinatorActor;
-        this.sessionService = sessionService;
-        this.planContentService = planContentService;
-        this.moduleService = moduleService;
-        this.sessionGroupPreprocessorService = sessionGroupPreprocessorService;
+        this.clustering = clustering;
+        this.timetableExcelExporter = timetableExcelExporter;
         this.creditTracker = new CreditHourTracker();
     }
  
@@ -205,10 +219,17 @@ public class ModuleAssignmentProcessor {
         for (SessionGroupMetaData meta : allMetaData) {
             List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
             String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+            List<Student> filteredEligibleStudents = eligibleStudents.stream()
+                .filter(s -> {
+                    String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
+                    return !studentAssignedTypes.getOrDefault(s.getId(), Set.of()).contains(key);
+                })
+                .toList();
+
 
             SessionAssignmentResult result = scheduleSessionViaActors(
                 meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
-                meta.getTotalStudents(), lecturerName, eligibleStudents,
+                meta.getTotalStudents(), lecturerName, filteredEligibleStudents,
                 meta.getGroupIndex(), meta.getGroupCount()
             );
 
@@ -225,36 +246,14 @@ public class ModuleAssignmentProcessor {
 
         if (!failedMeta.isEmpty()) {
             log.info("[HYBRID] Falling back to backtracking for {} failed session groups", failedMeta.size());
-
-            List<Venue> allVenues = venueMatrix.getSortedVenues();
-            BacktrackingScheduler fallback = new BacktrackingScheduler(
-                failedMeta, lecturerMatrix, venueMatrix, studentMatrix, allVenues, venueDistanceService
-            );
-
-            Map<SessionGroupMetaData, AssignmentOption> result = fallback.solve();
-            Map<SessionGroupMetaData, List<Student>> studentAssignments = fallback.getStudentAssignments();
-
-            for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : result.entrySet()) {
-                SessionGroupMetaData meta = entry.getKey();
-                AssignmentOption opt = entry.getValue();
-
-                Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(FilterUtil.extractName(meta.getLecturerName()));
-                if (lecturerOpt.isEmpty()) continue;
-                Lecturer lecturer = lecturerOpt.get();
-
-                String day = getDayName(opt.day());
-                LocalTime start = LocalTime.of(8, 0).plusMinutes(opt.startSlot() * 30L);
-                LocalTime end = start.plusMinutes(4 * 30L); // 2 hours assumed
-
-                List<Student> assigned = studentAssignments.getOrDefault(meta, List.of());
-                assignStudentsToSession(meta, day, start, end, lecturer, opt.venue(), assigned);
-            }
+            scheduleWithBacktracking(failedMeta);
         }
 
-        log.info("[HYBRID] Final session count: {}", sessionToModuleIdMap.size());
+        log.info("Total sessions created: {}", sessionToModuleIdMap.size());
         printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
         persistAndGroupSessions(sessionToModuleIdMap);
         actorSystem.terminate();
+        exportPersistedTimetable();
     }
 
 
@@ -297,7 +296,11 @@ public class ModuleAssignmentProcessor {
             : Collections.emptyList();
 
         int durationHours = getDurationHours(type);
-        String actorName = "sessionAssigner-" + typeGroup.replaceAll("\\W+", "");
+        String actorName = String.format("sessionAssigner-%s-%s-%d",
+                moduleId.replaceAll("\\W+", ""),
+                typeGroup.replaceAll("\\W+", ""),
+                semester);
+
 
         Module module = moduleService.getModuleById(moduleId)
                 .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
@@ -383,9 +386,6 @@ public class ModuleAssignmentProcessor {
         }
 
         log.info("Backtracking scheduling completed. Total sessions created: {}", sessionToModuleIdMap.size());
-        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
-        persistAndGroupSessions(sessionToModuleIdMap);
-        actorSystem.terminate();
     }
 
 
@@ -398,6 +398,21 @@ public class ModuleAssignmentProcessor {
 
             // Persist session
             Session savedSession = sessionService.saveSession(session);
+            Venue venue = sessionVenueMap.get(session);
+            if (venue != null) {
+                VenueAssignment assignment = new VenueAssignment();
+
+                VenueAssignmentId id = new VenueAssignmentId();
+                id.setVenueId(venue.getId());
+                id.setSessionId(savedSession.getId());
+
+                assignment.setVenueAssignmentId(id);
+                assignment.setVenue(venue);
+                assignment.setSession(savedSession);
+
+                venueAssignmentService.saveAssignment(assignment);
+            }
+
 
             // Fetch module by ID
             Optional<Module> optionalModule = moduleService.getModuleById(moduleId);
@@ -408,10 +423,11 @@ public class ModuleAssignmentProcessor {
             Module module = optionalModule.get();
 
             // Save PlanContent relation
-            PlanContent planContent = new PlanContent();
             PlanContentId planContentId = new PlanContentId();
             planContentId.setModuleId(module.getId());
             planContentId.setSessionId(savedSession.getId());
+
+            PlanContent planContent = new PlanContent();
             planContent.setPlanContentId(planContentId);
             planContent.setModule(module);
             planContent.setSession(savedSession);
@@ -427,6 +443,28 @@ public class ModuleAssignmentProcessor {
                 .add(savedSession);
         }
     }
+
+    @Transactional(readOnly = true)
+    public void exportPersistedTimetable() {
+        Map<Integer, Map<String, List<Session>>> sessionMap = new HashMap<>();
+
+        List<PlanContent> allPlanContents = planContentService.getAllPlanContents();  // you must implement this
+        for (PlanContent pc : allPlanContents) {
+            Session session = pc.getSession();
+            String moduleId = pc.getModule().getId();
+
+            Integer semester = studentSemesterMap.get(session.getStudent().getId());
+            if (semester == null) continue;
+
+            sessionMap
+                .computeIfAbsent(semester, k -> new HashMap<>())
+                .computeIfAbsent(moduleId, k -> new ArrayList<>())
+                .add(session);
+        }
+
+        timetableExcelExporter.exportTimetableBySemester(sessionMap);
+    }
+
 
     private void printFinalizedSchedule(Map<Session, String> sessionToModuleIdMap, Map<Session, Venue> sessionVenueMap) {
         Map<String, Map<String, Map<String, Map<String, List<Session>>>>> categorized = new TreeMap<>();
@@ -457,7 +495,7 @@ public class ModuleAssignmentProcessor {
                     String type = typeEntry.getKey();
 
                     for (var groupEntry : typeEntry.getValue().entrySet()) {
-                        String group = groupEntry.getKey();
+                        String group = groupEntry.getKey().split("-")[2];
                         List<Session> sessions = groupEntry.getValue();
 
                         for (Session s : sessions) {
@@ -492,6 +530,10 @@ public class ModuleAssignmentProcessor {
 
             sessionToModuleIdMap.put(session, meta.getModuleId());
             sessionVenueMap.put(session, venue);
+
+            String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
+            studentAssignedTypes.computeIfAbsent(student.getId(), k -> new HashSet<>()).add(key);
+
             sessionBySemesterAndModule
                 .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
                 .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())

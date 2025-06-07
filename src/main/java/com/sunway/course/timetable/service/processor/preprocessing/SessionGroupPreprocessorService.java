@@ -31,6 +31,7 @@ public class SessionGroupPreprocessorService {
         SubjectPlanInfo plan = data.getSubjectPlanInfo();
         Set<Student> allStudents = data.getEligibleStudents();
 
+        // === GROUP STUDENTS BY SEMESTER ===
         Map<Integer, List<Student>> studentsBySemester = new HashMap<>();
         for (Student student : allStudents) {
             Integer semester = studentSemesterMap.get(student.getId());
@@ -41,61 +42,59 @@ public class SessionGroupPreprocessorService {
 
         List<SessionGroupMetaData> metaDataList = new ArrayList<>();
 
-        for (var entry : studentsBySemester.entrySet()) {
-            int semester = entry.getKey();
-            List<Student> students = entry.getValue();
-            int totalStudents = students.size();
+        // === 1. CREATE SINGLE LECTURE (for combined semesters) ===
+        if (plan.hasLecture()) {
+            String lectureGroup = plan.getSubjectCode() + "-Lecture-G1";
+            List<Student> allStudentsCombined = allStudents.stream().toList();
 
-            if (plan.hasLecture()) {
-                String group = plan.getSubjectCode() + "-Lecture-G1";
-                metaDataList.add(new SessionGroupMetaData(
-                    semester,
-                    module.getId(),
-                    "Lecture",
-                    group,
-                    plan.getMainLecturer(),
-                    totalStudents,
-                    0,
-                    1,
-                    students
-                ));
-            }
-
-            List<SessionTypeInfo> sessionTypes = List.of(
-                new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getTutorialTutor()),
-                new SessionTypeInfo("Practical", plan.hasPractical(), plan.getPracticalTutor()),
-                new SessionTypeInfo("Workshop", plan.hasWorkshop(), plan.getWorkshopTutor())
+            SessionGroupMetaData lectureMeta = new SessionGroupMetaData(
+                0, // semester irrelevant for lecture
+                module.getId(),
+                "Lecture",
+                lectureGroup,
+                plan.getMainLecturer(),
+                allStudentsCombined.size(),
+                0,
+                1,
+                allStudentsCombined
             );
+            metaDataList.add(lectureMeta);
+        }
 
-            int groupCount = (int) Math.ceil((double) totalStudents / MAX_GROUP_SIZE);
+        // === 2. CREATE PRACTICAL / TUTORIAL / WORKSHOP GROUPS PER SEMESTER ===
+        List<SessionTypeInfo> sessionTypes = List.of(
+            new SessionTypeInfo("Tutorial", plan.hasTutorial(), plan.getTutorialTutor()),
+            new SessionTypeInfo("Practical", plan.hasPractical(), plan.getPracticalTutor()),
+            new SessionTypeInfo("Workshop", plan.hasWorkshop(), plan.getWorkshopTutor())
+        );
 
-            for (SessionTypeInfo typeInfo : sessionTypes) {
-                if (!typeInfo.hasType) continue;
+        List<Student> allStudentsSorted = new ArrayList<>(allStudents);
+        // allStudentsSorted.sort(Comparator.comparingLong(Student::getId));  // optional: for deterministic ordering
 
-                List<String> tutors = typeInfo.tutor();
+        int totalStudents = allStudentsSorted.size();
+        int groupCount = (int) Math.ceil((double) totalStudents / MAX_GROUP_SIZE);
 
-                for (int i = 0; i < groupCount; i++) {
-                    String group = plan.getSubjectCode() + "-" + typeInfo.type() + "-G" + (i + 1);
-                    String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
+        for (SessionTypeInfo typeInfo : sessionTypes) {
+            if (!typeInfo.hasType) continue;
+            List<String> tutors = typeInfo.tutor();
 
-                    // Slice out the group
-                    int startIdx = i * MAX_GROUP_SIZE;
-                    int endIdx = Math.min(startIdx + MAX_GROUP_SIZE, totalStudents);
-                    List<Student> groupStudents = students.subList(startIdx, endIdx);
+            for (int i = 0; i < groupCount; i++) {
+                List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups
 
-                    SessionGroupMetaData metaData = new SessionGroupMetaData(
-                        semester,
-                        module.getId(),
-                        typeInfo.type(),
-                        group,
-                        tutor,
-                        MAX_GROUP_SIZE,
-                        i,
-                        groupCount,
-                        groupStudents
-                    );
-                    metaDataList.add(metaData);
-                }
+                String groupName = plan.getSubjectCode() + "-" + typeInfo.type() + "-G" + (i + 1);
+                String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
+
+                metaDataList.add(new SessionGroupMetaData(
+                    0,  // semester not relevant due to merged input
+                    module.getId(),
+                    typeInfo.type(),
+                    groupName,
+                    tutor,
+                    MAX_GROUP_SIZE,
+                    i,
+                    groupCount,
+                    groupStudents
+                ));
             }
         }
 

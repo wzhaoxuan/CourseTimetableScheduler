@@ -1,6 +1,8 @@
-package com.sunway.course.timetable.service.tracker;
+package com.sunway.course.timetable.util.tracker;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.sunway.course.timetable.model.Student;

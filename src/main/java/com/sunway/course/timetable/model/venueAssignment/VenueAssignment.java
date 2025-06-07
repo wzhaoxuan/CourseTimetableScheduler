@@ -41,4 +41,20 @@ public class VenueAssignment {
     public void setVenueAssignmentId(VenueAssignmentId venueAssignmentId) {
         this.venueAssignmentId = venueAssignmentId;
     }
+
+    public Venue getVenue(){
+        return venue;
+    }
+
+    public void setVenue(Venue venue){
+        this.venue = venue;
+    }
+
+    public Session getSession(){
+        return session;
+    }
+    
+    public void setSession(Session session){
+        this.session = session;
+    }
 }

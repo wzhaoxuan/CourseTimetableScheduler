@@ -2,7 +2,7 @@ package com.sunway.course.timetable.service;
 import java.util.Optional;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.sunway.course.timetable.model.Session;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.interfaces.services.PlanContentService;
@@ -46,5 +46,9 @@ public class PlanContentServiceImpl implements PlanContentService{
     @Override
     public void deletePlanContent(PlanContentId id) {
         planContentRepository.deleteById(id);
+    }
+
+    public Optional<PlanContent> getModuleBySession(Session session) {
+         return planContentRepository.findBySession(session);
     }
 }

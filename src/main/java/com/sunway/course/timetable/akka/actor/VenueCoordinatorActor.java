@@ -183,19 +183,20 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         // Sort pruned domain by preferred venue proximity (if applicable)
         List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);
         if (msg.preferredVenues != null && !msg.preferredVenues.isEmpty()) {
-            sortedDomain.sort(Comparator.comparingInt((AssignmentOption opt) -> {
-                String idStr = String.valueOf(opt.venue().getId());
-                return msg.preferredVenues.contains(idStr)
-                    ? msg.preferredVenues.indexOf(idStr)
-                    : Integer.MAX_VALUE;
-            })
-            .thenComparingInt(opt -> opt.venue().getCapacity())); // Best-fit by capacity
+             // Best-fit by capacity
+            sortedDomain.sort(Comparator
+                .comparingInt((AssignmentOption opt) -> {
+                    int surplus = opt.venue().getCapacity() - msg.minCapacity;
+                    return (surplus < 0) ? Integer.MAX_VALUE : surplus; // penalize too-small rooms
+                })
+                .thenComparing(opt -> opt.venue().getName()) // optional: stable tie-breaker
+            );
         } else {
             sortedDomain.sort(Comparator.comparingInt(opt -> opt.venue().getCapacity()));
         }
 
         // Store for retry
-        this.domainQueue = new ArrayList<>(msg.prunedDomain);
+        this.domainQueue = sortedDomain;
         this.domainIndex = 0;
         this.currentRequester = msg.replyTo;
         this.currentRequest = msg;
@@ -227,7 +228,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         return this;
     }
 
-        private Behavior<VenueCoordinatorCommand> onVenueAccepted(VenueAcceptedMsg msg) {
+    private Behavior<VenueCoordinatorCommand> onVenueAccepted(VenueAcceptedMsg msg) {
         var accepted = msg.accepted;
         var req = currentRequest;
 
@@ -243,13 +244,13 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                 .filter(s -> studentAvailability.isAvailable(s.getId(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots))
                 .toList();
         } else {
-            int groupSize = (int) Math.ceil((double) allEligible.size() / req.groupCount);
-            int from = req.groupIndex * groupSize;
-            int to = Math.min(from + groupSize, allEligible.size());
-
-            assigned = allEligible.subList(from, to).stream()
+            final int MAX_GROUP_SIZE = 35;
+            assigned = allEligible.stream()
                 .filter(s -> studentAvailability.isAvailable(s.getId(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots))
+                .sorted(Comparator.comparingLong(Student::getId)) // Optional: stable assignment
+                .limit(MAX_GROUP_SIZE)
                 .toList();
+
         }
 
         if (assigned.isEmpty()) {

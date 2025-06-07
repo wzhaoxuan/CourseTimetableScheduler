@@ -3,8 +3,6 @@ import com.sunway.course.timetable.interfaces.PdfExportService;
 import com.sunway.course.timetable.util.GridManagerUtil;
 import com.sunway.course.timetable.util.PdfExporterUtil;
 
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
 import javafx.scene.Node;
 
 import com.itextpdf.layout.properties.UnitValue;

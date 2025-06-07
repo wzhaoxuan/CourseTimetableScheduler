@@ -1,5 +1,17 @@
 package com.sunway.course.timetable.engine;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
@@ -8,12 +20,6 @@ import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BacktrackingScheduler {
     private static final Logger log = LoggerFactory.getLogger(BacktrackingScheduler.class);
@@ -30,6 +36,8 @@ public class BacktrackingScheduler {
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>(); // Map<studentId, Set<module-type>> e.g., "CSC1024-PRACTICAL"
 
     private final int MIN_GROUP_SIZE = 5;
+    private static final int MAX_GROUP_SIZE = 35;
+
 
     public BacktrackingScheduler(List<SessionGroupMetaData> sessions,
                                   LecturerAvailabilityMatrix lecturerMatrix,
@@ -56,7 +64,15 @@ public class BacktrackingScheduler {
             }
 
             String referenceVenue = venues.get(0).getName();
-            pruned.sort(Comparator.comparingDouble(o -> venueDistanceService.getDistanceScore(referenceVenue, o.venue().getName())));
+            int requiredCapacity = meta.getTotalStudents();
+
+            pruned.sort(Comparator
+                .comparingInt((AssignmentOption opt) -> {
+                    int surplus = opt.venue().getCapacity() - requiredCapacity;
+                    return (surplus < 0) ? Integer.MAX_VALUE : surplus; // penalize too-small rooms
+                })
+                .thenComparingDouble(opt -> venueDistanceService.getDistanceScore(referenceVenue, opt.venue().getName()))
+            );
 
             domains.put(meta, pruned);
         }
@@ -125,7 +141,7 @@ public class BacktrackingScheduler {
             .filter(s -> studentMatrix.isAvailable(s.getId(), day, start, end))
             .filter(s -> !isAssignedToSameTypeGroup(meta, s.getId()))
             .sorted(Comparator.comparingInt(s -> studentAssignmentCount.getOrDefault(s.getId(), 0)))
-            .limit(meta.getTotalStudents())
+            .limit(MAX_GROUP_SIZE)
             .collect(Collectors.toList());
 
         for (Student s : assigned) {

@@ -24,7 +24,7 @@ import com.sunway.course.timetable.util.ExcelUtil;
 @Service
 public class StudentSemExcelReaderService {
 
-    private static Logger logger = LoggerFactory.getLogger(ProgrammeExcelReaderService.class);
+    private static Logger logger = LoggerFactory.getLogger(StudentSemExcelReaderService.class);
 
     public Map<Integer, List<StudentSem>> readStudentSemExcelFile(String filePath) throws FileNotFoundException {
         Map<Integer, List<StudentSem>> studentSemMap = new HashMap<>();

@@ -23,6 +23,7 @@ import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
@@ -84,19 +85,21 @@ public class RunnerUtil {
     @Bean
     @Profile("!test")  // Exclude from tests
     public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
-                                                 LecturerServiceImpl lecturerService,
-                                                 ProgrammeDistributionClustering clustering,
-                                                 ActorSystem<Void> actorSystem,
-                                                 VenueDistanceServiceImpl venueDistanceService,
-                                                 VenueSorterService venueSorterService,
-                                                 VenueAvailabilityMatrix venueMatrix,
-                                                 LecturerAvailabilityMatrix lecturerMatrix,
-                                                 StudentAvailabilityMatrix studentMatrix,
-                                                 ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
-                                                 SessionServiceImpl sessionService,
-                                                 PlanContentServiceImpl planContentService,
-                                                 ModuleServiceImpl  moduleService,
-                                                 SessionGroupPreprocessorService sessionGroupPreprocessorService) {
+                                                    LecturerServiceImpl lecturerService,
+                                                    ModuleServiceImpl moduleService,
+                                                    SessionServiceImpl sessionService,
+                                                    PlanContentServiceImpl planContentService,
+                                                    VenueDistanceServiceImpl venueDistanceService,
+                                                    VenueAssignmentServiceImpl venueAssignmentService,
+                                                    VenueSorterService venueSorterService,
+                                                    SessionGroupPreprocessorService sessionGroupPreprocessorService,
+                                                    VenueAvailabilityMatrix venueMatrix,
+                                                    LecturerAvailabilityMatrix lecturerMatrix,
+                                                    StudentAvailabilityMatrix studentMatrix,
+                                                    ActorSystem<Void> actorSystem,
+                                                    ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
+                                                    ProgrammeDistributionClustering clustering,
+                                                    TimetableExcelExporter timetableExcelExporter) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -105,30 +108,43 @@ public class RunnerUtil {
 
                 PreprocessingResult preprocessingResult = preprocessingService
                         .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
+
+                // System.out.println("=== Combined Module Assignment Summary ===");
+                // for (ModuleAssignmentData data : preprocessingResult.getModuleAssignmentDataList()) {
+                //     String moduleId = data.getModule().getId();
+                //     String subjectTitle = data.getSubjectPlanInfo().getSubjectCode();
+                //     Set<Long> studentIds = data.getEligibleStudents().stream()
+                //         .map(Student::getId)
+                //         .collect(Collectors.toSet());
+
+                //     System.out.println("Module ID: " + moduleId + ", Title: " + subjectTitle);
+                //     System.out.println("  Total Students: " + studentIds.size());
+                //     System.out.println("  Student IDs: " + studentIds.stream()
+                //         .sorted()
+                //         .map(String::valueOf)
+                //         .collect(Collectors.joining(", ")));
+                // }
+                // System.out.println("===================================================");
+
                 // Manually create the processor
-                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService, 
-                                                                                   clustering,
-                                                                                   actorSystem,
-                                                                                   venueDistanceService,
-                                                                                   venueSorterService,
-                                                                                   venueMatrix,
-                                                                                   lecturerMatrix,
-                                                                                   studentMatrix,
-                                                                                   venueCoordinatorActor,
-                                                                                   sessionService,
-                                                                                   planContentService,
-                                                                                   moduleService,
-                                                                                   sessionGroupPreprocessorService);
-                // Pair<List<Session>, Map<Integer, Map<String, Map<String, Double>>>> clusterSession = processor.clusterProgrammeDistribution(preprocessingResult.getModuleAssignmentDataList(), 
-                //                                                                                                                             preprocessingResult.getStudentProgrammeMap(), 
-                //                                                                                                                             preprocessingResult.getStudentSemesterMap());
-                // Map<Integer, Map<String, Map<String, Double>>> distanceMap = clusterSession.getValue();
+                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService,
+                                                                                    moduleService,
+                                                                                    sessionService,
+                                                                                    planContentService,
+                                                                                    venueDistanceService,
+                                                                                    venueAssignmentService,
+                                                                                    venueSorterService,
+                                                                                    sessionGroupPreprocessorService,
+                                                                                    venueMatrix,
+                                                                                    lecturerMatrix,
+                                                                                    studentMatrix,
+                                                                                    actorSystem,
+                                                                                    venueCoordinatorActor,
+                                                                                    clustering,
+                                                                                    timetableExcelExporter);
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
-
-                
-
 
             } catch (Exception e) {
                 System.err.println("Error reading Excel file: " + e.getMessage());

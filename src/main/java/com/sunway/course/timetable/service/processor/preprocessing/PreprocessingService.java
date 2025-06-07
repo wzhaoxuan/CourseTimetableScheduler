@@ -25,7 +25,6 @@ import com.sunway.course.timetable.model.programme.Programme;
 import com.sunway.course.timetable.repository.ModuleRepository;
 import com.sunway.course.timetable.repository.ProgrammeRepository;
 import com.sunway.course.timetable.service.excelReader.ModuleSemExcelReaderService;
-import com.sunway.course.timetable.service.excelReader.ProgrammeExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.StudentSemExcelReaderService;
 import com.sunway.course.timetable.service.excelReader.SubjectPlanExcelReaderService;
 
@@ -40,7 +39,7 @@ import com.sunway.course.timetable.service.excelReader.SubjectPlanExcelReaderSer
 @Service
 public class PreprocessingService {
 
-    private static Logger logger = LoggerFactory.getLogger(ProgrammeExcelReaderService.class);
+    private static Logger logger = LoggerFactory.getLogger(PreprocessingService.class);
 
     private final SubjectPlanExcelReaderService moduleExcelReaderService;
     private final ModuleRepository moduleRepository;
@@ -67,96 +66,84 @@ public class PreprocessingService {
         List<ModuleAssignmentData> assignmentDataList = new ArrayList<>();
         Map<Long, String> studentProgrammeMap = new HashMap<>();
         Map<Long, Integer> studentSemesterMap = new HashMap<>();
+        Map<String, Set<Integer>> moduleIdToSemestersMap = new HashMap<>();
+        Map<Integer, List<StudentSem>> studentSemMap = new HashMap<>();
 
         try {
                 List<SubjectPlanInfo> subjectPlans = moduleExcelReaderService.readExcelFile(subjectPlanFilePath);
                 Map<Integer, List<ModuleSem>> moduleSemMap = moduleSemExcelReaderService.readModuleSemExcelFile(moduleSemFilePath);
-                Map<Integer, List<StudentSem>> studentSemMap = studentSemExcelReaderService.readStudentSemExcelFile(studentSemFilePath);
+                studentSemMap = studentSemExcelReaderService.readStudentSemExcelFile(studentSemFilePath);
 
-                for (Map.Entry<Integer, List<ModuleSem>> semEntry : moduleSemMap.entrySet()) {
-                int semester = semEntry.getKey();
-                List<ModuleSem> modulesInSem = semEntry.getValue();
+                 // === Step 1: Build moduleId → semester set
+            for (Map.Entry<Integer, List<ModuleSem>> entry : moduleSemMap.entrySet()) {
+                int semester = entry.getKey();
+                for (ModuleSem ms : entry.getValue()) {
+                    moduleIdToSemestersMap.computeIfAbsent(ms.getModuleId(), k -> new HashSet<>()).add(semester);
+                }
+            }
 
-                Set<String> moduleCodesInSemester = modulesInSem.stream()
-                    .map(ModuleSem::getModuleId)
-                    .collect(Collectors.toSet());
+            // === Step 2: Combine modules by ID and build assignment data
+            for (SubjectPlanInfo subject : subjectPlans) {
+                List<String> moduleCodes = ModuleExcelHelper.splitSubjectCode(subject.getSubjectCode());
 
-                List<StudentSem> studentsInSemester = studentSemMap.getOrDefault(semester, List.of());
+                for (String moduleCode : moduleCodes) {
+                    Optional<Module> moduleOpt = moduleRepository.findById(moduleCode);
+                    if (moduleOpt.isEmpty()) continue;
 
-                for (SubjectPlanInfo subject : subjectPlans) {
-                    List<String> subjectCodes = ModuleExcelHelper.splitSubjectCode(subject.getSubjectCode());
-
-                    for (String moduleCode : subjectCodes) {
-                        if (!moduleCodesInSemester.contains(moduleCode)) {
-                            continue; // skip modules not offered in this semester
-                        }
-
-                        Optional<Module> moduleOptional = moduleRepository.findById(moduleCode);
-                        if (moduleOptional.isEmpty()) {
-                            continue;
-                        }
-
-                        Module module = moduleOptional.get();
-
-                        // Programmes offering the module
-                        List<Programme> programmesOfferingModule = programmeRepository.findByModuleId(moduleCode);
-                        Set<String> programmeCodes = programmesOfferingModule.stream()
+                    Module module = moduleOpt.get();
+                    // logger.info("Processing module: {}", module.getId());
+                    List<Programme> programmesOfferingModule = programmeRepository.findByModuleId(moduleCode);
+                    Set<String> programmeCodes = programmesOfferingModule.stream()
                             .map(p -> p.getProgrammeId().getId())
                             .collect(Collectors.toSet());
-                        
 
-                        Set<Student> eligibleStudents = new HashSet<>();
-                        for (StudentSem studentSem : studentsInSemester) {
-                            if (programmeCodes.contains(studentSem.getProgramme())) {
-                                for (Programme programme : programmesOfferingModule) {
-                                    Student student = programme.getStudent();
-                                    if (student.getId() == studentSem.getStudentId()) {
-                                        eligibleStudents.add(student);
-                                        studentProgrammeMap.put(student.getId(), programme.getProgrammeId().getId());
-                                        studentSemesterMap.put(student.getId(), semester);
-                                        break;
-                                    }
+                    Set<Student> combinedEligibleStudents = new HashSet<>();
+                    Set<Integer> semesters = moduleIdToSemestersMap.getOrDefault(moduleCode, Set.of());
+
+                    for (int sem : semesters) {
+                        List<StudentSem> studentsInSem = studentSemMap.getOrDefault(sem, List.of());
+
+                        for (StudentSem s : studentsInSem) {
+                            if (!programmeCodes.contains(s.getProgramme())) continue;
+
+                            for (Programme programme : programmesOfferingModule) {
+                                Student student = programme.getStudent();
+                                if (student.getId() == s.getStudentId()) {
+                                    combinedEligibleStudents.add(student);
+                                    studentProgrammeMap.put(student.getId(), programme.getProgrammeId().getId());
+                                    studentSemesterMap.put(student.getId(), sem); // Last sem wins (OK for merged)
+                                    break;
                                 }
                             }
                         }
+                    }
 
-                        // for (Student student : eligibleStudents) {
-                        //     System.out.println("Eligible student: " + student.getId() + " for module: " + moduleCode);
-                        // }
-
-                        ModuleAssignmentData assignmentData = new ModuleAssignmentData(
+                    if (!combinedEligibleStudents.isEmpty()) {
+                        ModuleAssignmentData data = new ModuleAssignmentData(
                             subject,
                             module,
                             programmesOfferingModule,
-                            eligibleStudents
+                            combinedEligibleStudents
                         );
-
-                        assignmentDataList.add(assignmentData);
+                        assignmentDataList.add(data);
                     }
                 }
-            
-
-                // Logging the semester grouping after processing each semester
-            //     logger.info("=== Semester-wise Module Assignment Data ===");
-            //     logger.info("Semester {}", semester);
-            //     for (ModuleSem moduleSem : modulesInSem) {
-            //         String moduleId = moduleSem.getModuleId();
-
-            //         List<ModuleAssignmentData> dataForModule = assignmentDataList.stream()
-            //             .filter(d -> d.getModule().getId().equals(moduleId))
-            //             .collect(Collectors.toList());
-
-            //         for (ModuleAssignmentData data : dataForModule) {
-            //             logger.info("  Module: {}", moduleId);
-            //             String studentsList = data.getEligibleStudents().stream()
-            //                 .map(student -> String.valueOf(student.getId()))
-            //                 .sorted()
-            //                 .collect(Collectors.joining(", "));
-            //             logger.info("    Students: {}", studentsList);
-            //         }
-            //     }
-            //     logger.info("-----------------------------------------------------------------------------------------------------------");
             }
+
+             // Logging the semester grouping after processing each semester
+        //     logger.info("=== Combined Module Assignment Summary ===");
+        //     for (ModuleAssignmentData data : assignmentDataList) {
+        //         String moduleId = data.getModule().getId();
+        //         String subjectTitle = data.getSubjectPlanInfo().getSubjectCode();
+        //         Set<Long> studentIds = data.getEligibleStudents().stream()
+        //             .map(Student::getId)
+        //             .collect(Collectors.toSet());
+
+        //         logger.info("Module ID: {}, Title: {}", moduleId, subjectTitle);
+        //         logger.info("  Total Students: {}", studentIds.size());
+        //         logger.info("  Student IDs: {}", studentIds.stream().sorted().map(String::valueOf).collect(Collectors.joining(", ")));
+        //     }
+        //     logger.info("===================================================");
 
         } catch (Exception e) {
             logger.error("Error reading Excel file: {}", e.getMessage());
@@ -164,17 +151,5 @@ public class PreprocessingService {
         }
 
         return new PreprocessingResult(assignmentDataList, studentProgrammeMap, studentSemesterMap);
-    }
-
-
-    private int findSemesterForModule(Map<Integer, List<ModuleSem>> moduleSemMap, String moduleCode) {
-        for (Map.Entry<Integer, List<ModuleSem>> entry : moduleSemMap.entrySet()) {
-            for (ModuleSem moduleSem : entry.getValue()) {
-                if (moduleSem.getModuleId().equals(moduleCode)) {
-                    return entry.getKey();
-                }
-            }
-        }
-        return -1; // Not found
     }
 }
