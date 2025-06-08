@@ -12,6 +12,7 @@ import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
+import com.sunway.course.timetable.view.MainApp;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
@@ -24,8 +25,10 @@ public class AkkaConfig {
 
     @Bean
     public ActorSystem<Void> actorSystem() {
-        return ActorSystem.create(Behaviors.empty(), "FullActorSystem");
-    }
+        ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "FullActorSystem");
+        MainApp.actorSystem = system;
+        return system;
+        }
 
     @Bean
     public List<Venue> venueList(VenueSorterService venueSorterService) {

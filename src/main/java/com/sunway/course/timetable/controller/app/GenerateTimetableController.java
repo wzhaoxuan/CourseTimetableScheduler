@@ -1,29 +1,49 @@
 package com.sunway.course.timetable.controller.app;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
+
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
-import com.sunway.course.timetable.event.LecturerConstraintConfirmedEvent;
-import com.sunway.course.timetable.event.VenueAddedEvent;
-import com.sunway.course.timetable.interfaces.services.VenueService;
+import com.sunway.course.timetable.controller.app.TimetableController;
+import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.result.FinalAssignmentResult;
+import com.sunway.course.timetable.result.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
+import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.store.VenueSessionStore;
-import com.sunway.course.timetable.store.WeekdaySessionStore;
+import com.sunway.course.timetable.service.PlanContentServiceImpl;
+import com.sunway.course.timetable.service.SessionServiceImpl;
+import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
+import com.sunway.course.timetable.service.excelReader.LecturerAvailablityExcelReaderService;
+import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
+import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
+import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueSorterService;
+import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.DateUtil;
-import com.sunway.course.timetable.util.GridManagerUtil;
+import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
+import com.sunway.course.timetable.util.TimetableExcelExporter;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.control.ListView;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -31,41 +51,89 @@ import javafx.scene.layout.Region;
 @Component
 public class GenerateTimetableController extends ContentController {
 
-    @FXML private Label programme, year, intake, semester, venue, lecturerAvailable;
+    @FXML private Label programme, year, intake, semester;
     @FXML private ComboBox<String>  programmeChoice, yearChoice, intakeChoice, semesterChoice;
-    @FXML private TextField venueField;
-    @FXML private Button generateButton, sectionButton;
-    @FXML private GridPane venueGrid, weekdayGrid;
-    @FXML private ScrollPane venueScroll, weekdayScroll;
+    @FXML private Button generateButton, resetFilesButton;
+    @FXML private Label dropTarget, instruction;
+    @FXML private AnchorPane dropPane;
+    @FXML private ListView<String> fileListView;
     @FXML private Region spacer1, spacer2, spacer3, spacer4;
 
-    private final int MAXCOLUMNS = 10;
-    private final int MAXROWS = 10;
-
-    private GridManagerUtil venueGridManager;
-    private GridManagerUtil weekdayGridManager;
-
-    private final VenueService venueService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final VenueSessionStore venueStore;
-    private final WeekdaySessionStore weekdayStore;
+    private final List<File> droppedFiles = new ArrayList<>();
+    private final TimetableController timetableController;
+    private final PreprocessingService preprocessingService;
+    private final LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService;
     private final LecturerServiceImpl lecturerService;
+    private final ModuleServiceImpl moduleService;
+    private final SessionServiceImpl sessionService;
+    private final PlanContentServiceImpl planContentService;
+    private final VenueDistanceServiceImpl venueDistanceService;
+    private final VenueAssignmentServiceImpl venueAssignmentService;
+    private final VenueSorterService venueSorterService;
+    private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
+    private final VenueAvailabilityMatrix venueMatrix;
+    private final LecturerAvailabilityMatrix lecturerMatrix;
+    private final StudentAvailabilityMatrix studentMatrix;
+    private final ActorSystem<Void> actorSystem;
+    private final ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor;
+    private final ProgrammeDistributionClustering clustering;
+    private final TimetableExcelExporter timetableExcelExporter;
+    private final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
+    private final FitnessEvaluator fitnessEvaluator;
 
-    public GenerateTimetableController(NavigationService navService, 
-                                        LoginSceneController loginController,
-                                        VenueService venueService,
-                                        ApplicationEventPublisher eventPublisher,
-                                        VenueSessionStore venueSessionStore,
-                                        WeekdaySessionStore weekdaySessionStore,
-                                        LecturerServiceImpl lecturerService
-                                        ) {
+    // == matches file names in the ListView ==
+    private File subjectPlanFile;
+    private File moduleSemFile;
+    private File studentSemFile;
+    private File lecturerAvailabilityFile;
+    private List<File> fifthFile = new ArrayList<>(); 
+    
+
+    public GenerateTimetableController(NavigationService navService,
+                                    LoginSceneController loginController,
+                                    TimetableController timetableController,
+                                    PreprocessingService preprocessingService,
+                                    LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService,
+                                    LecturerServiceImpl lecturerService,
+                                    ModuleServiceImpl moduleService,
+                                    SessionServiceImpl sessionService,
+                                    PlanContentServiceImpl planContentService,
+                                    VenueDistanceServiceImpl venueDistanceService,
+                                    VenueAssignmentServiceImpl venueAssignmentService,
+                                    VenueSorterService venueSorterService,
+                                    SessionGroupPreprocessorService sessionGroupPreprocessorService,
+                                    VenueAvailabilityMatrix venueMatrix,
+                                    LecturerAvailabilityMatrix lecturerMatrix,
+                                    StudentAvailabilityMatrix studentMatrix,
+                                    ActorSystem<Void> actorSystem,
+                                    ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
+                                    ProgrammeDistributionClustering clustering,
+                                    TimetableExcelExporter timetableExcelExporter,
+                                    LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+                                    FitnessEvaluator fitnessEvaluator) {
         super(navService, loginController);
-        this.venueService = venueService;
-        this.eventPublisher = eventPublisher;
-        this.venueStore = venueSessionStore;
-        this.weekdayStore = weekdaySessionStore;
+        this.timetableController = timetableController;
+        this.preprocessingService = preprocessingService;
+        this.lecturerAvailablityExcelReaderService = lecturerAvailablityExcelReaderService;
         this.lecturerService = lecturerService;
+        this.moduleService = moduleService;
+        this.sessionService = sessionService;
+        this.planContentService = planContentService;
+        this.venueDistanceService = venueDistanceService;
+        this.venueAssignmentService = venueAssignmentService;
+        this.venueSorterService = venueSorterService;
+        this.sessionGroupPreprocessorService = sessionGroupPreprocessorService;
+        this.venueMatrix = venueMatrix;
+        this.lecturerMatrix = lecturerMatrix;
+        this.studentMatrix = studentMatrix;
+        this.actorSystem = actorSystem;
+        this.venueCoordinatorActor = venueCoordinatorActor;
+        this.clustering = clustering;
+        this.timetableExcelExporter = timetableExcelExporter;
+        this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
+        this.fitnessEvaluator = fitnessEvaluator;
     }
+
 
     @Override
     public void initialize() {
@@ -73,84 +141,161 @@ public class GenerateTimetableController extends ContentController {
         setupLabelsText();
         setupComboBoxes();
         setupLayout();
-        setupVenueField();
-
-        venueGridManager = createVenueGridManager();
-        weekdayGridManager = createWeekdayGridManager();
-
-
-        venueStore.get().forEach(this::addVenueToGrid);
-        weekdayStore.getAllAvailability().forEach((lecturerId, days) -> {
-        lecturerService.getLecturerById(lecturerId).ifPresent(lecturer -> {
-                addWeekDayConstraintToGrid(lecturer.getName(), null);
-            });
-        }); 
-    }
-
-
-    @FXML
-    private void addSection(){
-        try {
-            navigationService.loadLecturerAvailabilityPage(); // Handle exception properly
-        } catch (Exception e) {
-            e.printStackTrace(); // Print the error if something goes wrong
-        }
+        setupDragAndDrop(); 
+        resetFilesButton.setOnAction(event -> clearDroppedFiles());
     }
 
     @FXML
     private void generate() {
         try{
-
             String programme = programmeChoice.getValue();
             String year = yearChoice.getValue();
             String intake = intakeChoice.getValue();
             String semester = semesterChoice.getValue();
 
             // Step 1: Read Excel (use fixed path or let user upload in future)
-            String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
-            String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
-            String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
+            if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
+                showError("Please drop all 4 required .xlsx files before generating.");
+                return;
+            }
+
+
+            // Use these files in your processor
+            System.out.println("Subject Plan: " + subjectPlanFile.getAbsolutePath());
+            System.out.println("Module Sem: " + moduleSemFile.getAbsolutePath());
+            System.out.println("Student Sem: " + studentSemFile.getAbsolutePath());
+
+            // Step 1: Preprocessing using user-uploaded files
+            PreprocessingResult preprocessingResult = preprocessingService
+                .preprocessModuleAndStudents(
+                    subjectPlanFile.getAbsolutePath(),
+                    moduleSemFile.getAbsolutePath(),
+                    studentSemFile.getAbsolutePath()
+                );
+            
+            // Step 2: Read lecturer availability
+            lecturerAvailablityExcelReaderService.readLecturerAvailabilityExcelFile(
+                lecturerAvailabilityFile.getAbsolutePath()
+            );
 
             
+            // Step 3: Initialize and run the processor
+            ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(
+                lecturerService,
+                moduleService,
+                sessionService,
+                planContentService,
+                venueDistanceService,
+                venueAssignmentService,
+                venueSorterService,
+                sessionGroupPreprocessorService,
+                venueMatrix,
+                lecturerMatrix,
+                studentMatrix,
+                actorSystem,
+                venueCoordinatorActor,
+                clustering,
+                timetableExcelExporter,
+                lecturerDayAvailabilityUtil,
+                fitnessEvaluator
+            );
 
-            // Step 3: Pass to processor
-            // processor.processAssignments(filteredData);
+            FinalAssignmentResult result = processor.processAssignments(
+                preprocessingResult.getModuleAssignmentDataList(),
+                preprocessingResult.getStudentProgrammeMap(),
+                preprocessingResult.getStudentSemesterMap()
+            );
 
-            // navigationService.loadTimetablePage(); // Handle exception properly
+        
+            navigationService.loadTimetablePage();
+
+            timetableController.loadExportedTimetables(
+                    result.getExportedTimetableFiles(),
+                    result.getFitnessScore()
+                );
 
         } catch (Exception e) {
             e.printStackTrace(); // Print the error if something goes wrong
         }
     }
 
-    @EventListener
-    public void handleLecturerConstraintConfirmed(LecturerConstraintConfirmedEvent event) {
-        String lecturerName = event.getLecturer().getName();
-        Long lecturerId = event.getLecturer().getId();
-        List<String> unavailableDays = event.getUnavailableDays();
+    private void setupDragAndDrop() {
+        dropPane.setOnDragOver(event -> {
+            if (event.getGestureSource() != dropPane && event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
 
-        weekdayStore.add(lecturerId, unavailableDays);
+        dropPane.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
 
-        for (String day : unavailableDays) {
-            addWeekDayConstraintToGrid(lecturerName, day);
+            if (db.hasFiles()) {
+                List<File> files = db.getFiles().stream()
+                    .filter(file -> file.getName().toLowerCase().endsWith(".xlsx"))
+                    .collect(Collectors.toList());
+
+                for (File file : files) {
+                    String name = file.getName().toLowerCase();
+                    if (name.contains("subjectplan")) {
+                        subjectPlanFile = file;
+                    } else if (name.contains("modulesem")) {
+                        moduleSemFile = file;
+                    } else if (name.contains("studentsem")) {
+                        studentSemFile = file;
+                    } else if (name.contains("lectureravailability")) {
+                        lecturerAvailabilityFile = file;
+                    } else {
+                        fifthFile.add(file); // fallback file
+                    }
+
+                    // Prevent duplicates
+                    if (droppedFiles.stream().noneMatch(f -> f.getName().equalsIgnoreCase(file.getName()))) {
+                        droppedFiles.add(file);
+                    }
+                }
+
+                updateFileListView();
+                success = true;
+            }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
+    private void updateFileListView() {
+        fileListView.getItems().clear();
+
+        if (subjectPlanFile != null) {
+            fileListView.getItems().add("Subject Plan: " + subjectPlanFile.getName());
+        }
+        if (moduleSemFile != null) {
+            fileListView.getItems().add("Module-Semester: " + moduleSemFile.getName());
+        }
+        if (studentSemFile != null) {
+            fileListView.getItems().add("Student-Semester: " + studentSemFile.getName());
+        }
+        if (lecturerAvailabilityFile != null) {
+            fileListView.getItems().add("Lecturer Availability: " + lecturerAvailabilityFile.getName());
+        }
+        if (fifthFile != null) {
+            fileListView.getItems().add("Extra: " + fifthFile.stream()
+                                                            .map(f -> f.getName())
+                                                            .collect(Collectors.joining(", ")));
         }
     }
 
-    @EventListener
-    public void handleVenueAdded(VenueAddedEvent event) {
-        String venueName = event.getVenue().getName();
-        if(venueStore.add(venueName)) {
-            addVenueToGrid(venueName);
-        }
-    }
-
-    private void addVenueToGrid(String venueName){
-        venueGridManager.addButton(venueName, "venue-button");
-    }
-
-    private void addWeekDayConstraintToGrid(String lecturerName, String day) {
-        weekdayGridManager.addButton(lecturerName, "lecturer-button");
-        System.out.println("Added Weekday Constraint: " + lecturerName);
+    private void clearDroppedFiles() {
+        droppedFiles.clear();
+        subjectPlanFile = null;
+        moduleSemFile = null;
+        studentSemFile = null;
+        lecturerAvailabilityFile = null;
+        fifthFile = null;
+        fileListView.getItems().clear();
+        showSuccess("Cleared file selection.");
     }
 
     private void setupLabelsText() {
@@ -159,11 +304,11 @@ public class GenerateTimetableController extends ContentController {
         year.setText("Year:");
         intake.setText("Intake:");
         semester.setText("Semester:");
-        venue.setText("Venue:");
-        lecturerAvailable.setText("Lecturer Available:");
-        venueField.setPromptText("UW 2-5");
         generateButton.setText("Generate");
-        sectionButton.setText("Add Section");
+        resetFilesButton.setText("Reset");
+        dropTarget.setText("Drop files here");
+        instruction.setText("Please drop .xlsx files:\n SubjectPlan, ModuleSem, StudentSem, LecturerAvailability.");
+        instruction.setWrapText(true);
     }
 
     private void setupComboBoxes() {
@@ -184,22 +329,13 @@ public class GenerateTimetableController extends ContentController {
         HBox.setHgrow(spacer4, Priority.ALWAYS);
     }
 
-    private void setupVenueField() {
-        venueField.setOnAction(event -> {
-            String venue = venueField.getText().trim();
-            if (!venue.isEmpty()) {
-                venueService.publishVenueAddedEvent(venue);
-                venueField.clear();
-            }
-        });
+
+    private void showError(String message) {
+        System.err.println(message); // You can also show this in a Label or Alert
     }
 
-    protected GridManagerUtil createVenueGridManager() {
-        return new GridManagerUtil(venueGrid, MAXCOLUMNS, MAXROWS);
+    private void showSuccess(String message) {
+        System.out.println(message); // Same here
     }
-    
-    protected GridManagerUtil createWeekdayGridManager() {
-        return new GridManagerUtil(weekdayGrid, MAXCOLUMNS, MAXROWS);
-    }
-    
+
 }

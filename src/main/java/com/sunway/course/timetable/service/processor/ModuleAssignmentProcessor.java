@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +32,13 @@ import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
-import com.sunway.course.timetable.model.assignment.SessionAssignmentResult;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
+import com.sunway.course.timetable.result.FinalAssignmentResult;
+import com.sunway.course.timetable.result.SessionAssignmentResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
@@ -107,6 +109,9 @@ public class ModuleAssignmentProcessor {
     private Map<Session, String> sessionToModuleIdMap = new HashMap<>();
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
+    private double finalScore;
+    private List<File> exportedFiles;
+
 
 
 
@@ -146,6 +151,7 @@ public class ModuleAssignmentProcessor {
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
         this.creditTracker = new CreditHourTracker();
+
     }
  
     /**
@@ -157,7 +163,7 @@ public class ModuleAssignmentProcessor {
      * @param studentSemesterMap Mapping of student ID to semester
      * @return  Map of semester -> (module ID -> list of generated sessions)
      */
-    public Map<Integer, Map<String, List<Session>>> processAssignments(
+    public FinalAssignmentResult processAssignments(
         List<ModuleAssignmentData> moduleDataList,
         Map<Long, String> studentProgrammeMap,
         Map<Long, Integer> studentSemesterMap) {
@@ -211,7 +217,7 @@ public class ModuleAssignmentProcessor {
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
 
         processAssignmentsHybrid(allMetaData);
-        return sessionBySemesterAndModule;
+        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, finalScore);
     }
 
 
@@ -279,16 +285,17 @@ public class ModuleAssignmentProcessor {
         persistAndGroupSessions(sessionToModuleIdMap);
         actorSystem.terminate();
 
+        log.info("Actor system terminated. Finalizing scheduling...");
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
         .toList();
 
         FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap);
-        double finalScore = finalFitness.getPercentage();
+        this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
 
-        exportPersistedTimetable(finalScore);
+        this.exportedFiles = exportPersistedTimetable(finalScore);
     }
 
 
@@ -482,8 +489,12 @@ public class ModuleAssignmentProcessor {
                         .add(savedSession);
                 }
             } else {
+                
                 // Fallback to student's semester if module-semester mapping is missing
-                Integer fallbackSemester = studentSemesterMap.get(originalSession.getStudent().getId());
+                Integer fallbackSemester = originalSession.getStudent() != null
+                        ? studentSemesterMap.get(originalSession.getStudent().getId())
+                        : null;
+
                 if (fallbackSemester != null) {
                     sessionBySemesterAndModule
                         .computeIfAbsent(fallbackSemester, k -> new HashMap<>())
@@ -498,7 +509,7 @@ public class ModuleAssignmentProcessor {
     }
 
     @Transactional(readOnly = true)
-    public void exportPersistedTimetable(double finalScore) {
+    public List<File> exportPersistedTimetable(double finalScore) {
         Map<Integer, Map<String, List<Session>>> sessionMap = new HashMap<>();
 
         List<PlanContent> allPlanContents = planContentService.getAllPlanContents(); 
@@ -515,7 +526,7 @@ public class ModuleAssignmentProcessor {
                 .add(session);
         }
 
-        timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore);
+        return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore);
     }
 
 

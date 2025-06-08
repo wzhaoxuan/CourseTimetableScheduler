@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Profile;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.model.assignment.PreprocessingResult;
+import com.sunway.course.timetable.result.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
@@ -84,96 +84,96 @@ public class RunnerUtil {
     //     };
     // }
 
-    @Bean
-    public CommandLineRunner readlecturerUnavailableExcel(LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService) {
-        return args -> {
-            String filePath = "src/main/resources/file/LecturerUnavailable.xlsx";
-            try {
-                // Read the Lecturer Availability Excel file
+    // @Bean
+    // public CommandLineRunner readlecturerUnavailableExcel(LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService) {
+    //     return args -> {
+    //         String filePath = "src/main/resources/file/LecturerUnavailable.xlsx";
+    //         try {
+    //             // Read the Lecturer Availability Excel file
 
-                lecturerAvailablityExcelReaderService.readLecturerAvailabilityExcelFile(filePath);
-                System.out.println("Lecturer availability processed successfully.");
-            } catch (Exception e) {
-                System.err.println("Error reading Lecturer Availability Excel file: " + e.getMessage());
-                e.printStackTrace();
-            }
-        };
-    }
+    //             lecturerAvailablityExcelReaderService.readLecturerAvailabilityExcelFile(filePath);
+    //             System.out.println("Lecturer availability processed successfully.");
+    //         } catch (Exception e) {
+    //             System.err.println("Error reading Lecturer Availability Excel file: " + e.getMessage());
+    //             e.printStackTrace();
+    //         }
+    //     };
+    // }
 
-    @Bean
-    @Profile("!test")  // Exclude from tests
-    public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
-                                                    LecturerServiceImpl lecturerService,
-                                                    ModuleServiceImpl moduleService,
-                                                    SessionServiceImpl sessionService,
-                                                    PlanContentServiceImpl planContentService,
-                                                    VenueDistanceServiceImpl venueDistanceService,
-                                                    VenueAssignmentServiceImpl venueAssignmentService,
-                                                    VenueSorterService venueSorterService,
-                                                    SessionGroupPreprocessorService sessionGroupPreprocessorService,
-                                                    VenueAvailabilityMatrix venueMatrix,
-                                                    LecturerAvailabilityMatrix lecturerMatrix,
-                                                    StudentAvailabilityMatrix studentMatrix,
-                                                    ActorSystem<Void> actorSystem,
-                                                    ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
-                                                    ProgrammeDistributionClustering clustering,
-                                                    TimetableExcelExporter timetableExcelExporter,
-                                                    LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                                    FitnessEvaluator fitnessEvaluator) {
-        return args -> {
-            try {
-                String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
-                String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
-                String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
+    // @Bean
+    // @Profile("!test")  // Exclude from tests
+    // public CommandLineRunner ModeleDataProcessor(PreprocessingService preprocessingService,
+    //                                                 LecturerServiceImpl lecturerService,
+    //                                                 ModuleServiceImpl moduleService,
+    //                                                 SessionServiceImpl sessionService,
+    //                                                 PlanContentServiceImpl planContentService,
+    //                                                 VenueDistanceServiceImpl venueDistanceService,
+    //                                                 VenueAssignmentServiceImpl venueAssignmentService,
+    //                                                 VenueSorterService venueSorterService,
+    //                                                 SessionGroupPreprocessorService sessionGroupPreprocessorService,
+    //                                                 VenueAvailabilityMatrix venueMatrix,
+    //                                                 LecturerAvailabilityMatrix lecturerMatrix,
+    //                                                 StudentAvailabilityMatrix studentMatrix,
+    //                                                 ActorSystem<Void> actorSystem,
+    //                                                 ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
+    //                                                 ProgrammeDistributionClustering clustering,
+    //                                                 TimetableExcelExporter timetableExcelExporter,
+    //                                                 LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+    //                                                 FitnessEvaluator fitnessEvaluator) {
+    //     return args -> {
+    //         try {
+    //             String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
+    //             String moduleSemFilePath = "src/main/resources/file/ModuleSem.xlsx";
+    //             String studentSemFilePath = "src/main/resources/file/StudentSem.xlsx";
 
-                PreprocessingResult preprocessingResult = preprocessingService
-                        .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
+    //             PreprocessingResult preprocessingResult = preprocessingService
+    //                     .preprocessModuleAndStudents(subjectPlanFilePath, moduleSemFilePath, studentSemFilePath);
 
-                // System.out.println("=== Combined Module Assignment Summary ===");
-                // for (ModuleAssignmentData data : preprocessingResult.getModuleAssignmentDataList()) {
-                //     String moduleId = data.getModule().getId();
-                //     String subjectTitle = data.getSubjectPlanInfo().getSubjectCode();
-                //     Set<Long> studentIds = data.getEligibleStudents().stream()
-                //         .map(Student::getId)
-                //         .collect(Collectors.toSet());
+    //             // System.out.println("=== Combined Module Assignment Summary ===");
+    //             // for (ModuleAssignmentData data : preprocessingResult.getModuleAssignmentDataList()) {
+    //             //     String moduleId = data.getModule().getId();
+    //             //     String subjectTitle = data.getSubjectPlanInfo().getSubjectCode();
+    //             //     Set<Long> studentIds = data.getEligibleStudents().stream()
+    //             //         .map(Student::getId)
+    //             //         .collect(Collectors.toSet());
 
-                //     System.out.println("Module ID: " + moduleId + ", Title: " + subjectTitle);
-                //     System.out.println("  Total Students: " + studentIds.size());
-                //     System.out.println("  Student IDs: " + studentIds.stream()
-                //         .sorted()
-                //         .map(String::valueOf)
-                //         .collect(Collectors.joining(", ")));
-                // }
-                // System.out.println("===================================================");
+    //             //     System.out.println("Module ID: " + moduleId + ", Title: " + subjectTitle);
+    //             //     System.out.println("  Total Students: " + studentIds.size());
+    //             //     System.out.println("  Student IDs: " + studentIds.stream()
+    //             //         .sorted()
+    //             //         .map(String::valueOf)
+    //             //         .collect(Collectors.joining(", ")));
+    //             // }
+    //             // System.out.println("===================================================");
 
-                // Manually create the processor
-                ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService,
-                                                                                    moduleService,
-                                                                                    sessionService,
-                                                                                    planContentService,
-                                                                                    venueDistanceService,
-                                                                                    venueAssignmentService,
-                                                                                    venueSorterService,
-                                                                                    sessionGroupPreprocessorService,
-                                                                                    venueMatrix,
-                                                                                    lecturerMatrix,
-                                                                                    studentMatrix,
-                                                                                    actorSystem,
-                                                                                    venueCoordinatorActor,
-                                                                                    clustering,
-                                                                                    timetableExcelExporter,
-                                                                                    lecturerDayAvailabilityUtil,
-                                                                                    fitnessEvaluator);
+    //             // Manually create the processor
+    //             ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(lecturerService,
+    //                                                                                 moduleService,
+    //                                                                                 sessionService,
+    //                                                                                 planContentService,
+    //                                                                                 venueDistanceService,
+    //                                                                                 venueAssignmentService,
+    //                                                                                 venueSorterService,
+    //                                                                                 sessionGroupPreprocessorService,
+    //                                                                                 venueMatrix,
+    //                                                                                 lecturerMatrix,
+    //                                                                                 studentMatrix,
+    //                                                                                 actorSystem,
+    //                                                                                 venueCoordinatorActor,
+    //                                                                                 clustering,
+    //                                                                                 timetableExcelExporter,
+    //                                                                                 lecturerDayAvailabilityUtil,
+    //                                                                                 fitnessEvaluator);
 
-                // Run the assignment
-                Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
+    //             // Run the assignment
+    //             Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());
 
-            } catch (Exception e) {
-                System.err.println("Error reading Excel file: " + e.getMessage());
-                e.printStackTrace();
-            }
-        };
-    }
+    //         } catch (Exception e) {
+    //             System.err.println("Error reading Excel file: " + e.getMessage());
+    //             e.printStackTrace();
+    //         }
+    //     };
+    // }
 
 
     // @Bean

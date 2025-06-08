@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.util;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalTime;
@@ -42,21 +43,21 @@ public class TimetableExcelExporter {
     @Autowired
     private VenueAssignmentServiceImpl venueAssignmentService;
 
-    public void exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, double fitnessScore) {
+    public List<File> exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, double fitnessScore) {
         System.out.printf("Final timetable fitness score: %.2f%%%n", fitnessScore);
+        List<File> files = new ArrayList<>();
         for (Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
             int semester = entry.getKey();
-            List<Session> allSessions = new ArrayList<>();
-
-            for (List<Session> sessions : entry.getValue().values()) {
-                allSessions.addAll(sessions);
-            }
-
-            exportSemesterTimetable(semester, allSessions, fitnessScore);
+            if (semester <= 0) continue; 
+            List<Session> allSessions = entry.getValue().values().stream().flatMap(List::stream).collect(Collectors.toList());
+            File file = exportSemesterTimetable(semester, allSessions, fitnessScore);
+            files.add(file);
         }
+
+        return files;
     }
 
-    private void exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore) {
+    private File exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore) {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Semester " + semester);
 
@@ -178,13 +179,14 @@ public class TimetableExcelExporter {
 
 
         String userHome = System.getProperty("user.home");
-        String downloadPath = userHome + "/Downloads/Semester_" + semester + "_Timetable.xlsx";
-        try (FileOutputStream out = new FileOutputStream(downloadPath)) {
+        File file = new File(userHome + "/Downloads/Semester-" + semester + " Timetable.xlsx");
+        try (FileOutputStream out = new FileOutputStream(file)) {
             workbook.write(out);
-            System.out.println("Timetable saved to: " + downloadPath);
+            System.out.println("Timetable saved to: " + file.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return file;
     }
 
     private CellStyle createBodyStyle(Workbook workbook) {

@@ -1,85 +1,98 @@
 package com.sunway.course.timetable.controller.app;
+import java.awt.Desktop;
+import java.awt.GraphicsEnvironment;
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
-import com.sunway.course.timetable.interfaces.PdfExportService;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.service.PdfExporterService;
-import com.sunway.course.timetable.util.GridManagerUtil;
+import com.sunway.course.timetable.util.FileUtils;
+import com.sunway.course.timetable.view.MainApp;
 
+import javafx.application.HostServices;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
 @Component
 public class TimetableController extends ContentController {
 
-    @FXML Button downloadTimetable;
-    @FXML Label satisfaction, score, monday, tuesday, wednesday, thursday, friday;
-    @FXML GridPane timetableGrid;
+    @FXML Button downloadAll;
+    @FXML Label satisfaction, score;
+    @FXML private VBox timetableList;
 
-    private GridManagerUtil timetableGridManager;
-    private FileChooser fileChooser = new FileChooser(); 
-    private PdfExportService pdfExportService;
+    private final List<File> exportedTimetables = new ArrayList<>();
+    private final HostServices hostServices;
 
-    public TimetableController(NavigationService navService, LoginSceneController loginController, 
-                                PdfExportService pdfExportService) {
+    public TimetableController(NavigationService navService, LoginSceneController loginController,
+                              HostServices hostServices) {
         super(navService, loginController);
-        this.pdfExportService = pdfExportService;
+        this.hostServices = MainApp.hostServices;
     }
 
     @Override
     protected void initialize() {
         super.initialize(); 
         setupLabelsText();
-
-        timetableGridManager = createTimetableGridManager();
-        timetableGridManager.setupGridBorders();
-
     }
 
     private void setupLabelsText() {
         subheading.setText("Timetable");
-        downloadTimetable.setText("Download");
+        downloadAll.setText("Download");
         satisfaction.setText("Satisfaction");
         score.setText("99%");
-        monday.setText("Monday");
-        tuesday.setText("Tuesday");
-        wednesday.setText("Wednesday");
-        thursday.setText("Thursday");
-        friday.setText("Friday");
     }
 
     @FXML
-    public void downloadTimetable() {
-        fileChooser.setTitle("Save Timetable");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDf files", "*.pdf"));
-        fileChooser.setInitialFileName("timetable.pdf");
+    public void downloadAll() {
+        if (exportedTimetables.isEmpty()) {
+            System.out.println("No timetables available to download.");
+            return;
+        }
 
-        File selectedFile = fileChooser.showSaveDialog(null);
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choose Folder to Save Files");
+        fileChooser.setInitialFileName("timetables.zip");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ZIP Files", "*.zip"));
+        File destination = fileChooser.showSaveDialog(downloadAll.getScene().getWindow());
 
-        if (selectedFile != null) {
+        if (destination != null) {
             try {
-                System.out.println("Exporting timetable to: " + selectedFile.getAbsolutePath());
-                pdfExportService.export(timetableGrid, selectedFile);
-                System.out.println("PDF saved successfully to: " + selectedFile.getAbsolutePath());
-            } catch (IOException e) {
+                FileUtils.zipFiles(exportedTimetables, destination); // helper you’ll define next
+                System.out.println("All timetables zipped to: " + destination.getAbsolutePath());
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    protected GridManagerUtil createTimetableGridManager() {
-        return new GridManagerUtil(timetableGrid); 
-    }
+    public void loadExportedTimetables(List<File> timetableFiles, double fitnessScore) {
+        exportedTimetables.clear();
+        exportedTimetables.addAll(timetableFiles);
 
-    public void setFileChooser(FileChooser chooser) {
-        this.fileChooser = chooser;
+        timetableList.getChildren().clear();
+
+        for (File file : timetableFiles) {
+            String displayName = file.getName().replace(".xlsx", "");
+            Button btn = new Button(displayName);
+            btn.setMaxWidth(Double.MAX_VALUE);
+            btn.getStyleClass().add("timetable-button"); 
+            VBox.setMargin(btn, new Insets(5));
+            btn.setOnAction(e -> {
+                try {
+                    hostServices.showDocument(file.toURI().toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+            timetableList.getChildren().add(btn);
+        }
     }
 }

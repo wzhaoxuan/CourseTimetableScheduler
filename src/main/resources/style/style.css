@@ -174,7 +174,7 @@
 .intake-label, .venue-label, .available-label, 
 .id-label, .unavailable-day-label, .programmelabel,
 .intakelabel, .yearlabel, .sactisfaction-label,
-.score-label{
+.score-label, .file-label, .instruction-label{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
@@ -259,99 +259,88 @@
     -fx-background-color: #3D52A0; /* Blue hover */
     -fx-text-fill: white;
 }
-.venue-scroll-pane {
-    -fx-fit-to-width: true; /* Ensures the ScrollPane takes up full width */
-    -fx-fit-to-height: true; /* Ensures the ScrollPane takes up full height */
-    -fx-background-color: #3D52A0;
-}
 
-/* Customizing the vertical scrollbar */
-.venue-scroll-pane .scroll-bar:vertical {
-    -fx-background-color: inherit; /* Blue background for the scrollbar track */
-    -fx-background-radius: 10;
-    -fx-border-radius: 10;
-    -fx-pref-width: 15px; /* Set the width of the vertical scrollbar */
-}
-
-/* Customizing the scrollbar thumb */
-.venue-scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: #6A8DFF; /* Light blue thumb */
-    -fx-background-radius: 10;
-}
-
-/* Customizing the horizontal scrollbar */
-.venue-scroll-pane .scroll-bar:horizontal {
-    -fx-background-color: inherit; /* Blue background for the scrollbar track */
-    -fx-background-radius: 10;
-    -fx-border-radius: 10;
-    -fx-pref-height: 15px; /* Set the height of the horizontal scrollbar */
-}
-
-/* Customizing the scrollbar thumb */
-.venue-scroll-pane .scroll-bar:horizontal .thumb {
-    -fx-background-color: #6A8DFF; /* Light blue thumb */
-    -fx-background-radius: 10;
-}
-.venue-textfield, .id-textfield{
-    -fx-background-color: #8697C4;
+.reset-button{
+    -fx-background-color: #7091E6;
     -fx-text-fill: black;
-    -fx-font-size: 14;
-    -fx-font-weight: bold;
-    -fx-background-radius: 10;
-    -fx-pref-height: inherit;
-}
-
-.venue-display, .week-day-display{
-    -fx-background-color: #8697C4;
-    -fx-text-fill: black;
-    -fx-font-size: 14;
-    -fx-font-weight: bold;
-    -fx-padding: 15;
-    -fx-pref-width: 100%;
-    -fx-pref-height: 100%;
-    -fx-vgap: 25;
-}
-
-.venue-button, .lecturer-button{
-    -fx-background-color: #5569b5;
-    -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 8;
+    -fx-pref-height: inherit;
+    -fx-pref-width: 70px;
     -fx-cursor: hand; /* hand cursor on hover */
 }
 
-.available-vbox{
-    -fx-spacing: 20px;
-    -fx-pref-width: inherit;
-    -fx-alignment: center;
+.timetable-button {
+    -fx-background-color: #7091E6;
+    -fx-text-fill: black;
     -fx-font-family: "serif";
+    -fx-font-size: 22;
+    -fx-font-weight: bold;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 10 20 10 20;
 }
 
-.available-hbox{
+.file-hbox{
     -fx-spacing: 30px;
     -fx-pref-width: inherit;
-    -fx-padding: 0 15 0 15;
+    -fx-pref-height: 30px;
+    -fx-padding: 0 0 10 15;
 }
 
-
-.available-label{
-    -fx-pref-width: 250px;
-}
-
-.available-button{
-    -fx-background-color: #3D52A0;
-    -fx-text-fill: white;
-    -fx-font-size: 15;
-    -fx-font-family: "serif";
-    -fx-font-weight: bold;
-    -fx-background-radius: 10;
-    -fx-pref-width: 120px;
-}
-
-.available-button:hover{
+.file-pane{
+    -fx-background-radius: 20;
     -fx-background-color: #5569b5;
-    -fx-scale-x: 1.02;
-    -fx-scale-y: 1.02;
+}
+
+.instruction-label{
+    -fx-pref-width: 750px;
+    -fx-pref-height: 70px;
+    -fx-text-alignment: center;
+    -fx-opacity: 0.5;
+}
+
+.viewList{
+     -fx-background-color: transparent; /* ensures inner bg is transparent */
+    -fx-text-fill: black;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-width: 0 0 1 0; /* underline style */
+    -fx-padding: 10 0 0 0;
+    -fx-pref-width: Infinity; /* expand to fill ScrollPane width */
+}
+
+/* Vertical scrollbar track */
+.viewList .scroll-bar:vertical {
+    -fx-background-color: #3D52A0;
+    -fx-pref-width: 12px;
+    -fx-border-radius: 10;
+}
+
+/* Vertical scrollbar thumb */
+.viewList .scroll-bar:vertical .thumb {
+    -fx-background-color: #6A8DFF;
+    -fx-background-radius: 10;
+}
+
+/* Horizontal scrollbar track */
+.viewList .scroll-bar:horizontal {
+    -fx-background-color: #3D52A0;
+    -fx-pref-height: 12px;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/* Horizontal scrollbar thumb */
+.viewList .scroll-bar:horizontal .thumb {
+    -fx-background-color: #6A8DFF;
+    -fx-background-radius: 10;
+}
+
+.viewList .list-cell:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-cursor: hand;
 }
 
 .generate-button{
@@ -370,20 +359,6 @@
     -fx-scale-y: 1.02;
 }
 
-/* Available Lecturer*/
-.id-label{
-    -fx-pref-width: 70px;
-}
-
-.unavailable-day-label{
-    -fx-padding: 0 0 0 10;
-    -fx-pref-width: 250px;
-}
-
-.unavailable-checkbox{
-    -fx-font-size: 15;
-    -fx-pref-width: 150px;
-}
 
 /* View Timetable*/
 .view-timetable-hbox{

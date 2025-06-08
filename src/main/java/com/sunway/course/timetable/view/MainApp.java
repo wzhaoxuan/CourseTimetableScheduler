@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.view;
+import akka.actor.typed.ActorSystem;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -7,6 +8,7 @@ import com.sunway.course.timetable.CourseTimetableSchedularApplication;
 import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.application.Application;
+import javafx.application.HostServices;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -15,12 +17,15 @@ import javafx.stage.Stage;
 public class MainApp extends Application {
     private static ConfigurableApplicationContext springContext;
     private static MainApp instance; // Singleton reference
+    public static ActorSystem<Void> actorSystem;
+    public static HostServices hostServices;
     private Stage primaryStage;
     private final String title = "SunwayCTS";
     private final String icon = "/images/sunwaycts.png";
 
     @Override
     public void init() throws Exception {
+        hostServices = getHostServices(); // Get HostServices for file opening
         // Start Spring Boot in the JavaFX lifecycle
         springContext = new SpringApplicationBuilder(CourseTimetableSchedularApplication.class).run();
         instance = this;
@@ -70,16 +75,6 @@ public class MainApp extends Application {
 
     public void loadGenerateTimetablePage() throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/GenerateTimetableScene.fxml"));
-        // Use Spring dependency injection
-        fxmlLoader.setControllerFactory(springContext::getBean);
-
-        Scene scene = new Scene(fxmlLoader.load());
-        primaryStage.setScene(scene);
-        primaryStage.show();
-    }
-
-    public void loadLecturerAvailabilityPage() throws Exception {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/LecturerAvailabilityScene.fxml"));
         // Use Spring dependency injection
         fxmlLoader.setControllerFactory(springContext::getBean);
 
@@ -142,6 +137,11 @@ public class MainApp extends Application {
     public void stop(){
         if(springContext != null){
             springContext.close(); // Ensure Spring context is closed when JavaFX stops
+        }
+
+        if (actorSystem != null) {
+            System.out.println("Shutting down ActorSystem...");
+            actorSystem.terminate();
         }
     }
 

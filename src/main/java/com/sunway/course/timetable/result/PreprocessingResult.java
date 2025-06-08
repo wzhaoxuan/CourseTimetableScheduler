@@ -1,7 +1,9 @@
-package com.sunway.course.timetable.model.assignment;
+package com.sunway.course.timetable.result;
 
 import java.util.List;
 import java.util.Map;
+
+import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 
 public class PreprocessingResult {
     private final List<ModuleAssignmentData> moduleAssignmentDataList;

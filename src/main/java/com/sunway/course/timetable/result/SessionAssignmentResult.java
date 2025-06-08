@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.model.assignment;
+package com.sunway.course.timetable.result;
 import java.time.LocalTime;
 import java.util.List;
 

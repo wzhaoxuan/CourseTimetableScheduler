@@ -63,11 +63,6 @@ public class NavigationService {
         mainApp.loadModulePage();
     }
 
-    public void loadLecturerAvailabilityPage() throws Exception {
-        checkMainApp();
-        mainApp.loadLecturerAvailabilityPage();
-    }
-
     public void loadTimetablePage() throws Exception {
         checkMainApp();
         mainApp.loadTimetablePage();
