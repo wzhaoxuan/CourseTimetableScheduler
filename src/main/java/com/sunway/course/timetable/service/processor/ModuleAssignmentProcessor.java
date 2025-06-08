@@ -501,7 +501,7 @@ public class ModuleAssignmentProcessor {
     public void exportPersistedTimetable(double finalScore) {
         Map<Integer, Map<String, List<Session>>> sessionMap = new HashMap<>();
 
-        List<PlanContent> allPlanContents = planContentService.getAllPlanContents();  // you must implement this
+        List<PlanContent> allPlanContents = planContentService.getAllPlanContents(); 
         for (PlanContent pc : allPlanContents) {
             Session session = pc.getSession();
             String moduleId = pc.getModule().getId();

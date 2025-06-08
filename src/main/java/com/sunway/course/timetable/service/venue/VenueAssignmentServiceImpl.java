@@ -33,7 +33,8 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     @Override
     public VenueAssignment saveAssignment(VenueAssignment assignment) {
-        return venueAssignmentRepository.save(assignment);
+        Optional<VenueAssignment> existing = venueAssignmentRepository.findById(assignment.getVenueAssignmentId());
+        return existing.orElseGet(() -> venueAssignmentRepository.save(assignment));
     }
 
     @Override
