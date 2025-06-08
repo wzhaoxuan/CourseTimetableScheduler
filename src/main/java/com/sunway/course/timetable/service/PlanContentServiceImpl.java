@@ -1,8 +1,7 @@
 package com.sunway.course.timetable.service;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
-import com.sunway.course.timetable.model.Session;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.interfaces.services.PlanContentService;
@@ -48,7 +47,7 @@ public class PlanContentServiceImpl implements PlanContentService{
         planContentRepository.deleteById(id);
     }
 
-    public Optional<PlanContent> getModuleBySession(Session session) {
-         return planContentRepository.findBySession(session);
+    public Optional<PlanContent> getModuleBySessionId(Long sessionId) {
+        return planContentRepository.findBySessionId(sessionId);
     }
 }

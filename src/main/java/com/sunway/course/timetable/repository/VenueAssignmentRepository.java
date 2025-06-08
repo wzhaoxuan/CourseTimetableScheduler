@@ -6,12 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
-import java.util.List;
-import com.sunway.course.timetable.model.Session;
 
 
 @Repository
 public interface VenueAssignmentRepository extends JpaRepository<VenueAssignment, VenueAssignmentId>{
-    Optional<VenueAssignment> findBySession(Session session);
+    Optional<VenueAssignment> findBySessionId(Long sessionId);
 
 }

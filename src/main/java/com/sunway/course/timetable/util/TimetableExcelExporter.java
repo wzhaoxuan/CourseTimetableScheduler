@@ -1,22 +1,34 @@
 package com.sunway.course.timetable.util;
-import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.model.plancontent.PlanContent;
-import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-
-import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
+import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 
 @Component
 public class TimetableExcelExporter {
@@ -30,7 +42,8 @@ public class TimetableExcelExporter {
     @Autowired
     private VenueAssignmentServiceImpl venueAssignmentService;
 
-    public void exportTimetableBySemester(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule) {
+    public void exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, double fitnessScore) {
+        System.out.printf("Final timetable fitness score: %.2f%%%n", fitnessScore);
         for (Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
             int semester = entry.getKey();
             List<Session> allSessions = new ArrayList<>();
@@ -39,11 +52,11 @@ public class TimetableExcelExporter {
                 allSessions.addAll(sessions);
             }
 
-            exportSemesterTimetable(semester, allSessions);
+            exportSemesterTimetable(semester, allSessions, fitnessScore);
         }
     }
 
-    private void exportSemesterTimetable(int semester, List<Session> sessions) {
+    private void exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore) {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Semester " + semester);
 
@@ -89,41 +102,48 @@ public class TimetableExcelExporter {
         typeColorMap.put("tutorial", createColoredStyle(workbook, IndexedColors.LIGHT_GREEN));
         typeColorMap.put("practical", createColoredStyle(workbook, IndexedColors.LIGHT_CORNFLOWER_BLUE));
 
-        for (Session session : sessions) {
-            String day = session.getDay();
+        Map<String, List<Session>> groupedSessions = sessions.stream().collect(Collectors.groupingBy(
+            s -> String.join("|",
+                s.getDay(),
+                s.getStartTime().toString(),
+                s.getTypeGroup(),
+                s.getType(),
+                s.getLecturer().getName(),
+                venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getVenue().getName()).orElse("Unknown")
+            )
+        ));
+
+        for (List<Session> groupList : groupedSessions.values()) {
+            Session s = groupList.get(0);
+            String day = s.getDay();
             Row row = dayRowMap.get(day);
             if (row == null) continue;
 
-            Optional<PlanContent> planOpt = planContentService.getModuleBySession(session);
-            String moduleCode = planOpt.map(p -> p.getModule().getId()).orElse("Unknown");
-
-            Optional<VenueAssignment> venueOpt = venueAssignmentService.getVenueBySession(session);
-            String venue = venueOpt.map(v -> v.getVenue().getName()).orElse("Unknown");
-
-            LocalTime start = session.getStartTime();
-            LocalTime end = session.getEndTime();
+            LocalTime start = s.getStartTime();
+            LocalTime end = s.getEndTime();
             int firstCol = timeSlotColumnMap.get(start);
             int lastCol = timeSlotColumnMap.get(end.minusMinutes(30));
 
-            String type = session.getType();
-            String typeGroup = session.getTypeGroup().split("-")[2];
-            String lecturerName = session.getLecturer().getName();
-            String content = String.format("%s-%s-%s\n(%s)\n%s",
-                    moduleCode, typeGroup, type, lecturerName, venue);
+            String moduleCode = planContentService.getModuleBySessionId(s.getId()).map(p -> p.getModule().getId()).orElse("Unknown");
+            String venue = venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getVenue().getName()).orElse("Unknown");
+            String lecturerName = s.getLecturer().getName();
+            String group = s.getTypeGroup().split("-")[2];
+            String type = s.getType();
 
-            Cell cell = row.createCell(firstCol);
-            cell.setCellValue(content);
+            String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturerName, venue);
+
+            Cell cell = row.getCell(firstCol);
+            if (cell == null) cell = row.createCell(firstCol);
+            String existing = cell.getStringCellValue();
+            cell.setCellValue(existing == null || existing.isEmpty() ? content : existing + "\n\n" + content);
 
             CellStyle colorStyle = typeColorMap.getOrDefault(type.toLowerCase(), wrapStyle);
             cell.setCellStyle(colorStyle);
 
             if (lastCol > firstCol && !isRegionAlreadyMerged(sheet, row.getRowNum(), firstCol, lastCol)) {
-                    sheet.addMergedRegion(new CellRangeAddress(
-                    row.getRowNum(), row.getRowNum(), firstCol, lastCol));
+                sheet.addMergedRegion(new CellRangeAddress(row.getRowNum(), row.getRowNum(), firstCol, lastCol));
             }
-
         }
-
         // Auto-size
         for (int i = 0; i <= timeSlotColumnMap.size(); i++) {
             sheet.autoSizeColumn(i);
@@ -142,6 +162,20 @@ public class TimetableExcelExporter {
             }
             row.setHeightInPoints(maxHeight);
         }
+
+        Row row = sheet.createRow(sheet.getLastRowNum() + 2);
+        Cell labelCell = row.createCell(0);
+        labelCell.setCellValue("Timetable Fitness Score:");
+        labelCell.setCellStyle(headerStyle);
+
+        Cell scoreCell = row.createCell(1);
+        scoreCell.setCellValue(fitnessScore + "%");
+        CellStyle scoreStyle = workbook.createCellStyle();
+        scoreStyle.cloneStyleFrom(headerStyle);
+        scoreStyle.setFillForegroundColor((fitnessScore < 80.0 ? IndexedColors.RED : IndexedColors.BRIGHT_GREEN).getIndex());
+        scoreStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        scoreCell.setCellStyle(scoreStyle);
+
 
         String userHome = System.getProperty("user.home");
         String downloadPath = userHome + "/Downloads/Semester_" + semester + "_Timetable.xlsx";

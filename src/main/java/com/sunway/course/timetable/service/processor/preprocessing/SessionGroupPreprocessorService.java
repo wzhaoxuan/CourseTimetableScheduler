@@ -2,6 +2,7 @@ package com.sunway.course.timetable.service.processor.preprocessing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
 @Service
 public class SessionGroupPreprocessorService {
     private final int MAX_GROUP_SIZE = 35;
+    private final Map<String, Set<Integer>> moduleSemesterMap = new HashMap<>();
 
     /**
      * Prepare session group metadata from raw sessions.
@@ -39,6 +41,12 @@ public class SessionGroupPreprocessorService {
                 studentsBySemester.computeIfAbsent(semester, k -> new ArrayList<>()).add(student);
             }
         }
+
+        for (Map.Entry<Integer, List<Student>> entry : studentsBySemester.entrySet()) {
+            int semester = entry.getKey();
+            moduleSemesterMap.computeIfAbsent(module.getId(), k -> new HashSet<>()).add(semester);
+        }
+
 
         List<SessionGroupMetaData> metaDataList = new ArrayList<>();
 
@@ -102,5 +110,10 @@ public class SessionGroupPreprocessorService {
     }
 
     private static record SessionTypeInfo(String type, boolean hasType, List<String> tutor) {}
+
+    public List<Integer> getSemestersForModule(String moduleId) {
+        return new ArrayList<>(moduleSemesterMap.getOrDefault(moduleId, Set.of()));
+    }
+
 }
 

@@ -11,22 +11,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.model.Lecturer;
+import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.assignment.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
-import com.sunway.course.timetable.service.WeekDayConstraintServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.excelReader.LecturerAvailablityExcelReaderService;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
 import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
 import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
-import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
@@ -119,7 +118,8 @@ public class RunnerUtil {
                                                     ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                                     ProgrammeDistributionClustering clustering,
                                                     TimetableExcelExporter timetableExcelExporter,
-                                                    LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil) {
+                                                    LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+                                                    FitnessEvaluator fitnessEvaluator) {
         return args -> {
             try {
                 String subjectPlanFilePath = "src/main/resources/file/SubjectPlan.xlsx";
@@ -162,7 +162,8 @@ public class RunnerUtil {
                                                                                     venueCoordinatorActor,
                                                                                     clustering,
                                                                                     timetableExcelExporter,
-                                                                                    lecturerDayAvailabilityUtil);
+                                                                                    lecturerDayAvailabilityUtil,
+                                                                                    fitnessEvaluator);
 
                 // Run the assignment
                 Map<Integer, Map<String, List<Session>>> session = processor.processAssignments(preprocessingResult.getModuleAssignmentDataList(), preprocessingResult.getStudentProgrammeMap(), preprocessingResult.getStudentSemesterMap());

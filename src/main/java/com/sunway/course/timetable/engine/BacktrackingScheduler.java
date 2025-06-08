@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.engine;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
@@ -59,15 +60,22 @@ public class BacktrackingScheduler {
         this.venueDistanceService = venueDistanceService;
          this.lecturerService = lecturerService;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
-        this.domains = new HashMap<>();
         this.assignment = new HashMap<>();
         this.studentAssignments = new HashMap<>();
 
+        // Run AC-3 propagation to compute reduced domains
+        this.domains = AC3ConstraintPropagator.propagate(
+            sessions,
+            lecturerMatrix,
+            venueMatrix,
+            studentMatrix,
+            venues,
+            lecturerService,
+            lecturerDayAvailabilityUtil
+        );
+
         for (SessionGroupMetaData meta : sessions) {
-            List<AssignmentOption> pruned = AC3DomainPruner.pruneDomain(
-                lecturerMatrix, venueMatrix, studentMatrix, venues, meta, meta.getEligibleStudents(),
-                lecturerService, lecturerDayAvailabilityUtil
-            );
+            List<AssignmentOption> pruned = this.domains.getOrDefault(meta, new ArrayList<>());
 
             if (pruned.isEmpty()) {
                 System.out.printf("[BACKTRACK] No valid options for: %s%n", meta.getTypeGroup());
@@ -86,6 +94,7 @@ public class BacktrackingScheduler {
 
             domains.put(meta, pruned);
         }
+
     }
 
     public Map<SessionGroupMetaData, AssignmentOption> solve() {

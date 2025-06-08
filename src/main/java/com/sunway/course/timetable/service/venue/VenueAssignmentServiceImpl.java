@@ -1,6 +1,4 @@
 package com.sunway.course.timetable.service.venue;
-import com.sunway.course.timetable.model.Session;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -43,9 +41,7 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
         venueAssignmentRepository.deleteById(key);
     }
 
-
-    public Optional<VenueAssignment> getVenueBySession(Session session){
-        return venueAssignmentRepository.findBySession(session);
-
+    public Optional<VenueAssignment> getVenueBySessionId(Long sessionId) {
+        return venueAssignmentRepository.findBySessionId(sessionId);
     }
 }

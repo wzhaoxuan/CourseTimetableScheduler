@@ -1,10 +1,11 @@
 package com.sunway.course.timetable.repository;
 import java.util.Optional;
-import com.sunway.course.timetable.model.Module;
-import com.sunway.course.timetable.model.Session;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 
@@ -15,5 +16,5 @@ public interface PlanContentRepository extends JpaRepository<PlanContent, PlanCo
     // For example, findByName(String name) to find students by their name
 
     Optional<PlanContent> findByModuleAndSession(Module module, Session session);
-    Optional<PlanContent> findBySession(Session session);
+    Optional<PlanContent> findBySessionId(Long sessionId);
 }

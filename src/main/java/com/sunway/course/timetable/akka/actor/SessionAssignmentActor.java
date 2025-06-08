@@ -1,8 +1,8 @@
 package com.sunway.course.timetable.akka.actor;
 import java.util.List;
 
-import com.sunway.course.timetable.engine.AC3DomainPruner;
-import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.DomainPruner;
+import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
@@ -141,7 +141,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         meta.setGroupCount(msg.groupCount);
         meta.setTotalStudents(msg.eligibleStudents.size());
 
-        List<AssignmentOption> prunedDomain = AC3DomainPruner.pruneDomain(
+        List<AssignmentOption> prunedDomain = DomainPruner.pruneDomain(
             msg.lecturerMatrix,
             msg.venueMatrix,
             msg.studentMatrix,

@@ -17,8 +17,8 @@ import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
-public class AC3DomainPruner {
-    private static final Logger log = LoggerFactory.getLogger(AC3DomainPruner.class);
+public class DomainPruner {
+    private static final Logger log = LoggerFactory.getLogger(DomainPruner.class);
 
     public record AssignmentOption(int day, int startSlot, Venue venue) {}
 

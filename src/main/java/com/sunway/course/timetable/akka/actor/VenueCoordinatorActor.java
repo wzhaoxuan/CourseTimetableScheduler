@@ -7,7 +7,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;

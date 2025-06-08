@@ -21,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.engine.AC3DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.engine.BacktrackingScheduler;
+import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Session;
@@ -49,8 +51,8 @@ import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
-import com.sunway.course.timetable.util.tracker.CreditHourTracker;
 import com.sunway.course.timetable.util.TimetableExcelExporter;
+import com.sunway.course.timetable.util.tracker.CreditHourTracker;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
@@ -70,6 +72,7 @@ import akka.actor.typed.javadsl.AskPattern;
 public class ModuleAssignmentProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(ModuleAssignmentProcessor.class);
+    private static final double FITNESS_THRESHOLD = 80.0;
 
     // === Dependencies ===
     private final CreditHourTracker creditTracker;
@@ -84,6 +87,7 @@ public class ModuleAssignmentProcessor {
     private final VenueSorterService venueSorterService;
     private final TimetableExcelExporter timetableExcelExporter;
     public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
+    public final FitnessEvaluator fitnessEvaluator;
 
     // === Singleton Matrices ===
     private final VenueAvailabilityMatrix venueMatrix;
@@ -121,7 +125,8 @@ public class ModuleAssignmentProcessor {
                                       ActorRef<VenueCoordinatorActor.VenueCoordinatorCommand> venueCoordinatorActor,
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
-                                      LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+                                      LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+                                      FitnessEvaluator fitnessEvaluator
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -139,6 +144,7 @@ public class ModuleAssignmentProcessor {
         this.clustering = clustering;
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
+        this.fitnessEvaluator = fitnessEvaluator;
         this.creditTracker = new CreditHourTracker();
     }
  
@@ -202,6 +208,8 @@ public class ModuleAssignmentProcessor {
             meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
         }
 
+        log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
+
         processAssignmentsHybrid(allMetaData);
         return sessionBySemesterAndModule;
     }
@@ -216,7 +224,7 @@ public class ModuleAssignmentProcessor {
      * @param allMetaData
      */
     private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData) {
-        log.info("Running hybrid scheduling: actor-first, fallback to backtracking");
+        log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness/fail");
 
         List<SessionGroupMetaData> failedMeta = new ArrayList<>();
 
@@ -248,8 +256,21 @@ public class ModuleAssignmentProcessor {
                     lecturer, result.getVenue(), result.getAssignedStudents());
         }
 
-        if (!failedMeta.isEmpty()) {
-            log.info("[HYBRID] Falling back to backtracking for {} failed session groups", failedMeta.size());
+        List<Session> allScheduledSessions = sessionBySemesterAndModule.values().stream()
+            .flatMap(m -> m.values().stream())
+            .flatMap(List::stream)
+            .toList();
+        
+
+        // 1st fitness evaluation after actor-based scheduling
+        FitnessResult initialFitness = fitnessEvaluator.evaluate(allScheduledSessions, sessionVenueMap);
+
+        double initialScore = initialFitness.getPercentage();
+        log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
+
+        // Retry failed or low-quality schedules
+        if (!failedMeta.isEmpty() || initialScore < FITNESS_THRESHOLD) {
+            log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
             scheduleWithBacktracking(failedMeta);
         }
 
@@ -257,7 +278,17 @@ public class ModuleAssignmentProcessor {
         printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
         persistAndGroupSessions(sessionToModuleIdMap);
         actorSystem.terminate();
-        exportPersistedTimetable();
+
+        List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
+        .flatMap(m -> m.values().stream())
+        .flatMap(List::stream)
+        .toList();
+
+        FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap);
+        double finalScore = finalFitness.getPercentage();
+        log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
+
+        exportPersistedTimetable(finalScore);
     }
 
 
@@ -397,15 +428,15 @@ public class ModuleAssignmentProcessor {
 
 
     private void persistAndGroupSessions(Map<Session, String> sessionToModuleIdMap) {
-        // sessionBySemesterAndModule.clear();
+        Map<Session, Venue> newSessionVenueMap = new HashMap<>();
 
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
-            Session session = entry.getKey();
+            Session originalSession = entry.getKey();
             String moduleId = entry.getValue();
 
             // Persist session
-            Session savedSession = sessionService.saveSession(session);
-            Venue venue = sessionVenueMap.get(session);
+            Session savedSession = sessionService.saveSession(originalSession);
+            Venue venue = sessionVenueMap.get(originalSession);
             if (venue != null) {
                 VenueAssignment assignment = new VenueAssignment();
 
@@ -418,8 +449,9 @@ public class ModuleAssignmentProcessor {
                 assignment.setSession(savedSession);
 
                 venueAssignmentService.saveAssignment(assignment);
-            }
 
+                newSessionVenueMap.put(savedSession, venue);
+            }
 
             // Fetch module by ID
             Optional<Module> optionalModule = moduleService.getModuleById(moduleId);
@@ -441,18 +473,32 @@ public class ModuleAssignmentProcessor {
             planContentService.savePlanContent(planContent);
 
             // Group by semester and module
-            Integer semester = studentSemesterMap.get(session.getStudent().getId());
-            if (semester == null) continue;
-
-            sessionBySemesterAndModule
-                .computeIfAbsent(semester, k -> new HashMap<>())
-                .computeIfAbsent(module.getId(), k -> new ArrayList<>())
-                .add(savedSession);
+            List<Integer> allSemesters = sessionGroupPreprocessorService.getSemestersForModule(moduleId);
+            if (allSemesters != null) {
+                for (Integer semester : allSemesters) {
+                    sessionBySemesterAndModule
+                        .computeIfAbsent(semester, k -> new HashMap<>())
+                        .computeIfAbsent(module.getId(), k -> new ArrayList<>())
+                        .add(savedSession);
+                }
+            } else {
+                // Fallback to student's semester if module-semester mapping is missing
+                Integer fallbackSemester = studentSemesterMap.get(originalSession.getStudent().getId());
+                if (fallbackSemester != null) {
+                    sessionBySemesterAndModule
+                        .computeIfAbsent(fallbackSemester, k -> new HashMap<>())
+                        .computeIfAbsent(module.getId(), k -> new ArrayList<>())
+                        .add(savedSession);
+                }
+            }
         }
+        // Update the sessionVenueMap to use persisted session references
+        sessionVenueMap.clear();
+        sessionVenueMap.putAll(newSessionVenueMap);
     }
 
     @Transactional(readOnly = true)
-    public void exportPersistedTimetable() {
+    public void exportPersistedTimetable(double finalScore) {
         Map<Integer, Map<String, List<Session>>> sessionMap = new HashMap<>();
 
         List<PlanContent> allPlanContents = planContentService.getAllPlanContents();  // you must implement this
@@ -469,7 +515,7 @@ public class ModuleAssignmentProcessor {
                 .add(session);
         }
 
-        timetableExcelExporter.exportTimetableBySemester(sessionMap);
+        timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore);
     }
 
 

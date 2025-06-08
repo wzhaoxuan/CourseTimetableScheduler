@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.model;
 import java.time.LocalTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -14,7 +15,9 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "session")
 public class Session {
+    @Column(name = "temp_id", nullable = false, unique = true, updatable = false)
     private final String tempId = UUID.randomUUID().toString();
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -123,4 +126,18 @@ public class Session {
                 ", type_group='" + typeGroup + '\'' +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Session)) return false;
+        Session other = (Session) o;
+        return Objects.equals(tempId, other.tempId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tempId);
+    }
+
 }
