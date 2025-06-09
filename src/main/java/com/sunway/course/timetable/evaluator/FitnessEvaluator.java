@@ -44,6 +44,7 @@ public class FitnessEvaluator {
         // Hard constraints
         int studentClashes = checkStudentClashes(sessions);
         int lecturerClashes = checkLecturerClashes(sessions);
+        
 
         hardConstraints.add(new WeightedConstraint("Student Clashes", HARD_VIOLATION_WEIGHT, Math.max(0, studentClashes)));
         hardConstraints.add(new WeightedConstraint("Lecturer Clashes", HARD_VIOLATION_WEIGHT, Math.max(0, lecturerClashes)));
@@ -53,12 +54,15 @@ public class FitnessEvaluator {
         // Soft constraints
         int idleGaps = checkIdleGaps(sessions);
         int badVenues = checkNonPreferredVenues(sessions, sessionVenueMap);
+        int practicalBeforeLecture = checkPracticalBeforeLecture(sessions);
 
-        softConstraints.add(new WeightedConstraint("Idle Gaps", 20.0, Math.max(0, idleGaps)));
-        softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 1.5, Math.max(0, badVenues)));
+        softConstraints.add(new WeightedConstraint("Idle Gaps", 150.0, Math.max(0, idleGaps)));
+        softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 80.0, Math.max(0, badVenues)));
+        softConstraints.add(new WeightedConstraint("Practical Before Lecture", 100.0, Math.max(0, practicalBeforeLecture)));
 
-        maxPenalty += 20.0 * sessions.size();
-        maxPenalty += 1.5 * sessions.size();
+        maxPenalty += 150.0 * sessions.size();
+        maxPenalty += 80.0 * sessions.size();
+        maxPenalty += 100.0 * sessions.size();
 
         for (WeightedConstraint hc : hardConstraints) totalPenalty += hc.score();
         for (WeightedConstraint sc : softConstraints) totalPenalty += sc.score();
@@ -207,6 +211,40 @@ public class FitnessEvaluator {
         }
         return nonPreferred;
     }
+
+
+    private static int checkPracticalBeforeLecture(List<Session> sessions) {
+    Map<String, List<Session>> sessionsByModule = new HashMap<>();
+
+    for (Session s : sessions) {
+        String moduleKey = s.getTypeGroup() != null ? s.getTypeGroup().split("-G")[0] : null;
+        if (moduleKey != null) {
+            sessionsByModule.computeIfAbsent(moduleKey, k -> new ArrayList<>()).add(s);
+        }
+    }
+
+    int count = 0;
+    for (List<Session> moduleSessions : sessionsByModule.values()) {
+        Session lecture = moduleSessions.stream()
+            .filter(s -> s.getType().equalsIgnoreCase("Lecture"))
+            .findFirst().orElse(null);
+
+        if (lecture == null) continue;
+
+        for (Session s : moduleSessions) {
+            if (!s.getType().equalsIgnoreCase("Practical") &&
+                !s.getType().equalsIgnoreCase("Tutorial") &&
+                !s.getType().equalsIgnoreCase("Workshop")) continue;
+
+            if (s.getDay().compareTo(lecture.getDay()) < 0 ||
+                (s.getDay().equals(lecture.getDay()) && s.getStartTime().isBefore(lecture.getEndTime()))) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
 }
 
 

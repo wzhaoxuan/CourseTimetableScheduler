@@ -1,5 +1,7 @@
 package com.sunway.course.timetable.akka.actor;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import com.sunway.course.timetable.engine.DomainPruner;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
@@ -42,7 +44,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         public final List<Venue> allVenues;
         public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
         public final LecturerServiceImpl lecturerService;
-
+        public final Map<String, SessionAssigned> lectureAssignmentsByModule; // ADDED
 
         public AssignSession(int durationHours, int minCapacity, String lecturerName,
                               Module module, List<Student> eligibleStudents,
@@ -55,7 +57,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                               StudentAvailabilityMatrix studentMatrix,
                               List<Venue> allVenues,
                               LecturerServiceImpl lecturerService,
-                              LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+                              LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+                              Map<String, SessionAssigned> lectureAssignmentsByModule // ADDED
                               ) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
@@ -74,7 +77,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             this.allVenues = allVenues;
             this.lecturerService = lecturerService;
             this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
-            
+            this.lectureAssignmentsByModule = lectureAssignmentsByModule; // ADDED
         }
     }
 
@@ -131,7 +134,6 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     private Behavior<SessionAssignmentCommand> onAssignSession(AssignSession msg) {
         this.originalRequester = msg.replyTo;
 
-        // Build minimal metadata to pass to domain pruner
         SessionGroupMetaData meta = new SessionGroupMetaData();
         meta.setModuleId(msg.module.getId());
         meta.setType(msg.sessionType);
@@ -152,7 +154,31 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             msg.lecturerDayAvailabilityUtil
         );
 
-        // Forward the request to the VenueCoordinatorActor
+        if (msg.sessionType.equalsIgnoreCase("Practical") ||
+            msg.sessionType.equalsIgnoreCase("Tutorial") ||
+            msg.sessionType.equalsIgnoreCase("Workshop")) {
+
+            SessionAssigned lecture = null;
+            if (msg.lectureAssignmentsByModule != null) {
+                lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
+            }
+
+            if (lecture != null) {
+                int lectureDay = lecture.dayIndex;
+                int lectureEndSlot = lecture.startIndex + lecture.durationSlots;
+
+                prunedDomain.sort(Comparator
+                    .comparingInt((AssignmentOption opt) -> {
+                        boolean afterLecture =
+                            opt.day() > lectureDay ||
+                            (opt.day() == lectureDay && opt.startSlot() >= lectureEndSlot);
+                        return afterLecture ? 0 : 1;
+                    })
+                    .thenComparingInt(AssignmentOption::startSlot)
+                );
+            }
+        }
+
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
             msg.sessionType, msg.groupIndex, msg.groupCount,
@@ -180,4 +206,3 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         return this;
     }
 }
-

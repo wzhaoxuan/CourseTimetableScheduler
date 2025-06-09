@@ -109,6 +109,7 @@ public class ModuleAssignmentProcessor {
     private Map<Session, String> sessionToModuleIdMap = new HashMap<>();
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
+    private Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule = new HashMap<>();
     private double finalScore;
     private List<File> exportedFiles;
 
@@ -244,17 +245,29 @@ public class ModuleAssignmentProcessor {
                 })
                 .toList();
 
-
             SessionAssignmentResult result = scheduleSessionViaActors(
                 meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
                 meta.getTotalStudents(), lecturerName, filteredEligibleStudents,
-                meta.getGroupIndex(), meta.getGroupCount()
+                meta.getGroupIndex(), meta.getGroupCount(), lectureAssignmentsByModule
             );
 
             if (result == null) {
                 log.warn("[HYBRID] Actor scheduling failed for {}", meta.getTypeGroup());
                 failedMeta.add(meta);
                 continue;
+            }
+
+            // Reconstruct SessionAssigned and store if type is Lecture
+            if (meta.getType().equalsIgnoreCase("Lecture")) {
+                int dayIndex = getDayIndex(result.getDay());
+                int startSlot = getStartSlot(result.getStartTime());
+                int durationSlots = (int) (Duration.between(result.getStartTime(), result.getEndTime()).toMinutes() / 30);
+
+                SessionAssignmentActor.SessionAssigned assigned = new SessionAssignmentActor.SessionAssigned(
+                    result.getVenue(), dayIndex, startSlot, durationSlots, result.getAssignedStudents()
+                );
+
+                lectureAssignmentsByModule.put(meta.getModuleId(), assigned);
             }
 
             Lecturer lecturer = lecturerService.getLecturerByName(lecturerName).orElse(null);
@@ -266,15 +279,11 @@ public class ModuleAssignmentProcessor {
             .flatMap(m -> m.values().stream())
             .flatMap(List::stream)
             .toList();
-        
 
-        // 1st fitness evaluation after actor-based scheduling
         FitnessResult initialFitness = fitnessEvaluator.evaluate(allScheduledSessions, sessionVenueMap);
-
         double initialScore = initialFitness.getPercentage();
         log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
 
-        // Retry failed or low-quality schedules
         if (!failedMeta.isEmpty() || initialScore < FITNESS_THRESHOLD) {
             log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
             scheduleWithBacktracking(failedMeta);
@@ -299,6 +308,7 @@ public class ModuleAssignmentProcessor {
     }
 
 
+
     /**
      * Call the actor model to schedule a session based on type, group and total student count,
      * assigning day/start/end and best-fit venue.
@@ -310,7 +320,7 @@ public class ModuleAssignmentProcessor {
      */
     private SessionAssignmentResult scheduleSessionViaActors(int semester,
         String moduleId, String type, String typeGroup, int totalStudents, String lecturerName,
-        List<Student> eligibleStudent, int groupIndex, int groupCount) {
+        List<Student> eligibleStudent, int groupIndex, int groupCount, Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule) {
 
         Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
         Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
@@ -367,7 +377,8 @@ public class ModuleAssignmentProcessor {
                     studentMatrix,
                     venueMatrix.getSortedVenues(),
                     lecturerService,
-                    lecturerDayAvailabilityUtil
+                    lecturerDayAvailabilityUtil,
+                    lectureAssignmentsByModule
             ),
             Duration.ofSeconds(100),
             actorSystem.scheduler()
@@ -627,6 +638,21 @@ public class ModuleAssignmentProcessor {
             case "PRACTICAL" -> 2;
             default -> 1;
         };
+    }
+
+    private int getDayIndex(String day) {
+        return switch (day.toLowerCase()) {
+            case "monday" -> 0;
+            case "tuesday" -> 1;
+            case "wednesday" -> 2;
+            case "thursday" -> 3;
+            case "friday" -> 4;
+            default -> throw new IllegalArgumentException("Unknown day: " + day);
+        };
+    }
+
+    private int getStartSlot(LocalTime startTime) {
+        return (int) Duration.between(LocalTime.of(8, 0), startTime).toMinutes() / 30;
     }
 }
 
