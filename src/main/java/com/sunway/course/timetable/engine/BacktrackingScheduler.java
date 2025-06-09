@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.engine;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
@@ -38,11 +41,11 @@ public class BacktrackingScheduler {
     public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     public final LecturerServiceImpl lecturerService;
     private final Map<Long, Integer> studentAssignmentCount = new HashMap<>();
-    private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>(); // Map<studentId, Set<module-type>> e.g., "CSC1024-PRACTICAL"
+    private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
+    private final FitnessEvaluator fitnessEvaluator;
 
     private final int MIN_GROUP_SIZE = 5;
     private static final int MAX_GROUP_SIZE = 35;
-
 
     public BacktrackingScheduler(List<SessionGroupMetaData> sessions,
                                   LecturerAvailabilityMatrix lecturerMatrix,
@@ -51,19 +54,20 @@ public class BacktrackingScheduler {
                                   List<Venue> venues,
                                   VenueDistanceServiceImpl venueDistanceService,
                                   LecturerServiceImpl lecturerService,
-                                  LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+                                  LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+                                  FitnessEvaluator fitnessEvaluator
                                   ) {
         this.lecturerMatrix = lecturerMatrix;
         this.venueMatrix = venueMatrix;
         this.studentMatrix = studentMatrix;
         this.sessions = sessions;
         this.venueDistanceService = venueDistanceService;
-         this.lecturerService = lecturerService;
+        this.lecturerService = lecturerService;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
+        this.fitnessEvaluator = fitnessEvaluator;
         this.assignment = new HashMap<>();
         this.studentAssignments = new HashMap<>();
 
-        // Run AC-3 propagation to compute reduced domains
         this.domains = AC3ConstraintPropagator.propagate(
             sessions,
             lecturerMatrix,
@@ -87,14 +91,13 @@ public class BacktrackingScheduler {
             pruned.sort(Comparator
                 .comparingInt((AssignmentOption opt) -> {
                     int surplus = opt.venue().getCapacity() - requiredCapacity;
-                    return (surplus < 0) ? Integer.MAX_VALUE : surplus; // penalize too-small rooms
+                    return (surplus < 0) ? Integer.MAX_VALUE : surplus;
                 })
                 .thenComparingDouble(opt -> venueDistanceService.getDistanceScore(referenceVenue, opt.venue().getName()))
             );
 
             domains.put(meta, pruned);
         }
-
     }
 
     public Map<SessionGroupMetaData, AssignmentOption> solve() {
@@ -127,6 +130,59 @@ public class BacktrackingScheduler {
         return false;
     }
 
+    private List<Session> buildCurrentSessions() {
+        List<Session> sessions = new ArrayList<>();
+        for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : assignment.entrySet()) {
+            SessionGroupMetaData meta = entry.getKey();
+            AssignmentOption option = entry.getValue();
+            List<Student> assignedStudents = studentAssignments.getOrDefault(meta, List.of());
+            for (Student student : assignedStudents) {
+                Session session = new Session();
+                session.setType(meta.getType());
+                session.setTypeGroup(meta.getTypeGroup());
+                session.setLecturer(lecturerService.getLecturerByName(meta.getLecturerName()).orElse(null));
+                session.setDay(getDayName(option.day()));
+                session.setStartTime(LocalTime.of(8, 0).plusMinutes(option.startSlot() * 30L));
+                session.setEndTime(LocalTime.of(8, 0).plusMinutes((option.startSlot() + 4) * 30L));
+                session.setStudent(student);
+                sessions.add(session);
+            }
+        }
+        return sessions;
+    }
+
+    private Map<Session, Venue> buildCurrentVenueMap() {
+        Map<Session, Venue> map = new HashMap<>();
+        for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : assignment.entrySet()) {
+            SessionGroupMetaData meta = entry.getKey();
+            AssignmentOption option = entry.getValue();
+            List<Student> assignedStudents = studentAssignments.getOrDefault(meta, List.of());
+            for (Student student : assignedStudents) {
+                Session session = new Session();
+                session.setType(meta.getType());
+                session.setTypeGroup(meta.getTypeGroup());
+                session.setLecturer(lecturerService.getLecturerByName(meta.getLecturerName()).orElse(null));
+                session.setDay(getDayName(option.day()));
+                session.setStartTime(LocalTime.of(8, 0).plusMinutes(option.startSlot() * 30L));
+                session.setEndTime(LocalTime.of(8, 0).plusMinutes((option.startSlot() + 4) * 30L));
+                session.setStudent(student);
+                map.put(session, option.venue());
+            }
+        }
+        return map;
+    }
+
+    private String getDayName(int index) {
+        return switch (index) {
+            case 0 -> "Monday";
+            case 1 -> "Tuesday";
+            case 2 -> "Wednesday";
+            case 3 -> "Thursday";
+            case 4 -> "Friday";
+            default -> throw new IllegalArgumentException("Invalid day index: " + index);
+        };
+    }
+
     private boolean isConsistent(SessionGroupMetaData meta, AssignmentOption option) {
         int start = option.startSlot();
         int end = start + 4;
@@ -140,11 +196,6 @@ public class BacktrackingScheduler {
             .filter(s -> !isAssignedToSameTypeGroup(meta, s.getId()))
             .count();
 
-        /**
-         * Check if the number of available students meets the minimum group size requirement.
-         * Current total students = 42, G2 has only 7 students, therefore MIN_GROUP_SIZE must be less.
-         * The MIN_GROUP_SIZE is not effecient, need to be change.
-         */
         return availableStudents >= MIN_GROUP_SIZE;
     }
 
@@ -196,11 +247,10 @@ public class BacktrackingScheduler {
     }
 
     private boolean isAssignedToSameTypeGroup(SessionGroupMetaData meta, long studentId) {
-    String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
-    Set<String> assignedTypes = studentAssignedTypes.getOrDefault(studentId, Set.of());
-    // This means the student is already in a group for this specific type (e.g., Practical) of this module
-    return assignedTypes.contains(key);
+        String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
+        Set<String> assignedTypes = studentAssignedTypes.getOrDefault(studentId, Set.of());
+        return assignedTypes.contains(key);
+    }
 }
 
-}
 

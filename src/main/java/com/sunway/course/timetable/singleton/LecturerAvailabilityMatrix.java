@@ -123,6 +123,16 @@ public class LecturerAvailabilityMatrix {
         }
     }
 
+    public synchronized void reset() {
+        for (boolean[][] matrix : availability.values()) {
+            for (int day = 0; day < DAYS; day++) {
+                for (int hour = 0; hour < TIME_SLOTS_PER_DAY; hour++) {
+                    matrix[day][hour] = true;
+                }
+            }
+        }
+    }
+
     // Range validation
     private boolean isValidRange(int day, int start, int end) {
         return day >= 0 && day < DAYS && start >= 0 && end <= TIME_SLOTS_PER_DAY && start < end;

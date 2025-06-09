@@ -5,39 +5,36 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.repository.SatisfactionRepository;
 
 @Component
 public class FitnessEvaluator {
 
     private static final Logger log = LoggerFactory.getLogger(FitnessEvaluator.class); 
-    public static final double HARD_VIOLATION_WEIGHT = 1000.0;
+    public static final double HARD_VIOLATION_WEIGHT = 500.0;
+
+    private final SatisfactionRepository satisfactionRepository;
+
+    public FitnessEvaluator(SatisfactionRepository satisfactionRepository) {
+        this.satisfactionRepository = satisfactionRepository;
+    }
 
     public record WeightedConstraint(String name, double weight, double penalty) {
         public double score() { return weight * penalty; }
     }
 
     public FitnessResult evaluate(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
-
-        // for (Session session : sessions) {
-        //     log.info("Scheduled session: {} on {} from {} to {} with Students: {} and Lecturer: {}",
-        //         session.getType(), session.getDay(),
-        //         session.getStartTime(), session.getEndTime(),
-        //         session.getStudent(), session.getLecturer().getName());
-        // }
-
-        // for(Map.Entry<Session, Venue> entry : sessionVenueMap.entrySet()) {
-        //     Session session = entry.getKey();
-        //     Venue venue = entry.getValue();
-        //     log.info("Session {} assigned to venue {}", session, venue.getName());
-        // }
-
         double totalPenalty = 0.0;
         double maxPenalty = 0.0;
 
@@ -47,24 +44,27 @@ public class FitnessEvaluator {
         // Hard constraints
         int studentClashes = checkStudentClashes(sessions);
         int lecturerClashes = checkLecturerClashes(sessions);
-        hardConstraints.add(new WeightedConstraint("Student Clashes", HARD_VIOLATION_WEIGHT, studentClashes));
-        hardConstraints.add(new WeightedConstraint("Lecturer Clashes", HARD_VIOLATION_WEIGHT, lecturerClashes));
-        maxPenalty += HARD_VIOLATION_WEIGHT * sessions.size();
-        maxPenalty += HARD_VIOLATION_WEIGHT * sessions.size();
+
+        hardConstraints.add(new WeightedConstraint("Student Clashes", HARD_VIOLATION_WEIGHT, Math.max(0, studentClashes)));
+        hardConstraints.add(new WeightedConstraint("Lecturer Clashes", HARD_VIOLATION_WEIGHT, Math.max(0, lecturerClashes)));
+
+        maxPenalty += HARD_VIOLATION_WEIGHT * (studentClashes + lecturerClashes);
 
         // Soft constraints
         int idleGaps = checkIdleGaps(sessions);
         int badVenues = checkNonPreferredVenues(sessions, sessionVenueMap);
-        softConstraints.add(new WeightedConstraint("Idle Gaps", 2.0, idleGaps));
-        softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 1.5, badVenues));
-        maxPenalty += 2.0 * sessions.size();
+
+        softConstraints.add(new WeightedConstraint("Idle Gaps", 20.0, Math.max(0, idleGaps)));
+        softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 1.5, Math.max(0, badVenues)));
+
+        maxPenalty += 20.0 * sessions.size();
         maxPenalty += 1.5 * sessions.size();
 
         for (WeightedConstraint hc : hardConstraints) totalPenalty += hc.score();
         for (WeightedConstraint sc : softConstraints) totalPenalty += sc.score();
 
-        double percentage = maxPenalty == 0 ? 100.0 : Math.max(0.0, 100.0 * (1.0 - totalPenalty / maxPenalty));
-        percentage = Math.round(percentage * 100.0) / 100.0;
+        double percentage = maxPenalty == 0 ? 100.0 : 100.0 * (1.0 - totalPenalty / maxPenalty);
+        percentage = Math.max(0.0, Math.min(100.0, Math.round(percentage * 100.0) / 100.0));
 
         List<FitnessResult.Violation> hard = hardConstraints.stream()
             .map(c -> new FitnessResult.Violation(c.name(), c.weight(), c.penalty(), c.score()))
@@ -74,34 +74,92 @@ public class FitnessEvaluator {
             .map(c -> new FitnessResult.Violation(c.name(), c.weight(), c.penalty(), c.score()))
             .toList();
 
+        System.out.println("---- FITNESS DEBUG ----");
+        System.out.println("Sessions: " + sessions.size());
+        System.out.println("Student clashes: " + studentClashes);
+        System.out.println("Lecturer clashes: " + lecturerClashes);
+        System.out.println("Idle gaps: " + idleGaps);
+        System.out.println("Bad venues: " + badVenues);
+        System.out.println("Total penalty: " + totalPenalty);
+        System.out.println("Max penalty: " + maxPenalty);
+        System.out.println("Final Fitness %: " + percentage);
+
+        int totalViolationCount = (int) Stream.concat(hardConstraints.stream(), softConstraints.stream())
+            .mapToDouble(WeightedConstraint::penalty)
+            .sum();
+
+        Satisfaction satisfaction = new Satisfaction();
+        satisfaction.setScore(percentage);
+        satisfaction.setConflict(totalViolationCount);
+        satisfactionRepository.save(satisfaction);
+
         return new FitnessResult(percentage, totalPenalty, maxPenalty, hard, soft);
     }
 
     private static int checkStudentClashes(List<Session> sessions) {
         int clashes = 0;
         Map<Long, List<Session>> byStudent = new HashMap<>();
+
         for (Session s : sessions) {
             if (s.getStudent() == null) continue;
-            byStudent.computeIfAbsent(s.getStudent().getId(), k -> new ArrayList<>()).add(s);
+            byStudent
+                .computeIfAbsent(s.getStudent().getId(), k -> new ArrayList<>())
+                .add(s);
         }
+
         for (List<Session> studentSessions : byStudent.values()) {
-            clashes += countOverlaps(studentSessions);
+            // Deduplicate by day + start + end time
+            List<Session> distinct = studentSessions.stream()
+                .collect(Collectors.collectingAndThen(
+                    Collectors.toCollection(() ->
+                        new TreeSet<>(Comparator
+                            .comparing(Session::getDay)
+                            .thenComparing(Session::getStartTime)
+                            .thenComparing(Session::getEndTime)
+                            .thenComparing(s -> s.getTypeGroup() != null ? s.getTypeGroup() : "")
+                        )
+                    ),
+                    ArrayList::new
+                ));
+
+            clashes += countOverlaps(distinct);
         }
+
         return clashes;
     }
+
 
     private static int checkLecturerClashes(List<Session> sessions) {
         int clashes = 0;
         Map<String, List<Session>> byLecturer = new HashMap<>();
+
         for (Session s : sessions) {
             if (s.getLecturer() == null) continue;
-            byLecturer.computeIfAbsent(s.getLecturer().getName(), k -> new ArrayList<>()).add(s);
+            byLecturer
+                .computeIfAbsent(s.getLecturer().getName(), k -> new ArrayList<>())
+                .add(s);
         }
+
         for (List<Session> lecturerSessions : byLecturer.values()) {
-            clashes += countOverlaps(lecturerSessions);
+            // Deduplicate by day + start + end time
+            List<Session> distinct = lecturerSessions.stream()
+                .collect(Collectors.collectingAndThen(
+                    Collectors.toCollection(() ->
+                        new TreeSet<>(Comparator
+                            .comparing(Session::getDay)
+                            .thenComparing(Session::getStartTime)
+                            .thenComparing(Session::getEndTime)
+                        )
+                    ),
+                    ArrayList::new
+                ));
+
+            clashes += countOverlaps(distinct);
         }
+
         return clashes;
     }
+
 
     private static int countOverlaps(List<Session> list) {
         int overlaps = 0;

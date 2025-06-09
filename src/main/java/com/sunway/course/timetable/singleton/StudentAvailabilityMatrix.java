@@ -83,10 +83,13 @@ public class StudentAvailabilityMatrix {
         return available;
     }
 
-    /**
-     * Optional reset logic (if needed between schedules).
-     */
     public synchronized void reset() {
-        availabilityMap.clear();
+        for (boolean[][] matrix : availabilityMap.values()) {
+            for (int day = 0; day < DAYS; day++) {
+                for (int hour = 0; hour < TIME_SLOTS_PER_DAY; hour++) {
+                    matrix[day][hour] = true;
+                }
+            }
+        }
     }
 }

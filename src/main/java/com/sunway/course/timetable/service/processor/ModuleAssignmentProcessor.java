@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.service.processor;
+import java.io.File;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -401,7 +401,8 @@ public class ModuleAssignmentProcessor {
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
             allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
-            venueDistanceService, lecturerService, lecturerDayAvailabilityUtil
+            venueDistanceService, lecturerService, lecturerDayAvailabilityUtil,
+            fitnessEvaluator
         );
 
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();

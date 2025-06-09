@@ -173,6 +173,22 @@ public class VenueAvailabilityMatrix {
         }
     }
 
+    public void reset() {
+        lock.writeLock().lock();
+        try {
+            for (int v = 0; v < availability.length; v++) {
+                for (int t = 0; t < TIME_SLOTS_PER_DAY; t++) {
+                    for (int d = 0; d < DAYS; d++) {
+                        availability[v][t][d] = false;
+                    }
+                }
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+
 
     /**
      * Returns the sorted list of venues used in the matrix.
