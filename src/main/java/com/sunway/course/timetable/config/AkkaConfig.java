@@ -11,9 +11,9 @@ import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
+import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.view.MainApp;
-import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;

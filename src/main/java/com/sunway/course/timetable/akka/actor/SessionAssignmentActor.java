@@ -1,9 +1,8 @@
 package com.sunway.course.timetable.akka.actor;
+import java.time.Duration;
 import java.time.LocalTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.time.Duration;
 
 import com.sunway.course.timetable.engine.DomainPruner;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
@@ -156,40 +155,40 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             msg.lecturerDayAvailabilityUtil
         );
 
-        if (msg.sessionType.equalsIgnoreCase("Practical") ||
-            msg.sessionType.equalsIgnoreCase("Tutorial") ||
-            msg.sessionType.equalsIgnoreCase("Workshop")) {
+        // if (msg.sessionType.equalsIgnoreCase("Practical") ||
+        //     msg.sessionType.equalsIgnoreCase("Tutorial") ||
+        //     msg.sessionType.equalsIgnoreCase("Workshop")) {
 
-            SessionAssigned lecture = null;
-            if (msg.lectureAssignmentsByModule != null) {
-                lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
-            }
+        //     SessionAssigned lecture = null;
+        //     if (msg.lectureAssignmentsByModule != null) {
+        //         lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
+        //     }
 
-            if (lecture != null) {
-                int lectureDay = lecture.dayIndex;
-                int lectureEndSlot = lecture.startIndex + lecture.durationSlots;
+        //     if (lecture != null) {
+        //         int lectureDay = lecture.dayIndex;
+        //         int lectureEndSlot = lecture.startIndex + lecture.durationSlots;
 
-                prunedDomain.sort(Comparator
-                    .comparingInt((AssignmentOption opt) -> {
-                        boolean afterLecture =
-                            opt.day() > lectureDay ||
-                            (opt.day() == lectureDay && opt.startSlot() >= lectureEndSlot);
-                        return afterLecture ? 0 : 1;
-                    })
-                    .thenComparingInt(AssignmentOption::startSlot)
-                );
-            }
-        }
+        //         prunedDomain.sort(Comparator
+        //             .comparingInt((AssignmentOption opt) -> {
+        //                 boolean afterLecture =
+        //                     opt.day() > lectureDay ||
+        //                     (opt.day() == lectureDay && opt.startSlot() >= lectureEndSlot);
+        //                 return afterLecture ? 0 : 1;
+        //             })
+        //             .thenComparingInt(AssignmentOption::startSlot)
+        //         );
+        //     }
+        // }
 
-        prunedDomain.sort(Comparator
-            .comparingInt((AssignmentOption opt) -> {
-                long studentsWithLongGap = msg.eligibleStudents.stream()
-                    .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
-                    .count();
-                return (int) studentsWithLongGap; // Prefer fewer long-gap cases
-            })
-            .thenComparingInt(AssignmentOption::startSlot)
-        );
+        // prunedDomain.sort(Comparator
+        //     .comparingInt((AssignmentOption opt) -> {
+        //         long studentsWithLongGap = msg.eligibleStudents.stream()
+        //             .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+        //             .count();
+        //         return (int) studentsWithLongGap; // Prefer fewer long-gap cases
+        //     })
+        //     .thenComparingInt(AssignmentOption::startSlot)
+        // );
 
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,

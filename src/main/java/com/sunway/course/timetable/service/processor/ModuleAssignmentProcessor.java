@@ -101,12 +101,12 @@ public class ModuleAssignmentProcessor {
     private final ActorSystem<Void> actorSystem;
 
     // === Data Structures ===
-    private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>();
+    private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>(); // Store all scheduled sessions grouped by semester and module ID
     private Map<Long, Integer> studentSemesterMap = new HashMap<>();
     private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
     private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
     private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
-    private Map<Session, String> sessionToModuleIdMap = new HashMap<>();
+    private Map<Session, String> sessionToModuleIdMap = new HashMap<>(); // Tracks which module ID each individual Session belongs to
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
     private Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule = new HashMap<>();
@@ -280,11 +280,11 @@ public class ModuleAssignmentProcessor {
             .flatMap(List::stream)
             .toList();
 
-        FitnessResult initialFitness = fitnessEvaluator.evaluate(allScheduledSessions, sessionVenueMap);
-        double initialScore = initialFitness.getPercentage();
-        log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
+        // FitnessResult initialFitness = fitnessEvaluator.evaluate(allScheduledSessions, sessionVenueMap);
+        // double initialScore = initialFitness.getPercentage();
+        // log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
 
-        if (!failedMeta.isEmpty() || initialScore < FITNESS_THRESHOLD) {
+        if (!failedMeta.isEmpty()) {
             log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
             scheduleWithBacktracking(failedMeta);
         }
@@ -409,12 +409,14 @@ public class ModuleAssignmentProcessor {
     private void scheduleWithBacktracking(List<SessionGroupMetaData> allMetaData) {
         log.info("Starting backtracking scheduling for {} session groups", allMetaData.size());
 
+        studentAssignedTypes.clear();
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
             allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
             venueDistanceService, lecturerService, lecturerDayAvailabilityUtil,
             fitnessEvaluator
         );
+        
 
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
         Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
@@ -522,22 +524,6 @@ public class ModuleAssignmentProcessor {
 
     @Transactional(readOnly = true)
     public List<File> exportPersistedTimetable(double finalScore) {
-        Map<Integer, Map<String, List<Session>>> sessionMap = new HashMap<>();
-
-        List<PlanContent> allPlanContents = planContentService.getAllPlanContents(); 
-        for (PlanContent pc : allPlanContents) {
-            Session session = pc.getSession();
-            String moduleId = pc.getModule().getId();
-
-            Integer semester = studentSemesterMap.get(session.getStudent().getId());
-            if (semester == null) continue;
-
-            sessionMap
-                .computeIfAbsent(semester, k -> new HashMap<>())
-                .computeIfAbsent(moduleId, k -> new ArrayList<>())
-                .add(session);
-        }
-
         return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore);
     }
 

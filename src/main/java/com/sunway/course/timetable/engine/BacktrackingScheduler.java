@@ -2,7 +2,6 @@ package com.sunway.course.timetable.engine;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
@@ -43,6 +43,9 @@ public class BacktrackingScheduler {
     private final Map<Long, Integer> studentAssignmentCount = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
     private final FitnessEvaluator fitnessEvaluator;
+    private double bestFitnessScore = -1;
+    private Map<SessionGroupMetaData, AssignmentOption> bestAssignment = new HashMap<>();
+    private Map<SessionGroupMetaData, List<Student>> bestStudentAssignments = new HashMap<>();
 
     private final int MIN_GROUP_SIZE = 5;
     private static final int MAX_GROUP_SIZE = 35;
@@ -68,7 +71,7 @@ public class BacktrackingScheduler {
         this.assignment = new HashMap<>();
         this.studentAssignments = new HashMap<>();
 
-        this.domains = AC3ConstraintPropagator.propagate(
+        this.domains = new HashMap<>(AC3ConstraintPropagator.propagate(
             sessions,
             lecturerMatrix,
             venueMatrix,
@@ -76,7 +79,7 @@ public class BacktrackingScheduler {
             venues,
             lecturerService,
             lecturerDayAvailabilityUtil
-        );
+        ));
 
         for (SessionGroupMetaData meta : sessions) {
             List<AssignmentOption> pruned = this.domains.getOrDefault(meta, new ArrayList<>());
@@ -101,11 +104,12 @@ public class BacktrackingScheduler {
     }
 
     public Map<SessionGroupMetaData, AssignmentOption> solve() {
-        if (backtrack(0)) {
-            return assignment;
-        } else {
-            return Collections.emptyMap();
-        }
+        backtrack(0);
+        assignment.clear();
+        assignment.putAll(bestAssignment);
+        studentAssignments.clear();
+        studentAssignments.putAll(bestStudentAssignments);
+        return assignment;
     }
 
     public Map<SessionGroupMetaData, List<Student>> getStudentAssignments() {
@@ -113,17 +117,28 @@ public class BacktrackingScheduler {
     }
 
     private boolean backtrack(int index) {
-        if (index == sessions.size()) return true;
+        if (index == sessions.size()) {
+            List<Session> currentSessions = buildCurrentSessions();
+            Map<Session, Venue> venueMap = buildCurrentVenueMap();
+            FitnessResult result = fitnessEvaluator.evaluate(currentSessions, venueMap);
+
+            if (result.getPercentage() > bestFitnessScore) {
+                bestFitnessScore = result.getPercentage();
+                bestAssignment.clear();
+                bestAssignment.putAll(assignment);
+                bestStudentAssignments.clear();
+                bestStudentAssignments.putAll(studentAssignments);
+            }
+            return false; // Continue searching
+        }
 
         SessionGroupMetaData meta = sessions.get(index);
-        List<AssignmentOption> options = domains.getOrDefault(meta, Collections.emptyList());
+        List<AssignmentOption> options = domains.getOrDefault(meta, List.of());
 
         for (AssignmentOption option : options) {
             if (isConsistent(meta, option)) {
                 assign(meta, option);
-                if (backtrack(index + 1)) {
-                    return true;
-                }
+                backtrack(index + 1);
                 unassign(meta, option);
             }
         }
