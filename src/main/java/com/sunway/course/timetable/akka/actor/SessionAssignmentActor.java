@@ -1,7 +1,9 @@
 package com.sunway.course.timetable.akka.actor;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import com.sunway.course.timetable.engine.DomainPruner;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
@@ -179,6 +181,16 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             }
         }
 
+        prunedDomain.sort(Comparator
+            .comparingInt((AssignmentOption opt) -> {
+                long studentsWithLongGap = msg.eligibleStudents.stream()
+                    .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+                    .count();
+                return (int) studentsWithLongGap; // Prefer fewer long-gap cases
+            })
+            .thenComparingInt(AssignmentOption::startSlot)
+        );
+
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
             msg.sessionType, msg.groupIndex, msg.groupCount,
@@ -204,5 +216,18 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         }
         originalRequester = null;
         return this;
+    }
+
+
+    private boolean causesLongGap(long studentId, int day, int startSlot, StudentAvailabilityMatrix studentMatrix) {
+        List<LocalTime> assignedSlots = studentMatrix.getAssignedTimes(studentId, day);
+        LocalTime thisStart = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
+        LocalTime thisEnd = thisStart.plusMinutes(120);
+
+        for (LocalTime time : assignedSlots) {
+            long gap = Math.abs(Duration.between(thisEnd, time).toMinutes());
+            if (gap > 120) return true;
+        }
+        return false;
     }
 }

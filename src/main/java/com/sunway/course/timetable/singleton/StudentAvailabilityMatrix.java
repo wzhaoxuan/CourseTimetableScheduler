@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.singleton;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -92,4 +93,25 @@ public class StudentAvailabilityMatrix {
             }
         }
     }
+
+    /**
+     * Get list of assigned session start times (in 30-min slots) for the given student on a given day.
+     * @return List of LocalTime representing occupied time blocks.
+     */
+    public List<LocalTime> getAssignedTimes(long studentId, int day) {
+        List<LocalTime> times = new ArrayList<>();
+        boolean[][] matrix = availabilityMap.get(studentId);
+        if (matrix == null) return times;
+
+        for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+            if (!matrix[day][slot]) {
+                // Convert slot index to time: 8:00 AM + slot * 30 minutes
+                LocalTime time = LocalTime.of(8, 0).plusMinutes(slot * 30L);
+                times.add(time);
+            }
+        }
+
+        return times;
+    }
+
 }

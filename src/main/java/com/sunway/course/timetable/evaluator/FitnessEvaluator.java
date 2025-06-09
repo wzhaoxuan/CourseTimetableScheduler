@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.evaluator;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,6 +41,9 @@ public class FitnessEvaluator {
 
         List<WeightedConstraint> hardConstraints = new ArrayList<>();
         List<WeightedConstraint> softConstraints = new ArrayList<>();
+        
+
+
 
         // Hard constraints
         int studentClashes = checkStudentClashes(sessions);
@@ -55,13 +59,16 @@ public class FitnessEvaluator {
         int idleGaps = checkIdleGaps(sessions);
         int badVenues = checkNonPreferredVenues(sessions, sessionVenueMap);
         int practicalBeforeLecture = checkPracticalBeforeLecture(sessions);
+        int longBreaks = checkLongBreaks(sessions);
 
         softConstraints.add(new WeightedConstraint("Idle Gaps", 150.0, Math.max(0, idleGaps)));
         softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 80.0, Math.max(0, badVenues)));
         softConstraints.add(new WeightedConstraint("Practical Before Lecture", 100.0, Math.max(0, practicalBeforeLecture)));
+        softConstraints.add(new WeightedConstraint("Breaks > 2 hours", 200.0, Math.max(0, longBreaks)));
 
         maxPenalty += 150.0 * sessions.size();
         maxPenalty += 80.0 * sessions.size();
+        maxPenalty += 200.0 * sessions.size();
         maxPenalty += 100.0 * sessions.size();
 
         for (WeightedConstraint hc : hardConstraints) totalPenalty += hc.score();
@@ -243,6 +250,32 @@ public class FitnessEvaluator {
         }
     }
     return count;
+}
+
+private static int checkLongBreaks(List<Session> sessions) {
+    Map<Long, Map<String, List<Session>>> grouped = new HashMap<>();
+
+    for (Session s : sessions) {
+        if (s.getStudent() == null) continue;
+        grouped.computeIfAbsent(s.getStudent().getId(), k -> new HashMap<>())
+               .computeIfAbsent(s.getDay(), d -> new ArrayList<>()).add(s);
+    }
+
+    int longGaps = 0;
+    for (Map<String, List<Session>> dailyMap : grouped.values()) {
+        for (List<Session> daySessions : dailyMap.values()) {
+            daySessions.sort(Comparator.comparing(Session::getStartTime));
+
+            for (int i = 0; i < daySessions.size() - 1; i++) {
+                Session current = daySessions.get(i);
+                Session next = daySessions.get(i + 1);
+                long minutesGap = Duration.between(current.getEndTime(), next.getStartTime()).toMinutes();
+
+                if (minutesGap > 120) longGaps++;
+            }
+        }
+    }
+    return longGaps;
 }
 
 }
