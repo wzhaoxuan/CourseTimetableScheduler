@@ -20,13 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.repository.SatisfactionRepository;
-import com.sunway.course.timetable.service.StatisfactionServiceImpl;
+import com.sunway.course.timetable.service.SatisfactionServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class StatisfactionServiceTest {
 
     @Mock private SatisfactionRepository satisfactionRepository;
-    @InjectMocks private StatisfactionServiceImpl statisfactionService;
+    @InjectMocks private SatisfactionServiceImpl statisfactionService;
 
     private Satisfaction satisfaction, satisfaction2;
 

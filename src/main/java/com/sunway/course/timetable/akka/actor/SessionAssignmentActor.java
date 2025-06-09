@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.akka.actor;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -190,6 +191,18 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         //     .thenComparingInt(AssignmentOption::startSlot)
         // );
 
+        prunedDomain.sort(Comparator
+            .comparingInt((AssignmentOption opt) -> {
+                int timePenalty = getTimeOfDayPenalty(opt.startSlot()); // Lower = better
+                long gapPenalty = msg.eligibleStudents.stream()
+                    .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+                    .count();
+                return timePenalty * 1000 + (int) gapPenalty;  // Weighted
+            })
+            .thenComparingInt(AssignmentOption::startSlot)
+        );
+
+
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
             msg.sessionType, msg.groupIndex, msg.groupCount,
@@ -228,5 +241,13 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             if (gap > 120) return true;
         }
         return false;
+    }
+
+    private int getTimeOfDayPenalty(int startSlot) {
+        LocalTime start = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
+
+        if (start.isBefore(LocalTime.of(11, 0))) return 0;        // Morning
+        else if (start.isBefore(LocalTime.of(16, 0))) return 1;   // Afternoon
+        else return 2;                                            // Late (after 4:00 PM)
     }
 }

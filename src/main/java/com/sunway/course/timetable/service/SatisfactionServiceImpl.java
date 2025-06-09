@@ -3,16 +3,16 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.sunway.course.timetable.interfaces.services.SatisfactionService;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.repository.SatisfactionRepository;
-import com.sunway.course.timetable.interfaces.services.StatisfactionService;
 
 @Service
-public class StatisfactionServiceImpl implements StatisfactionService{
+public class SatisfactionServiceImpl implements SatisfactionService{
 
     private final SatisfactionRepository satisfactionRepository;
 
-    public StatisfactionServiceImpl(SatisfactionRepository satisfactionRepository) {
+    public SatisfactionServiceImpl(SatisfactionRepository satisfactionRepository) {
         this.satisfactionRepository = satisfactionRepository;
     }
 
@@ -28,6 +28,17 @@ public class StatisfactionServiceImpl implements StatisfactionService{
 
     @Override
     public Satisfaction saveSatisfaction(Satisfaction satisfaction) {
+        if (satisfaction == null) {
+            throw new IllegalArgumentException("Satisfaction object cannot be null.");
+        }
+
+        if (satisfaction.getScore() < 0.0 || satisfaction.getScore() > 100.0) {
+            throw new IllegalArgumentException("Fitness score must be between 0 and 100.");
+        }
+
+        if (satisfaction.getConflict() < 0) {
+            throw new IllegalArgumentException("Conflict count cannot be negative.");
+        }
         return satisfactionRepository.save(satisfaction);
     }
 
@@ -35,5 +46,4 @@ public class StatisfactionServiceImpl implements StatisfactionService{
     public void deleteSatisfaction(Long id) {
         satisfactionRepository.deleteById(id);
     }
-
 }

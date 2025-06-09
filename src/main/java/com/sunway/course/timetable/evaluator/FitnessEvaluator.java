@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.evaluator;
 
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,12 +68,16 @@ public class FitnessEvaluator {
         int badVenues = checkNonPreferredVenues(sessions, sessionVenueMap);
         // int practicalBeforeLecture = checkPracticalBeforeLecture(sessions);
         // int longBreaks = checkLongBreaks(sessions);
+        int lateSessions = checkUnpreferredTimeOfDay(sessions);
 
+        softConstraints.add(new WeightedConstraint("Late Sessions", 50.0, Math.max(0, lateSessions)));
         softConstraints.add(new WeightedConstraint("Non-Preferred Venues", 80.0, Math.max(0, badVenues)));
         // softConstraints.add(new WeightedConstraint("Practical Before Lecture", 100.0, Math.max(0, practicalBeforeLecture)));
         // softConstraints.add(new WeightedConstraint("Breaks > 2 hours", 200.0, Math.max(0, longBreaks)));
 
+        maxPenalty += 50.0 * sessions.size();
         maxPenalty += 80.0 * sessions.size();
+        
         // maxPenalty += 200.0 * sessions.size();
         // maxPenalty += 100.0 * sessions.size();
 
@@ -98,6 +103,7 @@ public class FitnessEvaluator {
         System.out.println("Invalid days: " + invalidDays);
         System.out.println("Venue over capacity: " + overCapacity);
         System.out.println("Duplicate types per module: " + duplicateTypes);
+        System.out.println("Late sessions: " + lateSessions);
         System.out.println("Bad venues: " + badVenues);
         System.out.println("Total penalty: " + totalPenalty);
         System.out.println("Max penalty: " + maxPenalty);
@@ -309,6 +315,22 @@ public class FitnessEvaluator {
             }
         }
         return nonPreferred;
+    }
+
+    private static int checkUnpreferredTimeOfDay(List<Session> sessions) {
+        Set<String> seen = new HashSet<>();
+        int penalty = 0;
+
+        for (Session s : sessions) {
+            String key = s.getTypeGroup() + "-" + s.getDay() + "-" + s.getStartTime();
+            if (seen.add(key)) {
+                LocalTime start = s.getStartTime();
+                if (!start.isBefore(LocalTime.of(16, 0))) {  // 4:00 PM or later
+                    penalty++;
+                }
+            }
+        }
+        return penalty;
     }
 
 
