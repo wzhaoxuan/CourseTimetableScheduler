@@ -9,6 +9,8 @@ import com.sunway.course.timetable.akka.actor.VenueActor;
 import com.sunway.course.timetable.akka.actor.VenueActor.VenueCommand;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
@@ -58,7 +60,9 @@ public class AkkaConfig {
             List<ActorRef<VenueCommand>> venueActors,
             LecturerAvailabilityMatrix lecturerMatrix,
             VenueAvailabilityMatrix venueAvailabilityMatrix,
-            StudentAvailabilityMatrix studentAvailability
+            StudentAvailabilityMatrix studentAvailability,
+            VenueDistanceServiceImpl venueDistanceService,
+            VenueServiceImpl venueService
     ) {
         return actorSystem.systemActorOf(
                 VenueCoordinatorActor.create(
@@ -66,7 +70,9 @@ public class AkkaConfig {
                         venueActors,
                         lecturerMatrix,
                         venueAvailabilityMatrix,
-                        studentAvailability
+                        studentAvailability,
+                        venueDistanceService,
+                        venueService
                 ),
                 "venueCoordinator",
                 Props.empty()

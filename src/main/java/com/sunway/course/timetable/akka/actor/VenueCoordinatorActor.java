@@ -2,7 +2,10 @@ package com.sunway.course.timetable.akka.actor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,8 @@ import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueServiceImpl;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
@@ -117,6 +122,8 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     private final VenueAvailabilityMatrix venueAvailability;
     private final StudentAvailabilityMatrix studentAvailability;
     private final ActorRef<VenueActor.VenueResponse> venueResponseAdapter;
+    private final VenueDistanceServiceImpl venueDistanceService;
+    private final VenueServiceImpl venueService;
 
     // === Internal State ===
     private List<AssignmentOption> domainQueue = new ArrayList<>();
@@ -130,13 +137,17 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                                                            List<ActorRef<VenueActor.VenueCommand>> venueActors,
                                                            LecturerAvailabilityMatrix lecturerAvailability,
                                                            VenueAvailabilityMatrix venueAvailability,
-                                                           StudentAvailabilityMatrix studentAvailability) {
+                                                           StudentAvailabilityMatrix studentAvailability,
+                                                           VenueDistanceServiceImpl venueDistanceService,
+                                                           VenueServiceImpl venueService) {
         return Behaviors.setup(context -> new VenueCoordinatorActor(context,
             venues,
             venueActors,
             lecturerAvailability,
             venueAvailability,
-            studentAvailability));
+            studentAvailability,
+            venueDistanceService,
+            venueService));
     }
 
 
@@ -145,13 +156,17 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                                   List<ActorRef<VenueActor.VenueCommand>> venueActors,
                                   LecturerAvailabilityMatrix lecturerAvailability,
                                   VenueAvailabilityMatrix venueAvailability,
-                                  StudentAvailabilityMatrix studentAvailability) {
+                                  StudentAvailabilityMatrix studentAvailability,
+                                  VenueDistanceServiceImpl venueDistanceService,
+                                  VenueServiceImpl venueService) {
         super(context);
         this.venues = venues;
         this.venueActors = venueActors;
         this.lecturerAvailability = lecturerAvailability;
         this.venueAvailability = venueAvailability;
         this.studentAvailability = studentAvailability;
+        this.venueDistanceService = venueDistanceService;
+        this.venueService = venueService;
 
         // Message adapter: converts VenueResponse to VenueCoordinatorCommand
         this.venueResponseAdapter = context.messageAdapter(
@@ -180,17 +195,45 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             return this;
         }
 
+        List<AssignmentOption> filteredDomain = msg.prunedDomain;
+
+        if (List.of("Practical", "Tutorial", "Workshop").contains(msg.sessionType)) {
+            filteredDomain = filteredDomain.stream()
+                .filter(opt -> {
+                    String type = opt.venue().getType();
+                    return type.equalsIgnoreCase("Room") || type.equalsIgnoreCase("Lab");
+                })
+                .collect(Collectors.toList());
+        }
+
+
         // Sort pruned domain by preferred venue proximity (if applicable)
         List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);
-        if (msg.preferredVenues != null && !msg.preferredVenues.isEmpty()) {
-             // Best-fit by capacity
-            sortedDomain.sort(Comparator
-                .comparingInt((AssignmentOption opt) -> {
-                    int surplus = opt.venue().getCapacity() - msg.minCapacity;
-                    return (surplus < 0) ? Integer.MAX_VALUE : surplus; // penalize too-small rooms
+
+        // Optional: filter for practical/tutorial/workshop
+        if (List.of("Practical", "Tutorial", "Workshop").contains(msg.sessionType)) {
+            sortedDomain = sortedDomain.stream()
+                .filter(opt -> {
+                    String type = opt.venue().getType();
+                    return type.equalsIgnoreCase("Room") || type.equalsIgnoreCase("Lab");
                 })
-                .thenComparing(opt -> opt.venue().getName()) // optional: stable tie-breaker
-            );
+                .collect(Collectors.toList());
+        }
+
+        // Optimization: avoid unnecessary sort
+        if (sortedDomain.size() > 1 && msg.preferredVenues != null && !msg.preferredVenues.isEmpty()) {
+            Map<String, Double> distanceCache = new HashMap<>();
+            String from = getVenueNameById(msg.preferredVenues.get(0));
+
+            sortedDomain.sort(Comparator
+                .comparingDouble((AssignmentOption opt) -> {
+                    double distance = distanceCache.computeIfAbsent(opt.venue().getName(),
+                        k -> venueDistanceService.getDistanceScore(from, k));
+
+                    int surplus = opt.venue().getCapacity() - msg.minCapacity;
+                    return (surplus < 0 ? 100.0 : surplus) + distance;
+                })
+                .thenComparing(opt -> opt.venue().getName()));
         } else {
             sortedDomain.sort(Comparator.comparingInt(opt -> opt.venue().getCapacity()));
         }
@@ -274,6 +317,18 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     private Behavior<VenueCoordinatorCommand> onVenueRejected(VenueRejectedMsg msg) {
         log.info("Venue rejected assignment, moving to next option.");
         return tryNextDomainOption();
+    }
+
+
+    private String getVenueNameById(String idStr) {
+        try {
+            Long id = Long.parseLong(idStr);
+            return venueService.getVenueById(id)
+                .map(Venue::getName)
+                .orElse("UNKNOWN");
+        } catch (Exception e) {
+            return "UNKNOWN";
+        }
     }
 
 }

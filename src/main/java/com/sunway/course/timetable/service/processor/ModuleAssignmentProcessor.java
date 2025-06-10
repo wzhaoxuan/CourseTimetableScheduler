@@ -334,9 +334,10 @@ public class ModuleAssignmentProcessor {
                 .computeIfAbsent(semester, k -> new HashMap<>())
                 .computeIfAbsent(majorityProgramme, k -> new TreeMap<>());
 
-        String lastVenue = venueTimeMap.isEmpty() 
-                ? venueMatrix.getSortedVenues().stream().findFirst().map(Venue::getName).orElse(null) 
-                : venueTimeMap.lastEntry().getValue();
+        String lastVenue = venueTimeMap.isEmpty()
+            ? venueMatrix.getSortedVenues().stream().findFirst().map(Venue::getName).orElse(null)
+            : venueTimeMap.lastEntry().getValue();
+
 
         System.out.printf("Last venue for %s in semester %d: %s%n", typeGroup, semester, lastVenue);
 
