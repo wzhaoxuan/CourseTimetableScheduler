@@ -10,5 +10,4 @@ public interface VenueService {
     Optional<Venue> getVenueByName(String name);
     Optional<Venue> getVenueById(Long id);
     Venue addVenue(Venue venue);
-    void publishVenueAddedEvent(String name);
 }

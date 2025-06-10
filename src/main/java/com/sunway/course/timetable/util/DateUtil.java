@@ -6,19 +6,17 @@ import java.util.List;
 
 public class DateUtil {
 
-    public static List<String> getMonths(){
-        List<String> monthOptions = new ArrayList<String>();
+    public static List<String> getIntake(){
+        List<String> intakeOptions = new ArrayList<String>();
 
-        String[] months = {
-                "January", "February", "March", "April",
-                "May", "June", "July", "August",
-                "September", "October", "November", "December"
+        String[] intakes = {
+                "January", "April", "August", "September"
         };
         
-        for (String month : months) {
-            monthOptions.add(month.toUpperCase());
+        for (String intake : intakes) {
+            intakeOptions.add(intake.toUpperCase());
         }
-        return monthOptions;
+        return intakeOptions;
     }
 
     public static Month parseMonth(String intakeMonth){

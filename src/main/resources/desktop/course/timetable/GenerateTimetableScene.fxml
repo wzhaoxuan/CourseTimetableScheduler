@@ -76,12 +76,6 @@
                                  </children>
                               </VBox>
                               <Region fx:id="spacer3" />
-                              <VBox prefHeight="200.0" prefWidth="100.0" styleClass="semester-vbox" stylesheets="@style.css">
-                                 <children>
-                                    <Label fx:id="semester" styleClass="semester-label" stylesheets="@style.css" text="Label" />
-                                    <ComboBox fx:id="semesterChoice" prefWidth="150.0" styleClass="semester-choice" stylesheets="@style.css" />
-                                 </children>
-                              </VBox>
                            </children>
                         </HBox>
                         <VBox prefHeight="367.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css">

@@ -9,6 +9,11 @@ import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 
+/**
+ * Checks if sessions exceed the capacity of their assigned venues.
+ * This is a hard constraint, meaning it must be satisfied.
+ * A penalty is applied for each session that exceeds the venue's capacity.
+ */
 public class VenueCapacityChecker implements ConstraintChecker {
 
     @Override

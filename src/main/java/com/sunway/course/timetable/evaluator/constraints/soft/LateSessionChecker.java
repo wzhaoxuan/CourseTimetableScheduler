@@ -11,6 +11,11 @@ import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 
+/**
+ * Checks if sessions start late in the day.
+ * This is a soft constraint, meaning it is preferred but not mandatory.
+ * A penalty is applied for each session that starts at or after 4:00 PM.
+ */
 public class LateSessionChecker implements ConstraintChecker {
 
     @Override
@@ -25,7 +30,7 @@ public class LateSessionChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 50.0;
+        return 100.0;
     }
 
     @Override

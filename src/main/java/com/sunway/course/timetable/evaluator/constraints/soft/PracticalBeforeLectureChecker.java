@@ -7,6 +7,12 @@ import com.sunway.course.timetable.model.Venue;
 
 import java.util.*;
 
+
+/**
+ * Checks if practical sessions are scheduled before their corresponding lectures.
+ * This is a soft constraint, meaning it is preferred but not mandatory.
+ * A penalty is applied for each practical session that occurs before its lecture.
+ */
 public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
     @Override
@@ -21,7 +27,7 @@ public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 100.0;
+        return 50.0;
     }
 
     @Override

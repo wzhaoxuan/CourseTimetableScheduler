@@ -12,6 +12,10 @@ import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 
+/**
+ * Checks for venue transitions greater than 300 meters between consecutive sessions for the same student on the same day.
+ * This is a soft constraint, meaning it can be violated but incurs a penalty.
+ */
 public class VenueTransitionChecker implements ConstraintChecker {
 
     private final VenueDistanceServiceImpl distanceService;

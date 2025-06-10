@@ -12,6 +12,12 @@ import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 
+
+/**
+ * Checks for module clashes in the timetable.
+ * A clash occurs when a student is scheduled for multiple sessions of the same module
+ * at the same time but with different type-groups (e.g., lecture vs tutorial).
+ */
 public class ModuleClashChecker implements ConstraintChecker {
 
     @Override

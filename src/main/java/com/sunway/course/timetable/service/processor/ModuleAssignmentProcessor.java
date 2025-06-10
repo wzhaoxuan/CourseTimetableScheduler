@@ -114,8 +114,6 @@ public class ModuleAssignmentProcessor {
     private List<File> exportedFiles;
 
 
-
-
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                      ModuleServiceImpl moduleService,
                                       SessionServiceImpl sessionService,

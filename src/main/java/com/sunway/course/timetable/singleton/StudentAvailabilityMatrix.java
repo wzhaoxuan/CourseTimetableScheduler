@@ -114,4 +114,29 @@ public class StudentAvailabilityMatrix {
         return times;
     }
 
+    /**
+     * Check if assigning a session would result in the student having only one session on that day.
+     * This is used to avoid scheduling a session that would leave the student with no other commitments.
+     */
+    public boolean wouldBeOnlySession(long studentId, int day, int candidateStart, int duration) {
+        boolean[][] matrix = availabilityMap.get(studentId);
+        if (matrix == null) return false;
+
+        int occupiedCount = 0;
+
+        for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+            if (!matrix[day][slot]) {
+                // Already has another session that day
+                for (int i = 0; i < duration; i++) {
+                    if (slot != candidateStart + i) {
+                        return false; // Found another different session block
+                    }
+                }
+                occupiedCount++;
+            }
+        }
+
+        // If none or all occupied slots match the current assignment, it's a solo session day
+        return occupiedCount == 0;
+    }
 }

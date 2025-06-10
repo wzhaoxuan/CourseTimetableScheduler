@@ -12,7 +12,7 @@ public class DateUtilTest {
 
     @Test
     void testGetMonths_shouldReturnAllMonths(){
-        List<String> months = DateUtil.getMonths();
+        List<String> months = DateUtil.getIntake();
         assertEquals(12, months.size());
 
         assertNotNull(months, "Month list should not be null");

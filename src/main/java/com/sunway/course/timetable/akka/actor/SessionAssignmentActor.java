@@ -197,7 +197,12 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                 long gapPenalty = msg.eligibleStudents.stream()
                     .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
                     .count();
-                return timePenalty * 1000 + (int) gapPenalty;  // Weighted
+
+                // One-session-per-day penalty for students
+                long soloDayPenalty = msg.eligibleStudents.stream()
+                    .filter(s -> causesOnlyOneSessionDay(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+                    .count();
+                return timePenalty * 1000 + (int) gapPenalty + (int) soloDayPenalty * 5;  // Weighted
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );
@@ -249,5 +254,10 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         if (start.isBefore(LocalTime.of(11, 0))) return 0;        // Morning
         else if (start.isBefore(LocalTime.of(16, 0))) return 1;   // Afternoon
         else return 2;                                            // Late (after 4:00 PM)
+    }
+
+    private boolean causesOnlyOneSessionDay(Long studentId, int day, int startSlot, StudentAvailabilityMatrix matrix) {
+        List<LocalTime> occupied = matrix.getAssignedTimes(studentId, day);
+        return occupied.size() == 0; // Only one slot used on this day
     }
 }

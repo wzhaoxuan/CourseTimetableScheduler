@@ -22,6 +22,7 @@ import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityCheck
 import com.sunway.course.timetable.evaluator.constraints.hard.DuplicateTypeGroupChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.VenueTransitionChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
 
 @Component
 public class FitnessEvaluator {
@@ -42,7 +43,8 @@ public class FitnessEvaluator {
             new VenueCapacityChecker(),
             new DuplicateTypeGroupChecker(),
             new LateSessionChecker(),
-            new VenueTransitionChecker(venueDistanceService)
+            new VenueTransitionChecker(venueDistanceService),
+            new OneSessionDayChecker() 
         );
     }
 

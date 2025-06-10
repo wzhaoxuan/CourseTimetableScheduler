@@ -51,13 +51,13 @@ import javafx.scene.layout.Region;
 @Component
 public class GenerateTimetableController extends ContentController {
 
-    @FXML private Label programme, year, intake, semester;
-    @FXML private ComboBox<String>  programmeChoice, yearChoice, intakeChoice, semesterChoice;
+    @FXML private Label programme, year, intake;
+    @FXML private ComboBox<String>  programmeChoice, yearChoice, intakeChoice;
     @FXML private Button generateButton, resetFilesButton;
     @FXML private Label dropTarget, instruction;
     @FXML private AnchorPane dropPane;
     @FXML private ListView<String> fileListView;
-    @FXML private Region spacer1, spacer2, spacer3, spacer4;
+    @FXML private Region spacer1, spacer2, spacer4;
 
     private final List<File> droppedFiles = new ArrayList<>();
     private final TimetableController timetableController;
@@ -151,7 +151,6 @@ public class GenerateTimetableController extends ContentController {
             String programme = programmeChoice.getValue();
             String year = yearChoice.getValue();
             String intake = intakeChoice.getValue();
-            String semester = semesterChoice.getValue();
 
             // Step 1: Read Excel (use fixed path or let user upload in future)
             if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
@@ -302,8 +301,6 @@ public class GenerateTimetableController extends ContentController {
         subheading.setText("Generate Timetable");
         programme.setText("Programme:");
         year.setText("Year:");
-        intake.setText("Intake:");
-        semester.setText("Semester:");
         generateButton.setText("Generate");
         resetFilesButton.setText("Reset");
         dropTarget.setText("Drop files here");
@@ -316,16 +313,13 @@ public class GenerateTimetableController extends ContentController {
         programmeChoice.setVisibleRowCount(5);
         yearChoice.getItems().addAll(DateUtil.getYearOptions());
         yearChoice.setVisibleRowCount(5);
-        intakeChoice.getItems().addAll(DateUtil.getMonths());
+        intakeChoice.getItems().addAll(DateUtil.getIntake());
         intakeChoice.setVisibleRowCount(5);
-        semesterChoice.getItems().addAll("1", "2", "3", "4", "5", "6", "7", "8", "9");
-        semesterChoice.setVisibleRowCount(5);
     }
 
     private void setupLayout() {
         HBox.setHgrow(spacer1, Priority.ALWAYS);
         HBox.setHgrow(spacer2, Priority.ALWAYS);
-        HBox.setHgrow(spacer3, Priority.ALWAYS);
         HBox.setHgrow(spacer4, Priority.ALWAYS);
     }
 

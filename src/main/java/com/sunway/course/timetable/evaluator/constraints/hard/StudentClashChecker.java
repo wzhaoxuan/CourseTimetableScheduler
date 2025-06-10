@@ -1,11 +1,9 @@
 package com.sunway.course.timetable.evaluator.constraints.hard;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
@@ -13,6 +11,11 @@ import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.util.SessionConflictUtil;
 
+
+/**
+ * Checks for student clashes in the timetable.
+ * A clash occurs when a student is scheduled for multiple sessions at the same time.
+ */
 public class StudentClashChecker implements ConstraintChecker {
 
     @Override
