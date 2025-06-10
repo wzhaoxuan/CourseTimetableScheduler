@@ -46,16 +46,18 @@ public class TimetableExcelExporter {
     public List<File> exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, 
                                                     double fitnessScore, String programme, String intake, int year) {
         System.out.printf("Final timetable fitness score: %.2f%%%n", fitnessScore);
-        List<File> files = new ArrayList<>();
-        for (Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
-            int semester = entry.getKey();
-            if (semester <= 0) continue; 
-            List<Session> allSessions = entry.getValue().values().stream().flatMap(List::stream).collect(Collectors.toList());
-            File file = exportSemesterTimetable(semester, allSessions, fitnessScore, programme, intake, year);
-            files.add(file);
-        }
 
-        return files;
+         return sessionBySemesterAndModule.entrySet().stream()
+            .filter(entry -> entry.getKey() > 0) // skip semester 0 or negatives
+            .sorted(Map.Entry.comparingByKey()) // ensure S1, S2, S3 order
+            .map(entry -> {
+                int semester = entry.getKey();
+                List<Session> allSessions = entry.getValue().values().stream()
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+                return exportSemesterTimetable(semester, allSessions, fitnessScore, programme, intake, year);
+            })
+            .collect(Collectors.toList());
     }
 
     private File exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore,
@@ -250,32 +252,26 @@ public class TimetableExcelExporter {
         return false;
     }
 
-    private static final List<String> INTAKES = List.of("January", "April", "August");
-
-    // Mapping from normalized index → user-chosen label
-    private String getDisplayIntake(String normalized, String userSelectedIntake) {
-        if (normalized.equals("August")) {
-            return userSelectedIntake.equalsIgnoreCase("September") ? "September" : "August";
-        }
-        return normalized;
-    }
+    private static final List<String> NORMALIZED_INTAKES = List.of("January", "April", "August");
 
     private String getIntakeLabel(int semester, String userSelectedIntake, int baseYear) {
-        // Normalize logic
-        String baseNormalized = userSelectedIntake.equalsIgnoreCase("September") ? "August" : userSelectedIntake;
-        int baseIndex = INTAKES.indexOf(baseNormalized);
+        String normalized = userSelectedIntake.equalsIgnoreCase("September") ? "August" : userSelectedIntake;
+        int baseIndex = NORMALIZED_INTAKES.indexOf(normalized);
+        int totalIntakes = NORMALIZED_INTAKES.size();
+
         int offset = semester - 1;
+        int newIndex = (baseIndex - offset % totalIntakes + totalIntakes) % totalIntakes;
+        int roundsBack = (offset + (totalIntakes - baseIndex)) / totalIntakes;
 
-        int newIndex = (baseIndex - offset % 3 + 3) % 3;
-        int yearOffset = (baseIndex - offset < 0) ? (offset - baseIndex + 2) / 3 : -(offset / 3);
+        int newYear = baseYear - roundsBack + 1;
 
-        String normalizedIntake = INTAKES.get(newIndex);
-        String displayIntake = getDisplayIntake(normalizedIntake, userSelectedIntake);
+        // Use user’s original input name if it was "September"
+        String displayIntake = (normalized.equals("August") && userSelectedIntake.equalsIgnoreCase("September"))
+            ? "September"
+            : NORMALIZED_INTAKES.get(newIndex);
 
-        int year = baseYear + yearOffset;
-        return displayIntake + "-" + year;
+        return displayIntake + "-" + newYear;
     }
-
 
 }
 
