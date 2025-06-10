@@ -17,7 +17,6 @@ import javafx.application.HostServices;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
@@ -25,7 +24,6 @@ import javafx.stage.FileChooser;
 public class TimetableController extends ContentController {
 
     @FXML Button downloadAll;
-    @FXML Label satisfaction, score;
     @FXML private VBox timetableList;
 
     private final List<File> exportedTimetables = new ArrayList<>();
@@ -46,8 +44,6 @@ public class TimetableController extends ContentController {
     private void setupLabelsText() {
         subheading.setText("Timetable");
         downloadAll.setText("Download");
-        satisfaction.setText("Satisfaction");
-        score.setText("99%");
     }
 
     @FXML

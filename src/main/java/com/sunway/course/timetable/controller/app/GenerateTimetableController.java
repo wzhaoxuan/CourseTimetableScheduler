@@ -51,7 +51,7 @@ import javafx.scene.layout.Region;
 @Component
 public class GenerateTimetableController extends ContentController {
 
-    @FXML private Label programme, year, intake;
+    @FXML private Label programme, year, intake, validation, fileValidation;
     @FXML private ComboBox<String>  programmeChoice, yearChoice, intakeChoice;
     @FXML private Button generateButton, resetFilesButton;
     @FXML private Label dropTarget, instruction;
@@ -142,7 +142,11 @@ public class GenerateTimetableController extends ContentController {
         setupComboBoxes();
         setupLayout();
         setupDragAndDrop(); 
+
+        fileValidation.setVisible(false);
+        validation.setVisible(false);
         resetFilesButton.setOnAction(event -> clearDroppedFiles());
+        clearDroppedFiles();
     }
 
     @FXML
@@ -152,12 +156,26 @@ public class GenerateTimetableController extends ContentController {
             String year = yearChoice.getValue();
             String intake = intakeChoice.getValue();
 
-            // Step 1: Read Excel (use fixed path or let user upload in future)
-            if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
-                showError("Please drop all 4 required .xlsx files before generating.");
-                return;
+            boolean hasError = false;
+
+            if (programme == null || year == null || intake == null) {
+                validation.setText("*Please select Programme, Year,Intake.");
+                validation.setVisible(true);
+                hasError = true;
+            } else {
+                validation.setVisible(false); // hide error if resolved
             }
 
+            // Step 1: Read Excel (use fixed path or let user upload in future)
+            if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
+                fileValidation.setText("*Please drop all 4 required .xlsx files.");
+                fileValidation.setVisible(true);
+                hasError = true;
+            } else {
+                fileValidation.setVisible(false); // hide error if resolved
+            }
+
+            if(hasError) return;
 
             // Use these files in your processor
             System.out.println("Subject Plan: " + subjectPlanFile.getAbsolutePath());
@@ -199,10 +217,14 @@ public class GenerateTimetableController extends ContentController {
                 fitnessEvaluator
             );
 
+            int yearInt = Integer.parseInt(year);
             FinalAssignmentResult result = processor.processAssignments(
                 preprocessingResult.getModuleAssignmentDataList(),
                 preprocessingResult.getStudentProgrammeMap(),
-                preprocessingResult.getStudentSemesterMap()
+                preprocessingResult.getStudentSemesterMap(),
+                programme,
+                intake,
+                yearInt
             );
 
         
@@ -301,6 +323,7 @@ public class GenerateTimetableController extends ContentController {
         subheading.setText("Generate Timetable");
         programme.setText("Programme:");
         year.setText("Year:");
+        intake.setText("Intake:");
         generateButton.setText("Generate");
         resetFilesButton.setText("Reset");
         dropTarget.setText("Drop files here");

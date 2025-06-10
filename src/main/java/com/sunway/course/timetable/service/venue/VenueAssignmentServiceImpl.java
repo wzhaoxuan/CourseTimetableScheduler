@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.interfaces.services.VenueAssignmentService;
+import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.repository.VenueAssignmentRepository;
@@ -42,7 +43,8 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
         venueAssignmentRepository.deleteById(key);
     }
 
-    public Optional<VenueAssignment> getVenueBySessionId(Long sessionId) {
-        return venueAssignmentRepository.findBySessionId(sessionId);
+    public Optional<Venue> getVenueBySessionId(Long sessionId) {
+        List<VenueAssignment> assignments = venueAssignmentRepository.findBySessionId(sessionId);
+        return assignments.isEmpty() ? Optional.empty() : Optional.of(assignments.get(0).getVenue());
     }
 }

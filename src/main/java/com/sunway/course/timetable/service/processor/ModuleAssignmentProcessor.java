@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ import akka.actor.typed.javadsl.AskPattern;
 public class ModuleAssignmentProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(ModuleAssignmentProcessor.class);
-    private static final double FITNESS_THRESHOLD = 80.0;
+    private static final double FITNESS_THRESHOLD = 85.0;
 
     // === Dependencies ===
     private final CreditHourTracker creditTracker;
@@ -165,7 +166,10 @@ public class ModuleAssignmentProcessor {
     public FinalAssignmentResult processAssignments(
         List<ModuleAssignmentData> moduleDataList,
         Map<Long, String> studentProgrammeMap,
-        Map<Long, Integer> studentSemesterMap) {
+        Map<Long, Integer> studentSemesterMap,
+        String programme,
+        String intake,
+        int year) {
 
         this.studentSemesterMap = studentSemesterMap;
         sessionBySemesterAndModule.clear();
@@ -215,7 +219,9 @@ public class ModuleAssignmentProcessor {
 
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
 
-        processAssignmentsHybrid(allMetaData);
+        processAssignmentsHybrid(allMetaData, programme, intake, year);
+
+        log.info("Actor system terminated. Finalizing scheduling...");
         return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, finalScore);
     }
 
@@ -228,7 +234,7 @@ public class ModuleAssignmentProcessor {
      * 
      * @param allMetaData
      */
-    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData) {
+    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year) {
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness/fail");
 
         List<SessionGroupMetaData> failedMeta = new ArrayList<>();
@@ -290,9 +296,8 @@ public class ModuleAssignmentProcessor {
         log.info("Total sessions created: {}", sessionToModuleIdMap.size());
         printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
         persistAndGroupSessions(sessionToModuleIdMap);
-        actorSystem.terminate();
 
-        log.info("Actor system terminated. Finalizing scheduling...");
+        
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
@@ -302,7 +307,7 @@ public class ModuleAssignmentProcessor {
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
 
-        this.exportedFiles = exportPersistedTimetable(finalScore);
+        this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
     }
 
 
@@ -347,10 +352,11 @@ public class ModuleAssignmentProcessor {
             : Collections.emptyList();
 
         int durationHours = getDurationHours(type);
-        String actorName = String.format("sessionAssigner-%s-%s-%d",
+        String actorName = String.format("sessionAssigner-%s-%s-%d-%s",
                 moduleId.replaceAll("\\W+", ""),
                 typeGroup.replaceAll("\\W+", ""),
-                semester);
+                semester,
+                UUID.randomUUID());
 
 
         Module module = moduleService.getModuleById(moduleId)
@@ -522,8 +528,8 @@ public class ModuleAssignmentProcessor {
     }
 
     @Transactional(readOnly = true)
-    public List<File> exportPersistedTimetable(double finalScore) {
-        return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore);
+    public List<File> exportPersistedTimetable(String programme, String intake, int year, double finalScore) {
+        return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore, programme, intake, year);
     }
 
 

@@ -1,5 +1,5 @@
 package com.sunway.course.timetable.repository;
-import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -10,6 +10,6 @@ import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 
 @Repository
 public interface VenueAssignmentRepository extends JpaRepository<VenueAssignment, VenueAssignmentId>{
-    Optional<VenueAssignment> findBySessionId(Long sessionId);
+    List<VenueAssignment> findBySessionId(Long sessionId);
 
 }

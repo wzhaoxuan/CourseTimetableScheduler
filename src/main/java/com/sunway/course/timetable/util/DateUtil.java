@@ -40,7 +40,9 @@ public class DateUtil {
     public static List<String> getYearOptions() {
         int currentYear = getCurrentYear();
         List<String> yearOptions = new ArrayList<>();
-        yearOptions.add(String.valueOf(currentYear));
+        for(int year = currentYear - 3; year <= currentYear; year++) {
+            yearOptions.add(String.valueOf(year));
+        }
         return yearOptions;
     }
 }

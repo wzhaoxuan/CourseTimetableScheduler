@@ -183,6 +183,15 @@
     -fx-pref-height: inherit;
 }
 
+.validation-label{
+    -fx-text-fill: red;
+    -fx-padding: 0 0 0 10;
+    -fx-pref-width: 500px;
+    -fx-font-size: 15;
+    -fx-font-family: "serif";
+    -fx-pref-height: inherit;
+}
+
 .venue-label{
     -fx-padding: 5;
     -fx-pref-width: 100px;

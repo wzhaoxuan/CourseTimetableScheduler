@@ -50,34 +50,39 @@
                         <Label fx:id="title" alignment="CENTER" prefHeight="60.0" prefWidth="1030.0" styleClass="heading" stylesheets="@style.css" text="Label" />
                         <HBox prefHeight="41.0" prefWidth="1030.0">
                            <children>
-                              <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="54.0" prefWidth="1030.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
+                              <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="41.0" prefWidth="952.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
                            </children>
                         </HBox>
-                        <HBox prefHeight="81.0" prefWidth="1030.0" styleClass="details-hbox" stylesheets="@style.css">
+                        <VBox prefHeight="64.0" prefWidth="1030.0">
                            <children>
-                              <VBox prefHeight="43.0" prefWidth="161.0" styleClass="programme-vbox" stylesheets="@style.css">
+                              <Label fx:id="validation" prefHeight="23.0" prefWidth="1031.0" styleClass="validation-label" stylesheets="@../../../style/style.css" text="Label" />
+                              <HBox prefHeight="81.0" prefWidth="1030.0" styleClass="details-hbox" stylesheets="@style.css">
                                  <children>
-                                    <Label fx:id="programme" styleClass="programme-label" stylesheets="@style.css" text="Label" />
-                                    <ComboBox fx:id="programmeChoice" prefWidth="150.0" styleClass="programme-choice" stylesheets="@style.css" />
+                                    <VBox prefHeight="43.0" prefWidth="161.0" styleClass="programme-vbox" stylesheets="@style.css">
+                                       <children>
+                                          <Label fx:id="programme" styleClass="programme-label" stylesheets="@style.css" text="Label" />
+                                          <ComboBox fx:id="programmeChoice" prefWidth="150.0" styleClass="programme-choice" stylesheets="@style.css" />
+                                       </children>
+                                    </VBox>
+                                    <Region fx:id="spacer1" />
+                                    <VBox prefHeight="200.0" prefWidth="100.0" styleClass="year-vbox" stylesheets="@style.css">
+                                       <children>
+                                          <Label fx:id="year" styleClass="year-label" stylesheets="@style.css" text="Label" />
+                                          <ComboBox fx:id="yearChoice" prefWidth="150.0" styleClass="year-choice" stylesheets="@style.css" />
+                                       </children>
+                                    </VBox>
+                                    <Region fx:id="spacer2" />
+                                    <VBox prefHeight="200.0" prefWidth="100.0" styleClass="intake-vbox" stylesheets="@style.css">
+                                       <children>
+                                          <Label fx:id="intake" styleClass="intake-label" stylesheets="@style.css" text="Label" />
+                                          <ComboBox fx:id="intakeChoice" prefWidth="150.0" styleClass="intake-choice" stylesheets="@style.css" />
+                                       </children>
+                                    </VBox>
+                                    <Region fx:id="spacer3" />
                                  </children>
-                              </VBox>
-                              <Region fx:id="spacer1" />
-                              <VBox prefHeight="200.0" prefWidth="100.0" styleClass="year-vbox" stylesheets="@style.css">
-                                 <children>
-                                    <Label fx:id="year" styleClass="year-label" stylesheets="@style.css" text="Label" />
-                                    <ComboBox fx:id="yearChoice" prefWidth="150.0" styleClass="year-choice" stylesheets="@style.css" />
-                                 </children>
-                              </VBox>
-                              <Region fx:id="spacer2" />
-                              <VBox prefHeight="200.0" prefWidth="100.0" styleClass="intake-vbox" stylesheets="@style.css">
-                                 <children>
-                                    <Label fx:id="intake" styleClass="intake-label" stylesheets="@style.css" text="Label" />
-                                    <ComboBox fx:id="intakeChoice" prefWidth="150.0" styleClass="intake-choice" stylesheets="@style.css" />
-                                 </children>
-                              </VBox>
-                              <Region fx:id="spacer3" />
+                              </HBox>
                            </children>
-                        </HBox>
+                        </VBox>
                         <VBox prefHeight="367.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css">
                            <children>
                               <VBox prefHeight="391.0" prefWidth="1030.0">
@@ -85,6 +90,7 @@
                                     <HBox prefHeight="36.0" prefWidth="1030.0" styleClass="file-hbox" stylesheets="@../../../style/style.css">
                                        <children>
                                           <Label fx:id="dropTarget" prefHeight="46.0" styleClass="file-label" stylesheets="@../../../style/style.css" text="Label" />
+                                          <Label fx:id="fileValidation" prefHeight="25.0" prefWidth="396.0" styleClass="validation-label" stylesheets="@../../../style/style.css" text="Label" />
                                           <Region fx:id="spacer4" />
                                           <Button fx:id="resetFilesButton" mnemonicParsing="false" prefHeight="49.0" prefWidth="52.0" styleClass="reset-button" stylesheets="@../../../style/style.css" text="Button" />
                                        </children>

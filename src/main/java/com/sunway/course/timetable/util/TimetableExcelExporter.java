@@ -43,21 +43,23 @@ public class TimetableExcelExporter {
     @Autowired
     private VenueAssignmentServiceImpl venueAssignmentService;
 
-    public List<File> exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, double fitnessScore) {
+    public List<File> exportWithFitnessAnnotation(Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule, 
+                                                    double fitnessScore, String programme, String intake, int year) {
         System.out.printf("Final timetable fitness score: %.2f%%%n", fitnessScore);
         List<File> files = new ArrayList<>();
         for (Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
             int semester = entry.getKey();
             if (semester <= 0) continue; 
             List<Session> allSessions = entry.getValue().values().stream().flatMap(List::stream).collect(Collectors.toList());
-            File file = exportSemesterTimetable(semester, allSessions, fitnessScore);
+            File file = exportSemesterTimetable(semester, allSessions, fitnessScore, programme, intake, year);
             files.add(file);
         }
 
         return files;
     }
 
-    private File exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore) {
+    private File exportSemesterTimetable(int semester, List<Session> sessions, double fitnessScore,
+                                          String programme, String intake, int year) {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Semester " + semester);
 
@@ -110,9 +112,12 @@ public class TimetableExcelExporter {
                 s.getTypeGroup(),
                 s.getType(),
                 s.getLecturer().getName(),
-                venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getVenue().getName()).orElse("Unknown")
-            )
-        ));
+                String.valueOf(
+                    venueAssignmentService.getVenueBySessionId(s.getId())
+                        .map(v -> v.getName())
+                        .orElse("Unknown")
+                        )
+        )));
 
         for (List<Session> groupList : groupedSessions.values()) {
             Session s = groupList.get(0);
@@ -126,7 +131,7 @@ public class TimetableExcelExporter {
             int lastCol = timeSlotColumnMap.get(end.minusMinutes(30));
 
             String moduleCode = planContentService.getModuleBySessionId(s.getId()).map(p -> p.getModule().getId()).orElse("Unknown");
-            String venue = venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getVenue().getName()).orElse("Unknown");
+            String venue = venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getName()).orElse("Unknown");
             String lecturerName = s.getLecturer().getName();
             String group = s.getTypeGroup().split("-")[2];
             String type = s.getType();
@@ -177,9 +182,10 @@ public class TimetableExcelExporter {
         scoreStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         scoreCell.setCellStyle(scoreStyle);
 
-
         String userHome = System.getProperty("user.home");
-        File file = new File(userHome + "/Downloads/Semester-" + semester + " Timetable.xlsx");
+        String intakeLabel = getIntakeLabel(semester, intake, year); // use inputs
+        String fileName = String.format("%s-%s S%d.xlsx", programme, intakeLabel, semester);
+        File file = new File(userHome + "/Downloads/" + fileName);
         try (FileOutputStream out = new FileOutputStream(file)) {
             workbook.write(out);
             System.out.println("Timetable saved to: " + file.getAbsolutePath());
@@ -243,6 +249,33 @@ public class TimetableExcelExporter {
         }
         return false;
     }
+
+    private static final List<String> INTAKES = List.of("January", "April", "August");
+
+    // Mapping from normalized index → user-chosen label
+    private String getDisplayIntake(String normalized, String userSelectedIntake) {
+        if (normalized.equals("August")) {
+            return userSelectedIntake.equalsIgnoreCase("September") ? "September" : "August";
+        }
+        return normalized;
+    }
+
+    private String getIntakeLabel(int semester, String userSelectedIntake, int baseYear) {
+        // Normalize logic
+        String baseNormalized = userSelectedIntake.equalsIgnoreCase("September") ? "August" : userSelectedIntake;
+        int baseIndex = INTAKES.indexOf(baseNormalized);
+        int offset = semester - 1;
+
+        int newIndex = (baseIndex - offset % 3 + 3) % 3;
+        int yearOffset = (baseIndex - offset < 0) ? (offset - baseIndex + 2) / 3 : -(offset / 3);
+
+        String normalizedIntake = INTAKES.get(newIndex);
+        String displayIntake = getDisplayIntake(normalizedIntake, userSelectedIntake);
+
+        int year = baseYear + yearOffset;
+        return displayIntake + "-" + year;
+    }
+
 
 }
 
