@@ -10,15 +10,18 @@ import java.util.Map;
 public class FinalAssignmentResult {
     private final Map<Integer, Map<String, List<Session>>> sessionMap;
     private final List<File> exportedTimetableFiles;
+    private final List<File> lecturerTimetableFiles;
     private final double fitnessScore;
 
     public FinalAssignmentResult(
         Map<Integer, Map<String, List<Session>>> sessionMap,
         List<File> exportedTimetableFiles,
+        List<File> lecturerTimetableFiles,
         double fitnessScore
     ) {
         this.sessionMap = sessionMap;
         this.exportedTimetableFiles = exportedTimetableFiles;
+        this.lecturerTimetableFiles = lecturerTimetableFiles;
         this.fitnessScore = fitnessScore;
     }
 
@@ -28,6 +31,10 @@ public class FinalAssignmentResult {
 
     public List<File> getExportedTimetableFiles() {
         return exportedTimetableFiles;
+    }
+
+    public List<File> getLecturerTimetableFiles(){
+        return lecturerTimetableFiles;
     }
 
     public double getFitnessScore() {

@@ -174,7 +174,8 @@
 .intake-label, .venue-label, .available-label, 
 .id-label, .unavailable-day-label, .programmelabel,
 .intakelabel, .yearlabel, .sactisfaction-label,
-.score-label, .file-label, .instruction-label{
+.score-label, .file-label, .instruction-label,
+.section-label{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
@@ -288,6 +289,7 @@
     -fx-border-radius: 20;
     -fx-background-radius: 20;
     -fx-padding: 10 20 10 20;
+    -fx-pref-width: 1000px;
 }
 
 .file-hbox{
@@ -455,42 +457,17 @@
     -fx-scale-y: 1.02;
 }
 
-.grid-cell{
-    -fx-border-color: black;
-    -fx-border-width: 1;
-    -fx-background-color: #6176c7;
+.scroll-pane{
+    -fx-background-color: transparent;
 }
 
-.weekday-label, .time-label{
-    -fx-font-family: "serif";
-    -fx-font-size: 15;
-    -fx-font-color: black;
-    -fx-font-weight: bold;
-    -fx-pref-width: inherit;
-    -fx-alignment: center;
+.scroll-pane .scroll-bar:vertical {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
 }
 
-.time-label{
-    -fx-font-size: 10;
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
 }
 
-.statisfaction-label{
-    -fx-font-family: "serif";
-    -fx-font-size: 40;
-    -fx-font-color: black;
-    -fx-font-weight: bold;
-    -fx-pref-height: 20;
-}
-
-.satisfaction-vbox{
-    -fx-padding: 0 15 0 15;
-}
-
-.score-label{
-    -fx-background-color: #8697C4;
-    -fx-pref-width: 100;
-    -fx-pref-height: inherit;
-    -fx-background-radius: 20;
-    -fx-alignment: center;
-    -fx-font-size: 40;
-}

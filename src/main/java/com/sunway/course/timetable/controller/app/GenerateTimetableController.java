@@ -14,6 +14,7 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.controller.app.TimetableController;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
 import com.sunway.course.timetable.result.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
@@ -34,7 +35,6 @@ import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.DateUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
-import com.sunway.course.timetable.util.TimetableExcelExporter;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -232,8 +232,10 @@ public class GenerateTimetableController extends ContentController {
 
             timetableController.loadExportedTimetables(
                     result.getExportedTimetableFiles(),
+                    result.getLecturerTimetableFiles(),
                     result.getFitnessScore()
                 );
+                
 
         } catch (Exception e) {
             e.printStackTrace(); // Print the error if something goes wrong

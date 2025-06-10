@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.UUID;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import com.sunway.course.timetable.engine.BacktrackingScheduler;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.evaluator.FitnessResult;
+import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Session;
@@ -54,7 +56,6 @@ import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
-import com.sunway.course.timetable.util.TimetableExcelExporter;
 import com.sunway.course.timetable.util.tracker.CreditHourTracker;
 
 import akka.actor.typed.ActorRef;
@@ -113,6 +114,7 @@ public class ModuleAssignmentProcessor {
     private Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule = new HashMap<>();
     private double finalScore;
     private List<File> exportedFiles;
+    private List<File> exportedLecturerFiles;
 
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
@@ -222,7 +224,7 @@ public class ModuleAssignmentProcessor {
         processAssignmentsHybrid(allMetaData, programme, intake, year);
 
         log.info("Actor system terminated. Finalizing scheduling...");
-        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, finalScore);
+        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, finalScore);
     }
 
 
@@ -308,6 +310,25 @@ public class ModuleAssignmentProcessor {
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
+
+        Set<String> allLecturerNames = sessionBySemesterAndModule.values().stream()
+            .flatMap(moduleMap -> moduleMap.values().stream())
+            .flatMap(List::stream)
+            .map(s -> s.getLecturer().getName())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        this.exportedLecturerFiles = new ArrayList<>();
+        for (String lecturerName : allLecturerNames) {
+            Map<Integer, List<Session>> lecturerSessions = timetableExcelExporter.filterSessionsByLecturer(
+                sessionBySemesterAndModule, lecturerName
+            );
+
+            List<File> files = timetableExcelExporter.exportLecturerTimetable(
+                lecturerSessions, lecturerName, intake, year
+            );
+            this.exportedLecturerFiles.addAll(files);
+        }
     }
 
 
