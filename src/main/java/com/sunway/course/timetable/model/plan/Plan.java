@@ -1,7 +1,6 @@
 package com.sunway.course.timetable.model.plan;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
-import com.sunway.course.timetable.model.plancontent.PlanContentId;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -9,7 +8,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -17,10 +15,10 @@ import jakarta.persistence.Table;
 public class Plan {
 
     @EmbeddedId
-    private PlanContentId planId;  // Using the same composite key as PlanContent
+    private PlanId planId;
 
-    @OneToOne
-    @MapsId  // Automatically maps moduleId and sessionId from PlanContentId
+    @ManyToOne
+    @MapsId("planContentId")  // Tell JPA that planContentId inside embeddedId maps to planContent
     @JoinColumns({
         @JoinColumn(name = "module_id", referencedColumnName = "module_id"),
         @JoinColumn(name = "session_id", referencedColumnName = "session_id")
@@ -28,22 +26,22 @@ public class Plan {
     private PlanContent planContent;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "satisfaction_id", nullable = false)
+    @JoinColumn(name = "satisfaction_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Satisfaction satisfaction;
 
     public Plan() {}
 
-    public Plan(PlanContentId planId, PlanContent planContent, Satisfaction satisfaction) {
+    public Plan(PlanId planId, PlanContent planContent, Satisfaction satisfaction) {
         this.planId = planId;
         this.planContent = planContent;
         this.satisfaction = satisfaction;
     }
 
-    public PlanContentId getPlanId() {
+    public PlanId getPlanId() {
         return planId;
     }
 
-    public void setPlanId(PlanContentId planId) {
+    public void setPlanId(PlanId planId) {
         this.planId = planId;
     }
 
@@ -63,4 +61,5 @@ public class Plan {
         this.satisfaction = satisfaction;
     }
 }
+
 

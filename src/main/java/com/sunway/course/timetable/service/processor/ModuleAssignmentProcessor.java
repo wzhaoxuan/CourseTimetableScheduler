@@ -38,6 +38,7 @@ import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
 import com.sunway.course.timetable.model.plan.Plan;
+import com.sunway.course.timetable.model.plan.PlanId;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
@@ -319,7 +320,7 @@ public class ModuleAssignmentProcessor {
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
 
-        savePlans(persistedSessions, sessionToModuleIdMap);
+        // savePlans(persistedSessions);
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
 
@@ -488,6 +489,10 @@ public class ModuleAssignmentProcessor {
 
     private void persistAndGroupSessions(Map<Session, String> sessionToModuleIdMap) {
         Map<Session, Venue> newSessionVenueMap = new HashMap<>();
+        List<PlanContentId> persistedPlanContentIds = new ArrayList<>();
+
+        Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
+            .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
 
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
             Session originalSession = entry.getKey();
@@ -555,6 +560,15 @@ public class ModuleAssignmentProcessor {
                 }
             }
         }
+
+        for (PlanContentId planContentId : persistedPlanContentIds) {
+        PlanContent planContent = planContentService.getPlanContentById(planContentId)
+                .orElseThrow(() -> new IllegalStateException("PlanContent not found after save"));
+
+        PlanId planId = new PlanId(planContentId, savedSatisfaction.getId());
+        Plan plan = new Plan(planId, planContent, savedSatisfaction);
+        planService.savePlan(plan);
+    }
         // Update the sessionVenueMap to use persisted session references
         sessionVenueMap.clear();
         sessionVenueMap.putAll(newSessionVenueMap);
@@ -641,24 +655,52 @@ public class ModuleAssignmentProcessor {
         }
     }
 
-    private void savePlans(List<Session> persistedSessions, Map<Session, String> sessionToModuleIdMap) {
+    private void savePlans(List<Session> persistedSessions) {
         Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
-            .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
+                .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
+
+        // Build SessionId -> ModuleId mapping directly from PlanContent table
+        Map<Long, String> sessionToModuleMap = planContentService.getAllPlanContents().stream()
+                .collect(Collectors.toMap(
+                        pc -> pc.getSession().getId(),
+                        pc -> pc.getModule().getId(),
+                        (existing, replacement) -> existing // handle duplicates safely
+                ));
 
         for (Session session : persistedSessions) {
-            String moduleId = sessionToModuleIdMap.get(session);
-            PlanContentId planContentId = new PlanContentId(moduleId, session.getId());
+            String moduleId = sessionToModuleMap.get(session.getId());
 
-            Optional<PlanContent> planContentOpt = planContentService.getPlanContentById(planContentId);
-            if (planContentOpt.isEmpty()) {
-                log.warn("PlanContent not found for session {}, module {}", session.getId(), moduleId);
+            if (moduleId == null) {
+                log.warn("PlanContent not found for session {}", session.getId());
                 continue;
             }
 
-            Plan plan = new Plan(planContentId, planContentOpt.get(), savedSatisfaction);
+            // Construct PlanContentId
+            PlanContentId planContentId = new PlanContentId();
+            planContentId.setSessionId(session.getId());
+            planContentId.setModuleId(moduleId);
+
+            Optional<PlanContent> planContentOpt = planContentService.getPlanContentById(planContentId);
+            if (planContentOpt.isEmpty()) {
+                log.warn("PlanContent entity missing for PlanContentId: {}", planContentId);
+                continue;
+            }
+
+            Plan plan = new Plan();
+            PlanId planId = new PlanId();
+            planId.setPlanContentId(planContentId);
+            planId.setSatisfactionId(savedSatisfaction.getId());
+
+            plan.setPlanId(planId);
+            plan.setPlanContent(planContentOpt.get());
+            plan.setSatisfaction(savedSatisfaction);
+
             planService.savePlan(plan);
         }
     }
+
+
+
 
 
 

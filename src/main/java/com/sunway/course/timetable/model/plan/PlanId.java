@@ -1,55 +1,57 @@
 package com.sunway.course.timetable.model.plan;
+import java.io.Serializable;
 import java.util.Objects;
+
+import com.sunway.course.timetable.model.plancontent.PlanContentId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 
 @Embeddable
-public class PlanId {
+public class PlanId implements Serializable {
 
-    @Column(name = "id")
-    private Long id;
+    @Embedded
+    private PlanContentId planContentId;
 
-    @Column(name = "plan_content_id")
-    private Long planContentId;
+    @Column(name = "satisfaction_id")
+    private Long satisfactionId;
 
-    public PlanId() {
-        // Default constructor
-    }
+    public PlanId() {}
 
-    public PlanId(Long id, Long planContentId) {
-        this.id = id;
+    public PlanId(PlanContentId planContentId, Long satisfactionId) {
         this.planContentId = planContentId;
+        this.satisfactionId = satisfactionId;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getPlanContentId() {
+    public PlanContentId getPlanContentId() {
         return planContentId;
     }
 
-    public void setPlanContentId(Long planContentId) {
+    public void setPlanContentId(PlanContentId planContentId) {
         this.planContentId = planContentId;
     }
 
-    
+    public Long getSatisfactionId() {
+        return satisfactionId;
+    }
+
+    public void setSatisfactionId(Long satisfactionId) {
+        this.satisfactionId = satisfactionId;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PlanId)) return false;
         PlanId that = (PlanId) o;
-        return id.equals(that.id) && planContentId.equals(that.planContentId);
+        return Objects.equals(planContentId, that.planContentId) &&
+               Objects.equals(satisfactionId, that.satisfactionId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, planContentId);
+        return Objects.hash(planContentId, satisfactionId);
     }
 }
+
