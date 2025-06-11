@@ -9,13 +9,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import java.util.UUID;
-import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +31,13 @@ import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.model.plan.Plan;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
@@ -45,6 +47,8 @@ import com.sunway.course.timetable.result.SessionAssignmentResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
+import com.sunway.course.timetable.service.PlanServiceImpl;
+import com.sunway.course.timetable.service.SatisfactionServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
@@ -86,6 +90,8 @@ public class ModuleAssignmentProcessor {
     private final VenueDistanceServiceImpl venueDistanceService;
     private final VenueAssignmentServiceImpl venueAssignmentService;
     private final ModuleServiceImpl moduleService;
+    private final PlanServiceImpl planService;
+    private final SatisfactionServiceImpl satisfactionService;
     private final ProgrammeDistributionClustering clustering;
     private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
     private final VenueSorterService venueSorterService;
@@ -124,6 +130,8 @@ public class ModuleAssignmentProcessor {
                                       VenueDistanceServiceImpl venueDistanceService,
                                       VenueAssignmentServiceImpl venueAssignmentService,
                                       VenueSorterService venueSorterService,
+                                      PlanServiceImpl planService,
+                                      SatisfactionServiceImpl satisfactionService,
                                       SessionGroupPreprocessorService sessionGroupPreprocessorService,
                                       VenueAvailabilityMatrix venueMatrix,
                                       LecturerAvailabilityMatrix lecturerMatrix,
@@ -143,6 +151,8 @@ public class ModuleAssignmentProcessor {
         this.venueAssignmentService = venueAssignmentService;
         this.venueSorterService = venueSorterService;
         this.sessionGroupPreprocessorService = sessionGroupPreprocessorService;
+        this.planService = planService;
+        this.satisfactionService = satisfactionService;
         this.venueMatrix = venueMatrix;
         this.lecturerMatrix = lecturerMatrix;
         this.studentMatrix = studentMatrix;
@@ -308,6 +318,8 @@ public class ModuleAssignmentProcessor {
         FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap);
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
+
+        savePlans(persistedSessions, sessionToModuleIdMap);
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
 
@@ -628,6 +640,27 @@ public class ModuleAssignmentProcessor {
                 .add(session);
         }
     }
+
+    private void savePlans(List<Session> persistedSessions, Map<Session, String> sessionToModuleIdMap) {
+        Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
+            .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
+
+        for (Session session : persistedSessions) {
+            String moduleId = sessionToModuleIdMap.get(session);
+            PlanContentId planContentId = new PlanContentId(moduleId, session.getId());
+
+            Optional<PlanContent> planContentOpt = planContentService.getPlanContentById(planContentId);
+            if (planContentOpt.isEmpty()) {
+                log.warn("PlanContent not found for session {}, module {}", session.getId(), moduleId);
+                continue;
+            }
+
+            Plan plan = new Plan(planContentId, planContentOpt.get(), savedSatisfaction);
+            planService.savePlan(plan);
+        }
+    }
+
+
 
 
     private String getDayName(int index) {

@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.service;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -46,4 +47,10 @@ public class SatisfactionServiceImpl implements SatisfactionService{
     public void deleteSatisfaction(Long id) {
         satisfactionRepository.deleteById(id);
     }
+
+    @Override
+    public Optional<Satisfaction> findLatestSatisfaction() {
+        return satisfactionRepository.findTopByOrderByIdDesc();
+    }
+
 }

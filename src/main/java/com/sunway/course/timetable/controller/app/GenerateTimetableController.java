@@ -4,15 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
-import com.sunway.course.timetable.controller.app.TimetableController;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
@@ -21,6 +17,8 @@ import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
+import com.sunway.course.timetable.service.PlanServiceImpl;
+import com.sunway.course.timetable.service.SatisfactionServiceImpl;
 import com.sunway.course.timetable.service.SessionServiceImpl;
 import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
 import com.sunway.course.timetable.service.excelReader.LecturerAvailablityExcelReaderService;
@@ -36,6 +34,8 @@ import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.DateUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -70,6 +70,8 @@ public class GenerateTimetableController extends ContentController {
     private final VenueDistanceServiceImpl venueDistanceService;
     private final VenueAssignmentServiceImpl venueAssignmentService;
     private final VenueSorterService venueSorterService;
+    private final PlanServiceImpl planService;
+    private final SatisfactionServiceImpl satisfactionService;
     private final SessionGroupPreprocessorService sessionGroupPreprocessorService;
     private final VenueAvailabilityMatrix venueMatrix;
     private final LecturerAvailabilityMatrix lecturerMatrix;
@@ -101,6 +103,8 @@ public class GenerateTimetableController extends ContentController {
                                     VenueDistanceServiceImpl venueDistanceService,
                                     VenueAssignmentServiceImpl venueAssignmentService,
                                     VenueSorterService venueSorterService,
+                                    PlanServiceImpl planService,
+                                    SatisfactionServiceImpl satisfactionService,
                                     SessionGroupPreprocessorService sessionGroupPreprocessorService,
                                     VenueAvailabilityMatrix venueMatrix,
                                     LecturerAvailabilityMatrix lecturerMatrix,
@@ -122,6 +126,8 @@ public class GenerateTimetableController extends ContentController {
         this.venueDistanceService = venueDistanceService;
         this.venueAssignmentService = venueAssignmentService;
         this.venueSorterService = venueSorterService;
+        this.planService = planService;
+        this.satisfactionService = satisfactionService;
         this.sessionGroupPreprocessorService = sessionGroupPreprocessorService;
         this.venueMatrix = venueMatrix;
         this.lecturerMatrix = lecturerMatrix;
@@ -205,6 +211,8 @@ public class GenerateTimetableController extends ContentController {
                 venueDistanceService,
                 venueAssignmentService,
                 venueSorterService,
+                planService,
+                satisfactionService,
                 sessionGroupPreprocessorService,
                 venueMatrix,
                 lecturerMatrix,

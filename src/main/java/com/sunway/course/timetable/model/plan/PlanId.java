@@ -38,6 +38,7 @@ public class PlanId {
         this.planContentId = planContentId;
     }
 
+    
 
     @Override
     public boolean equals(Object o) {

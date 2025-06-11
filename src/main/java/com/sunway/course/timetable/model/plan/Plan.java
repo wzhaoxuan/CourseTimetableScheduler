@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.model.plan;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
+import com.sunway.course.timetable.model.plancontent.PlanContentId;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -16,28 +17,42 @@ import jakarta.persistence.Table;
 public class Plan {
 
     @EmbeddedId
-    private PlanId planId;
+    private PlanContentId planId;  // Using the same composite key as PlanContent
 
     @OneToOne
-    @JoinColumn(name = "satisfaction_id", referencedColumnName = "id", unique = true)
-    private Satisfaction satisfaction;
-
-    @ManyToOne
-    @MapsId("plancontentId")  // Maps the plancontentId part of the composite key (Only if PlanContent uses @EmbeddedId that includes planId)
+    @MapsId  // Automatically maps moduleId and sessionId from PlanContentId
     @JoinColumns({
-        @JoinColumn(name = "session_id", referencedColumnName = "session_id"),
-        @JoinColumn(name = "module_id", referencedColumnName = "module_id")
+        @JoinColumn(name = "module_id", referencedColumnName = "module_id"),
+        @JoinColumn(name = "session_id", referencedColumnName = "session_id")
     })
     private PlanContent planContent;
 
-    public Plan() {
-        // Default constructor
-    }
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "satisfaction_id", nullable = false)
+    private Satisfaction satisfaction;
 
-    public Plan(PlanId planId, PlanContent planContent, Satisfaction satisfaction) {
+    public Plan() {}
+
+    public Plan(PlanContentId planId, PlanContent planContent, Satisfaction satisfaction) {
         this.planId = planId;
         this.planContent = planContent;
         this.satisfaction = satisfaction;
+    }
+
+    public PlanContentId getPlanId() {
+        return planId;
+    }
+
+    public void setPlanId(PlanContentId planId) {
+        this.planId = planId;
+    }
+
+    public PlanContent getPlanContent() {
+        return planContent;
+    }
+
+    public void setPlanContent(PlanContent planContent) {
+        this.planContent = planContent;
     }
 
     public Satisfaction getSatisfaction() {
@@ -47,5 +62,5 @@ public class Plan {
     public void setSatisfaction(Satisfaction satisfaction) {
         this.satisfaction = satisfaction;
     }
-
 }
+
