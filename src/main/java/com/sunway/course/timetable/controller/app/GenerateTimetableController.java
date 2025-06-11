@@ -31,7 +31,7 @@ import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
-import com.sunway.course.timetable.util.DateUtil;
+import com.sunway.course.timetable.util.InputUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 import akka.actor.typed.ActorRef;
@@ -241,6 +241,7 @@ public class GenerateTimetableController extends ContentController {
             timetableController.loadExportedTimetables(
                     result.getExportedTimetableFiles(),
                     result.getLecturerTimetableFiles(),
+                    result.getModuleTimetableFiles(),
                     result.getFitnessScore()
                 );
                 
@@ -344,9 +345,9 @@ public class GenerateTimetableController extends ContentController {
     private void setupComboBoxes() {
         programmeChoice.getItems().addAll("BIT", "BCS");
         programmeChoice.setVisibleRowCount(5);
-        yearChoice.getItems().addAll(DateUtil.getYearOptions());
+        yearChoice.getItems().addAll(InputUtil.getYearOptions());
         yearChoice.setVisibleRowCount(5);
-        intakeChoice.getItems().addAll(DateUtil.getIntake());
+        intakeChoice.getItems().addAll(InputUtil.getIntake());
         intakeChoice.setVisibleRowCount(5);
     }
 

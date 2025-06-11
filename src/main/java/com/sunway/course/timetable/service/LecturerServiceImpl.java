@@ -1,10 +1,10 @@
 package com.sunway.course.timetable.service;
-import com.sunway.course.timetable.interfaces.services.LecturerService;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.sunway.course.timetable.interfaces.services.LecturerService;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.repository.LecturerRepository;
 
@@ -36,5 +36,4 @@ public class LecturerServiceImpl implements LecturerService {
     public Optional<List<Lecturer>> getLecturersByType(String type) {
         return lecturerRepository.findByType(type);
     } 
-
 }

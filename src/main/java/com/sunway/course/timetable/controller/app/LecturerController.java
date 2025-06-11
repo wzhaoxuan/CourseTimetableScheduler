@@ -1,43 +1,96 @@
 package com.sunway.course.timetable.controller.app;
+import java.io.File;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
-import com.sunway.course.timetable.controller.base.SelectionController;
+import com.sunway.course.timetable.controller.base.AbstractTimetableViewController;
+import com.sunway.course.timetable.exporter.HistoricalTimetableExporter;
+import com.sunway.course.timetable.model.Lecturer;
+import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.service.PlanServiceImpl;
 
+import javafx.application.HostServices;
 import javafx.fxml.FXML;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 @Component
-public class LecturerController extends SelectionController{
-    
+public class LecturerController extends AbstractTimetableViewController<String> {
+
     @FXML private RadioButton full_time, part_time, teaching_assistant;
 
-    public LecturerController(NavigationService navService, LoginSceneController loginController) {
-        super(navService, loginController);
+    private final LecturerServiceImpl lecturerService;
+    private final HistoricalTimetableExporter exporter;
+    private final PlanServiceImpl planService;
+
+    public LecturerController(
+        NavigationService navService,
+        LoginSceneController loginController,
+        HistoricalTimetableExporter exporter,
+        LecturerServiceImpl lecturerService,
+        HostServices hostServices,
+        PlanServiceImpl planService) {
+        super(navService, loginController, hostServices, name -> name);  // ✅ use String directly
+        this.lecturerService = lecturerService;
+        this.exporter = exporter;
+        this.planService = planService;
     }
 
     @Override
     protected void initialize() {
-        super.initialize(); // Call BaseController's initialize()
-
+        super.initialize();
+        initializeBase();
         subheading.setText("View Lecturer");
 
-        full_time.setText("FullTime");
-        part_time.setText("PartTime");
-        teaching_assistant.setText("TeachingAssistant");
+        full_time.setOnAction(e -> loadLecturersByType("FullTime"));
+        part_time.setOnAction(e -> loadLecturersByType("PartTime"));
+        teaching_assistant.setOnAction(e -> loadLecturersByType("TeachingAssistant"));
 
-        // Handle RadioButton Selection
-        ToggleGroup toggleGroup = new ToggleGroup();
+        loadLecturersWithPlans();
+    }
 
-        full_time.setToggleGroup(toggleGroup);
-        part_time.setToggleGroup(toggleGroup);
-        teaching_assistant.setToggleGroup(toggleGroup);
+    private void loadLecturersWithPlans() {
+        Set<String> lecturersWithPlans = planService.getAllPlans().stream()
+            .map(plan -> plan.getPlanContent().getSession().getLecturer().getName())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
 
-        full_time.setOnAction(this::handleRadioSelection);
-        part_time.setOnAction(this::handleRadioSelection);
-        teaching_assistant.setOnAction(this::handleRadioSelection);
+        loadItems(lecturersWithPlans.stream().sorted().toList());
+    }
+
+    private void loadLecturersByType(String type) {
+        Set<String> lecturersWithPlans = planService.getAllPlans().stream()
+            .map(plan -> plan.getPlanContent().getSession().getLecturer().getName())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        List<String> lecturers = lecturerService.getLecturersByType(type)
+            .orElse(List.of())
+            .stream()
+            .map(Lecturer::getName)
+            .filter(lecturersWithPlans::contains)
+            .sorted()
+            .toList();
+
+        loadItems(lecturers);
+    }
+
+    @Override
+    protected void handleButtonClick(String lecturerName) {
+        try {
+            List<File> files = exporter.exportByLecturer(lecturerName);
+            for (File file : files) {
+                hostServices.showDocument(file.toURI().toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
+
+

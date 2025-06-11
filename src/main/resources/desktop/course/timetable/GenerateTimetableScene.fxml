@@ -15,18 +15,18 @@
    <children>
       <HBox layoutX="-4.0" layoutY="10.0" prefHeight="100.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <VBox prefHeight="759.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@../../../style/style.css">
+            <VBox prefHeight="759.0" prefWidth="0.0" styleClass="side-bar" stylesheets="@../../../style/style.css" HBox.hgrow="NEVER">
                <children>
-                  <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" styleClass="profile-vbox" stylesheets="@style.css">
+                  <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" styleClass="profile-vbox" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                      <children>
                         <ImageView fx:id="profile" fitHeight="69.0" fitWidth="67.0" pickOnBounds="true" preserveRatio="true" styleClass="profile" />
                         <Label fx:id="username" styleClass="username" stylesheets="@style.css" text="Label" />
                      </children>
                      <VBox.margin>
-                        <Insets top="10.0" />
+                        <Insets />
                      </VBox.margin>
                   </HBox>
-                  <VBox prefHeight="200.0" prefWidth="287.0" styleClass="button-vbox" stylesheets="@style.css">
+                  <VBox prefHeight="200.0" prefWidth="287.0" styleClass="button-vbox" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                      <children>
                         <Button fx:id="homeButton" mnemonicParsing="false" onAction="#home" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
                         <Button fx:id="generateTimetable" mnemonicParsing="false" onAction="#generateTimetable" prefHeight="46.0" prefWidth="283.0" styleClass="side-bar-button" stylesheets="@style.css" text="Button" />
@@ -36,16 +36,16 @@
                         <Insets top="80.0" />
                      </VBox.margin>
                   </VBox>
-                  <Button fx:id="logOutButton" mnemonicParsing="false" onAction="#logOut" prefHeight="46.0" prefWidth="283.0" styleClass="logout-button" stylesheets="@style.css" text="Button">
+                  <Button fx:id="logOutButton" mnemonicParsing="false" onAction="#logOut" prefHeight="46.0" prefWidth="283.0" styleClass="logout-button" stylesheets="@style.css" text="Button" VBox.vgrow="ALWAYS">
                      <VBox.margin>
-                        <Insets top="230.0" />
+                        <Insets bottom="10.0" top="230.0" />
                      </VBox.margin>
                   </Button>
                </children>
             </VBox>
             <VBox alignment="TOP_CENTER" prefHeight="750.0" prefWidth="1049.0" styleClass="content-vbox" stylesheets="@../../../style/style.css" HBox.hgrow="ALWAYS">
                <children>
-                  <VBox prefHeight="648.0" prefWidth="1050.0" styleClass="generate-timetable-vbox" stylesheets="@style.css">
+                  <VBox prefHeight="648.0" prefWidth="1050.0" styleClass="generate-timetable-vbox" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                      <children>
                         <Label fx:id="title" alignment="CENTER" prefHeight="60.0" prefWidth="1030.0" styleClass="heading" stylesheets="@style.css" text="Label" />
                         <HBox prefHeight="41.0" prefWidth="1030.0">
@@ -83,11 +83,11 @@
                               </HBox>
                            </children>
                         </VBox>
-                        <VBox prefHeight="367.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css">
+                        <VBox prefHeight="367.0" prefWidth="1030.0" styleClass="available-vbox" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                            <children>
                               <VBox prefHeight="391.0" prefWidth="1030.0">
                                  <children>
-                                    <HBox prefHeight="36.0" prefWidth="1030.0" styleClass="file-hbox" stylesheets="@../../../style/style.css">
+                                    <HBox prefHeight="36.0" prefWidth="1030.0" styleClass="file-hbox" stylesheets="@../../../style/style.css" VBox.vgrow="ALWAYS">
                                        <children>
                                           <Label fx:id="dropTarget" prefHeight="46.0" styleClass="file-label" stylesheets="@../../../style/style.css" text="Label" />
                                           <Label fx:id="fileValidation" prefHeight="25.0" prefWidth="396.0" styleClass="validation-label" stylesheets="@../../../style/style.css" text="Label" />
@@ -95,12 +95,12 @@
                                           <Button fx:id="resetFilesButton" mnemonicParsing="false" prefHeight="49.0" prefWidth="52.0" styleClass="reset-button" stylesheets="@../../../style/style.css" text="Button" />
                                        </children>
                                     </HBox>
-                                    <AnchorPane fx:id="dropPane" prefHeight="191.0" prefWidth="1030.0" styleClass="file-pane" stylesheets="@../../../style/style.css">
+                                    <AnchorPane fx:id="dropPane" prefHeight="191.0" prefWidth="1030.0" styleClass="file-pane" stylesheets="@../../../style/style.css" VBox.vgrow="ALWAYS">
                                        <children>
                                           <Label fx:id="instruction" alignment="CENTER" layoutX="145.0" layoutY="57.0" styleClass="instruction-label" stylesheets="@../../../style/style.css" text="Label" AnchorPane.leftAnchor="145.0" AnchorPane.topAnchor="57.0" />
                                        </children>
                                     </AnchorPane>
-                                    <ListView fx:id="fileListView" prefHeight="154.0" prefWidth="1030.0" styleClass="viewList" stylesheets="@../../../style/style.css" />
+                                    <ListView fx:id="fileListView" prefHeight="154.0" prefWidth="1030.0" styleClass="viewList" stylesheets="@../../../style/style.css" VBox.vgrow="ALWAYS" />
                                  </children>
                               </VBox>
                            </children>

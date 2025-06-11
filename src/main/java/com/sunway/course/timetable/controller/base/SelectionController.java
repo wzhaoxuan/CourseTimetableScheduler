@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.view.MainApp;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

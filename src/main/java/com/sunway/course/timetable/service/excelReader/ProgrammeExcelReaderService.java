@@ -24,8 +24,8 @@ import com.sunway.course.timetable.model.programme.ProgrammeId;
 import com.sunway.course.timetable.repository.ModuleRepository;
 import com.sunway.course.timetable.repository.ProgrammeRepository;
 import com.sunway.course.timetable.repository.StudentRepository;
-import com.sunway.course.timetable.util.DateUtil;
 import com.sunway.course.timetable.util.ExcelUtil;
+import com.sunway.course.timetable.util.InputUtil;
 
 import jakarta.transaction.Transactional;
 
@@ -84,7 +84,7 @@ public class ProgrammeExcelReaderService {
         if(programmeId.isEmpty() || moduleId.isEmpty() || startYearStr.isEmpty()) return;
 
         int startYear = Integer.parseInt(startYearStr);
-        int endYear = endYearStr.isEmpty() ? DateUtil.getCurrentYear() : Integer.parseInt(endYearStr);
+        int endYear = endYearStr.isEmpty() ? InputUtil.getCurrentYear() : Integer.parseInt(endYearStr);
 
         // Check if the module ID is valid
         Module module = moduleRepository.findById(moduleId).orElse(null);

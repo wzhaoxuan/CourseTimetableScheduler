@@ -122,6 +122,7 @@ public class ModuleAssignmentProcessor {
     private double finalScore;
     private List<File> exportedFiles;
     private List<File> exportedLecturerFiles;
+    private List<File> exportedModuleFiles;
 
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
@@ -235,7 +236,7 @@ public class ModuleAssignmentProcessor {
         processAssignmentsHybrid(allMetaData, programme, intake, year);
 
         log.info("Actor system terminated. Finalizing scheduling...");
-        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, finalScore);
+        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, exportedModuleFiles, finalScore);
     }
 
 
@@ -329,6 +330,7 @@ public class ModuleAssignmentProcessor {
             .flatMap(List::stream)
             .map(s -> s.getLecturer().getName())
             .filter(Objects::nonNull)
+            .sorted()
             .collect(Collectors.toSet());
 
         this.exportedLecturerFiles = new ArrayList<>();
@@ -342,6 +344,10 @@ public class ModuleAssignmentProcessor {
             );
             this.exportedLecturerFiles.addAll(files);
         }
+
+        this.exportedModuleFiles = timetableExcelExporter.exportModuleTimetable(
+            sessionBySemesterAndModule, intake, year
+        );
     }
 
 

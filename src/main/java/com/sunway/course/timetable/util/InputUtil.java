@@ -4,7 +4,7 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DateUtil {
+public class InputUtil {
 
     public static List<String> getIntake(){
         List<String> intakeOptions = new ArrayList<String>();

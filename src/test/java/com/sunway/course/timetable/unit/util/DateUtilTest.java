@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 
-import com.sunway.course.timetable.util.DateUtil;
+import com.sunway.course.timetable.util.InputUtil;
 
 public class DateUtilTest {
 
     @Test
     void testGetMonths_shouldReturnAllMonths(){
-        List<String> months = DateUtil.getIntake();
+        List<String> months = InputUtil.getIntake();
         assertEquals(12, months.size());
 
         assertNotNull(months, "Month list should not be null");
@@ -24,15 +24,15 @@ public class DateUtilTest {
 
     @Test
     void testGetCurrentYear_shouldReturnCurrentYear(){
-        int currentYear = DateUtil.getCurrentYear();
+        int currentYear = InputUtil.getCurrentYear();
         int expectedYear = Year.now().getValue();
         assertEquals(expectedYear, currentYear);
     }
 
     @Test
     void testGetYearOptions_shouldReturnCurrentYear(){
-        List<String> yearOptions = DateUtil.getYearOptions();
-        int currentYear = DateUtil.getCurrentYear();
+        List<String> yearOptions = InputUtil.getYearOptions();
+        int currentYear = InputUtil.getCurrentYear();
 
         assertNotNull(yearOptions, "Year options list should not be null");
         assertEquals(1, yearOptions.size());

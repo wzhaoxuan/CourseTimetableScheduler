@@ -380,7 +380,7 @@
 .view-timetable-vbox{
     -fx-spacing: 20px;
     -fx-pref-width: inherit;
-    -fx-pref-height: 200;
+    -fx-pref-height: inherit;
     -fx-padding: 10;
     -fx-alignment: center;
 }
@@ -429,6 +429,7 @@
     -fx-text-fill: black;
     -fx-font-size: 12;
     -fx-font-weight: bold;
+    -fx-pref-width: inherit;
 }
 
 /* Lecturer Table */
@@ -436,6 +437,10 @@
     -fx-spacing: 50px;
     -fx-padding: 0 0 0 5;
     /* -fx-max-width: 1000; */
+}
+
+.lecturer-timetable-vbox{
+    -fx-pref-width: inherit;
 }
 
 /* Timetable Table */
@@ -459,6 +464,8 @@
 
 .scroll-pane{
     -fx-background-color: transparent;
+    -fx-pref-width: inherit;
+    -fx-pref-height: inherit;
 }
 
 .scroll-pane .scroll-bar:vertical {
