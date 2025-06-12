@@ -149,8 +149,8 @@ public class TimetableSheetWriter {
     }
 
     private void writeSingleSession(Session s, String venue, String moduleCode, Sheet sheet,
-            Map<String, Row> dayRowMap, Map<LocalTime, Integer> timeSlotColumnMap,
-            CellStyle wrapStyle, Map<String, CellStyle> typeColorMap) {
+        Map<String, Row> dayRowMap, Map<LocalTime, Integer> timeSlotColumnMap,
+        CellStyle wrapStyle, Map<String, CellStyle> typeColorMap) {
 
         Row row = dayRowMap.get(s.getDay());
         if (row == null) return;
@@ -167,8 +167,14 @@ public class TimetableSheetWriter {
         String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturer, venue);
 
         Cell cell = row.getCell(firstCol);
-        if (cell == null) cell = row.createCell(firstCol);
-        cell.setCellValue(content);
+        if (cell == null) {
+            cell = row.createCell(firstCol);
+            cell.setCellValue(content);
+        } else {
+            String existing = cell.getStringCellValue();
+            cell.setCellValue(existing + "\n\n\n" + content); 
+        }
+
         cell.setCellStyle(typeColorMap.getOrDefault(type.toLowerCase(), wrapStyle));
 
         if (lastCol > firstCol && !isMerged(sheet, row.getRowNum(), firstCol, lastCol)) {
@@ -176,20 +182,28 @@ public class TimetableSheetWriter {
         }
     }
 
+
     private void autoSize(Sheet sheet, Map<LocalTime, Integer> timeSlotColumnMap, Map<String, Row> dayRowMap) {
-        for (int i = 0; i <= timeSlotColumnMap.size(); i++) sheet.autoSizeColumn(i);
+        for (int i = 0; i <= timeSlotColumnMap.size(); i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        final float baseHeight = 16f;  // Base font height (slightly larger than default 15)
+        final float lineSpacing = 1.3f; // Scaling factor to allow for wrapped lines
+
         for (Row row : dayRowMap.values()) {
-            float maxHeight = sheet.getDefaultRowHeightInPoints();
+            float maxHeight = baseHeight;
             for (int j = 1; j <= timeSlotColumnMap.size(); j++) {
                 Cell cell = row.getCell(j);
                 if (cell != null && cell.getStringCellValue() != null) {
                     int lines = cell.getStringCellValue().split("\\n").length;
-                    maxHeight = Math.max(maxHeight, lines * sheet.getDefaultRowHeightInPoints());
+                    maxHeight = Math.max(maxHeight, lines * baseHeight * lineSpacing);
                 }
             }
             row.setHeightInPoints(maxHeight);
         }
     }
+
 
     public void addFitnessScore(Workbook workbook, double score) {
         Sheet sheet = workbook.getSheetAt(0);

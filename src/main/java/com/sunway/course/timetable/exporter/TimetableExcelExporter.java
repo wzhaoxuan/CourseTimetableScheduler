@@ -53,12 +53,12 @@ public class TimetableExcelExporter {
         for (var entry : sessionsBySemester.entrySet()) {
             int semester = entry.getKey();
             List<Session> sessions = entry.getValue();
-            Map<String, List<Session>> grouped = groupSessions(sessions);
+            if(semester <= 0 || sessions.isEmpty()) continue;
             Map<Long, String> venueMap = resolveVenueMap(sessions);
             Map<Long, String> moduleMap = resolveModuleMap(sessions);
-            if(semester <= 0 || grouped.isEmpty()) continue;
+            
 
-            Workbook workbook = timetableSheetWriter.generateWorkbook("Semester " + semester, grouped, venueMap, moduleMap);
+            Workbook workbook = timetableSheetWriter.generateWorkbookSimple("Semester " + semester, sessions, venueMap, moduleMap);
             String fileName = String.format("%s-%s S%d.xlsx", lecturerName, getIntakeLabel(semester, intake, year), semester);
             files.add(saveWorkbookToFile(workbook, fileName));
         }

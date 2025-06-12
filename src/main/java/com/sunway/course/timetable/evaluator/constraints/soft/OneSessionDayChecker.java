@@ -1,9 +1,10 @@
 package com.sunway.course.timetable.evaluator.constraints.soft;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
+
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
@@ -61,11 +62,11 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
         int penalty = 0;
         for (Map<String, Set<String>> perDay : studentDaySlots.values()) {
-            log.info("Student day slots: {}", perDay);
+            // log.info("Student day slots: {}", perDay);
             penalty += perDay.values().stream().filter(set -> set.size() == 1).count();
         }
         for (Map<String, Set<String>> perDay : lecturerDaySlots.values()) {
-            log.info("Lecturer day slots: {}", perDay);
+            // log.info("Lecturer day slots: {}", perDay);
             penalty += perDay.values().stream().filter(set -> set.size() == 1).count();
         }
 

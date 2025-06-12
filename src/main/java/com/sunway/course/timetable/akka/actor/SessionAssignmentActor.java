@@ -156,52 +156,21 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             msg.lecturerDayAvailabilityUtil
         );
 
-        // if (msg.sessionType.equalsIgnoreCase("Practical") ||
-        //     msg.sessionType.equalsIgnoreCase("Tutorial") ||
-        //     msg.sessionType.equalsIgnoreCase("Workshop")) {
-
-        //     SessionAssigned lecture = null;
-        //     if (msg.lectureAssignmentsByModule != null) {
-        //         lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
-        //     }
-
-        //     if (lecture != null) {
-        //         int lectureDay = lecture.dayIndex;
-        //         int lectureEndSlot = lecture.startIndex + lecture.durationSlots;
-
-        //         prunedDomain.sort(Comparator
-        //             .comparingInt((AssignmentOption opt) -> {
-        //                 boolean afterLecture =
-        //                     opt.day() > lectureDay ||
-        //                     (opt.day() == lectureDay && opt.startSlot() >= lectureEndSlot);
-        //                 return afterLecture ? 0 : 1;
-        //             })
-        //             .thenComparingInt(AssignmentOption::startSlot)
-        //         );
-        //     }
-        // }
-
-        // prunedDomain.sort(Comparator
-        //     .comparingInt((AssignmentOption opt) -> {
-        //         long studentsWithLongGap = msg.eligibleStudents.stream()
-        //             .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
-        //             .count();
-        //         return (int) studentsWithLongGap; // Prefer fewer long-gap cases
-        //     })
-        //     .thenComparingInt(AssignmentOption::startSlot)
-        // );
-
         prunedDomain.sort(Comparator
             .comparingInt((AssignmentOption opt) -> {
+                // One-session-per-day penalty for students
+                long soloDayPenalty = msg.eligibleStudents.stream()
+                    .filter(s -> causesOnlyOneSessionDay(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+                    .count();
                 int timePenalty = getTimeOfDayPenalty(opt.startSlot()); // Lower = better
                 long gapPenalty = msg.eligibleStudents.stream()
                     .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
                     .count();
 
-                // One-session-per-day penalty for students
-                long soloDayPenalty = msg.eligibleStudents.stream()
-                    .filter(s -> causesOnlyOneSessionDay(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
-                    .count();
+                int sequencingPenalty = 0;
+                if (isDependentSession(msg.sessionType)) {
+                    sequencingPenalty = calculateLectureAfterPenalty(msg, opt);
+                }
                 return timePenalty * 1000 + (int) gapPenalty + (int) soloDayPenalty * 5;  // Weighted
             })
             .thenComparingInt(AssignmentOption::startSlot)
@@ -260,4 +229,21 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         List<LocalTime> occupied = matrix.getAssignedTimes(studentId, day);
         return occupied.size() == 0; // Only one slot used on this day
     }
+
+    private boolean isDependentSession(String type) {
+        return type.equalsIgnoreCase("Practical") 
+            || type.equalsIgnoreCase("Tutorial") 
+            || type.equalsIgnoreCase("Workshop");
+    }
+
+    private int calculateLectureAfterPenalty(AssignSession msg, AssignmentOption opt) {
+        SessionAssigned lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
+        if (lecture == null) return 0; // no penalty if no lecture exists yet
+
+        if (opt.day() < lecture.dayIndex) return 1;  // schedule before lecture → penalty
+        if (opt.day() == lecture.dayIndex && opt.startSlot() < (lecture.startIndex + lecture.durationSlots)) return 1;
+
+        return 0; // OK, practical is after lecture
+    }
+
 }

@@ -334,7 +334,6 @@ public class ModuleAssignmentProcessor {
         // savePlans(persistedSessions);
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
-        mainPageStateHolder.updateSemesterFiles(exportedFiles);
         Set<String> allLecturerNames = sessionBySemesterAndModule.values().stream()
             .flatMap(moduleMap -> moduleMap.values().stream())
             .flatMap(List::stream)
@@ -354,6 +353,8 @@ public class ModuleAssignmentProcessor {
             );
             this.exportedLecturerFiles.addAll(files);
         }
+
+        mainPageStateHolder.updateSemesterFiles(exportedFiles);
 
         this.exportedModuleFiles = timetableExcelExporter.exportModuleTimetable(
             sessionBySemesterAndModule, intake, year
