@@ -166,12 +166,21 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                 long gapPenalty = msg.eligibleStudents.stream()
                     .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
                     .count();
+                
+                    long spreadPenaltyStudents = msg.eligibleStudents.stream()
+                    .filter(s -> isNewDayForStudent(s.getId(), opt.day(), msg.studentMatrix))
+                    .count();
+
+                boolean lecturerNewDay = isNewDayForLecturer(msg.lecturerName, opt.day(), msg.lecturerMatrix);
+                int spreadPenaltyLecturer = lecturerNewDay ? 1 : 0;
 
                 int sequencingPenalty = 0;
                 if (isDependentSession(msg.sessionType)) {
                     sequencingPenalty = calculateLectureAfterPenalty(msg, opt);
                 }
-                return timePenalty * 1000 + (int) gapPenalty + (int) soloDayPenalty * 5;  // Weighted
+                
+                return timePenalty * 1000 + (int) gapPenalty + (int) soloDayPenalty * 5 + sequencingPenalty * 500 +
+                (int) spreadPenaltyStudents * 2 + spreadPenaltyLecturer * 3 ;  // Weighted
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );
@@ -211,11 +220,14 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         LocalTime thisEnd = thisStart.plusMinutes(120);
 
         for (LocalTime time : assignedSlots) {
-            long gap = Math.abs(Duration.between(thisEnd, time).toMinutes());
-            if (gap > 120) return true;
+            long gapAfter = Math.abs(Duration.between(thisEnd, time).toMinutes());
+            long gapBefore = Math.abs(Duration.between(time, thisStart).toMinutes());
+
+            if (gapAfter > 120 || gapBefore > 120) return true;
         }
         return false;
     }
+
 
     private int getTimeOfDayPenalty(int startSlot) {
         LocalTime start = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
@@ -245,5 +257,15 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
         return 0; // OK, practical is after lecture
     }
+
+    private boolean isNewDayForLecturer(String lecturerName, int day, LecturerAvailabilityMatrix lecturerMatrix) {
+        return lecturerMatrix.getAssignedDays(lecturerName).contains(day) == false;
+    }
+
+    private boolean isNewDayForStudent(Long studentId, int day, StudentAvailabilityMatrix studentMatrix) {
+        List<LocalTime> occupied = studentMatrix.getAssignedTimes(studentId, day);
+        return occupied.isEmpty();  // If student has no sessions that day
+    }
+
 
 }

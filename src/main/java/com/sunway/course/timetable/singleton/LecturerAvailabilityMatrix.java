@@ -1,7 +1,10 @@
 package com.sunway.course.timetable.singleton;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.springframework.stereotype.Component;
@@ -137,4 +140,26 @@ public class LecturerAvailabilityMatrix {
     private boolean isValidRange(int day, int start, int end) {
         return day >= 0 && day < DAYS && start >= 0 && end <= TIME_SLOTS_PER_DAY && start < end;
     }
+
+    public Set<Integer> getAssignedDays(String lecturerId) {
+        lock.readLock().lock();
+        try {
+            boolean[][] schedule = availability.get(lecturerId);
+            if (schedule == null) return Collections.emptySet();
+
+            Set<Integer> assignedDays = new HashSet<>();
+            for (int day = 0; day < DAYS; day++) {
+                for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+                    if (schedule[day][slot]) {
+                        assignedDays.add(day);
+                        break;  // no need to check further slots for this day
+                    }
+                }
+            }
+            return assignedDays;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
 }
