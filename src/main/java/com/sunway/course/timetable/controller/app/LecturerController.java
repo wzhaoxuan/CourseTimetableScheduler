@@ -11,6 +11,7 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.AbstractTimetableViewController;
 import com.sunway.course.timetable.exporter.HistoricalTimetableExporter;
 import com.sunway.course.timetable.model.Lecturer;
+import com.sunway.course.timetable.result.SelectionStateHolder;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.service.PlanServiceImpl;
@@ -18,6 +19,7 @@ import com.sunway.course.timetable.service.PlanServiceImpl;
 import javafx.application.HostServices;
 import javafx.fxml.FXML;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 
 @Component
 public class LecturerController extends AbstractTimetableViewController<String> {
@@ -31,11 +33,12 @@ public class LecturerController extends AbstractTimetableViewController<String> 
     public LecturerController(
         NavigationService navService,
         LoginSceneController loginController,
+        SelectionStateHolder stateHolder,
         HistoricalTimetableExporter exporter,
         LecturerServiceImpl lecturerService,
         HostServices hostServices,
         PlanServiceImpl planService) {
-        super(navService, loginController, hostServices, name -> name);  // ✅ use String directly
+        super(navService, loginController, stateHolder, hostServices, name -> name); 
         this.lecturerService = lecturerService;
         this.exporter = exporter;
         this.planService = planService;
@@ -46,6 +49,14 @@ public class LecturerController extends AbstractTimetableViewController<String> 
         super.initialize();
         initializeBase();
         subheading.setText("View Lecturer");
+        full_time.setText("Full time");
+        part_time.setText("Part time");
+        teaching_assistant.setText("Teaching assistant");
+
+        ToggleGroup typeGroup = new ToggleGroup();
+        full_time.setToggleGroup(typeGroup);
+        part_time.setToggleGroup(typeGroup);
+        teaching_assistant.setToggleGroup(typeGroup);
 
         full_time.setOnAction(e -> loadLecturersByType("FullTime"));
         part_time.setOnAction(e -> loadLecturersByType("PartTime"));

@@ -8,6 +8,7 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.AbstractTimetableViewController;
 import com.sunway.course.timetable.exporter.HistoricalTimetableExporter;
 import com.sunway.course.timetable.result.ModuleDataHolder;
+import com.sunway.course.timetable.result.SelectionStateHolder;
 import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.application.HostServices;
@@ -21,11 +22,12 @@ public class ProgrammeController extends AbstractTimetableViewController<String>
     public ProgrammeController(
         NavigationService navService,
         LoginSceneController loginController,
+        SelectionStateHolder stateHolder,
         HistoricalTimetableExporter exporter,
         ModuleDataHolder moduleDataHolder,
         HostServices hostServices) {
 
-        super(navService, loginController, hostServices, id -> id);
+        super(navService, loginController, stateHolder, hostServices, id -> id);
         this.exporter = exporter;
         this.moduleDataHolder = moduleDataHolder;
     }

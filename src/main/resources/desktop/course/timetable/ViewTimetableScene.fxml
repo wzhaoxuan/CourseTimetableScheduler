@@ -59,6 +59,7 @@
                               <RadioButton fx:id="programme" mnemonicParsing="false" prefHeight="115.0" prefWidth="147.0" stylesheets="@style.css" text="RadioButton" />
                            </children>
                         </HBox>
+                        <AnchorPane prefHeight="351.0" prefWidth="1029.0" VBox.vgrow="ALWAYS" />
                      </children>
                   </VBox>
                </children>

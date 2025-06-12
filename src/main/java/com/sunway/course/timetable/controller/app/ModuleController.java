@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.AbstractTimetableViewController;
 import com.sunway.course.timetable.exporter.HistoricalTimetableExporter;
+import com.sunway.course.timetable.result.SelectionStateHolder;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
 
@@ -22,10 +23,11 @@ public class ModuleController extends AbstractTimetableViewController<String> {
     public ModuleController(
         NavigationService navService,
         LoginSceneController loginController,
+        SelectionStateHolder stateHolder,
         HistoricalTimetableExporter exporter,
         ModuleServiceImpl moduleService,
         HostServices hostServices) {
-        super(navService, loginController, hostServices, id -> id);
+        super(navService, loginController, stateHolder, hostServices, id -> id);
         this.exporter = exporter;
         this.moduleService = moduleService;
     }
