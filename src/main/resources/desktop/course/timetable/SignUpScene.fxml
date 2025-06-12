@@ -32,6 +32,11 @@
                   <TextField fx:id="usernameField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-user-id" stylesheets="@style.css" />
                   <PasswordField fx:id="passwordField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-password" stylesheets="@style.css" />
                   <PasswordField fx:id="confirmPasswordField" prefHeight="40.0" prefWidth="252.0" styleClass="sign-up-confirm-password" stylesheets="@style.css" />
+                  <Button fx:id="toLoginButton" alignment="CENTER_RIGHT" contentDisplay="RIGHT" mnemonicParsing="false" onAction="#navigateToLogin" styleClass="sign-up" stylesheets="@../../../style/style.css" text="Button">
+                     <VBox.margin>
+                        <Insets left="180.0" top="-25.0" />
+                     </VBox.margin>
+                  </Button>
                   <Button fx:id="signUpButton" mnemonicParsing="false" onAction="#signUp" styleClass="sign-up-button" stylesheets="@style.css" text="Button">
                      <VBox.margin>
                         <Insets top="100.0" />

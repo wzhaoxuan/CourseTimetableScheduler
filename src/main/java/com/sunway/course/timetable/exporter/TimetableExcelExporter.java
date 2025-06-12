@@ -2,17 +2,13 @@ package com.sunway.course.timetable.exporter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -86,7 +82,7 @@ public class TimetableExcelExporter {
 
                 if (sessions == null || sessions.isEmpty()) continue;
 
-                // ✅ Group directly: no need to re-group using complex keys
+                // Group directly: no need to re-group using complex keys
                 Map<Long, String> venueMap = resolveVenueMap(sessions);
                 Map<Long, String> moduleCodeMap = resolveModuleMap(sessions);
 

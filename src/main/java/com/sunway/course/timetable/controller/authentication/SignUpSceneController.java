@@ -4,10 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
-import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.interfaces.services.UserService;
+import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 
 
@@ -15,6 +16,7 @@ import javafx.scene.control.PasswordField;
 public class SignUpSceneController extends AuthBaseController {
 
     @FXML private PasswordField confirmPasswordField;
+    @FXML private Button toLoginButton;
 
     @Autowired
     private UserService userService;
@@ -26,6 +28,7 @@ public class SignUpSceneController extends AuthBaseController {
     @Override
     protected void initialize(){
         super.initialize(); 
+        toLoginButton.setText("Back to Login");
         confirmPasswordField.setPromptText("Confirm Password");
     }
 
@@ -41,5 +44,10 @@ public class SignUpSceneController extends AuthBaseController {
         } else {
             System.out.println("Sign up failed");
         }
+    }
+
+    @FXML
+    protected void navigateToLogin() {
+        navigateToPage("LoginPage"); // Navigate to the login page
     }
 }

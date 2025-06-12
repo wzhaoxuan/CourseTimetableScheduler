@@ -49,9 +49,9 @@
                         <Label fx:id="subheading" alignment="TOP_LEFT" prefHeight="34.0" prefWidth="1144.0" styleClass="sub-heading" stylesheets="@style.css" text="Label" />
                      </children>
                   </HBox>
-                  <ScrollPane hbarPolicy="NEVER" prefHeight="590.0" prefWidth="935.0" vbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                  <ScrollPane fx:id="recentTimetableScroll" hbarPolicy="NEVER" prefHeight="590.0" prefWidth="935.0" vbarPolicy="NEVER" VBox.vgrow="ALWAYS">
                      <content>
-                        <VBox prefHeight="200.0" prefWidth="1049.0" />
+                        <VBox fx:id="recentTimetableBox" prefHeight="200.0" prefWidth="1049.0" />
                      </content>
                   </ScrollPane>
                </children>

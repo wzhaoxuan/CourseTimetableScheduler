@@ -14,8 +14,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.plan.Plan;
+import com.sunway.course.timetable.result.ModuleDataHolder;
 import com.sunway.course.timetable.service.PlanServiceImpl;
 import com.sunway.course.timetable.util.IntakeUtils;
 
@@ -25,39 +25,51 @@ public class HistoricalTimetableExporter {
 
     private final PlanServiceImpl planService;
     private final TimetableSheetWriter timetableSheetWriter;
-    private final Map<String, ModuleAssignmentData> moduleDataMap;
+    private final ModuleDataHolder moduleDataHolder;
     private final Map<Long, Integer> studentSemesterMap;
 
     public HistoricalTimetableExporter(
             PlanServiceImpl planService,
             TimetableSheetWriter timetableSheetWriter,
-            Map<String, ModuleAssignmentData> moduleDataMap,
+            ModuleDataHolder moduleDataHolder,
             Map<Long, Integer> studentSemesterMap) {
         this.planService = planService;
         this.timetableSheetWriter = timetableSheetWriter;
-        this.moduleDataMap = moduleDataMap;
+        this.moduleDataHolder = moduleDataHolder;
         this.studentSemesterMap = studentSemesterMap;
     }
 
-    // ✅ Export for Programme
+    // Export for Programme
     public List<File> exportByProgramme(String programme, String intake, int year) {
-        List<Plan> plans = planService.getPlansByProgramme(programme, moduleDataMap);
+        // 1Get all modules that belong to this programme
+        Set<String> moduleIdsForProgramme = moduleDataHolder.getModuleDataList().stream()
+            .filter(data -> data.getProgrammeOfferingModules().stream()
+                    .anyMatch(p -> p.getProgrammeId().getId().equalsIgnoreCase(programme)))
+            .map(data -> data.getModule().getId())
+            .collect(Collectors.toSet());
+
+        // 2Get all plans that match these modules
+        List<Plan> plans = planService.getAllPlans().stream()
+            .filter(plan -> moduleIdsForProgramme.contains(plan.getPlanContent().getModule().getId()))
+            .toList();
+
         return generateTimetableFiles(plans, programme, intake, year);
     }
 
-    // ✅ Export for Lecturer
+
+    // Export for Lecturer
     public List<File> exportByLecturer(String lecturerName) {
         List<Plan> plans = planService.getPlansByLecturer(lecturerName);
         return generateTimetableFiles(plans, lecturerName, null, 0);
     }
 
-    // ✅ Export for Module
+    // Export for Module
     public List<File> exportByModule(String moduleId) {
         List<Plan> plans = planService.getPlansByModule(moduleId);
         return generateTimetableFiles(plans, moduleId, null, 0);
     }
 
-    // ✅ Group by semester -> Generate timetable files
+    // Group by semester -> Generate timetable files
     private List<File> generateTimetableFiles(List<Plan> plans, String identifier, String intake, int year) {
 
         Map<Integer, List<Plan>> plansBySemester = plans.stream()
@@ -113,6 +125,16 @@ public class HistoricalTimetableExporter {
             .sorted()
             .toList();
     }
+
+    public List<String> getAllProgrammeCodes() {
+        return moduleDataHolder.getModuleDataList().stream()
+            .flatMap(data -> data.getProgrammeOfferingModules().stream())
+            .map(p -> p.getProgrammeId().getId())
+            .distinct()
+            .sorted()
+            .toList();
+    }
+
 
 
     private File saveWorkbookToFile(Workbook workbook, String filename) {

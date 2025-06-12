@@ -12,6 +12,8 @@ import com.sunway.course.timetable.controller.base.ContentController;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
+import com.sunway.course.timetable.result.MainPageStateHolder;
+import com.sunway.course.timetable.result.ModuleDataHolder;
 import com.sunway.course.timetable.result.PreprocessingResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
@@ -82,6 +84,8 @@ public class GenerateTimetableController extends ContentController {
     private final TimetableExcelExporter timetableExcelExporter;
     private final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     private final FitnessEvaluator fitnessEvaluator;
+    private final ModuleDataHolder moduleDataHolder;
+    private final MainPageStateHolder mainPageStateHolder; 
 
     // == matches file names in the ListView ==
     private File subjectPlanFile;
@@ -114,7 +118,9 @@ public class GenerateTimetableController extends ContentController {
                                     ProgrammeDistributionClustering clustering,
                                     TimetableExcelExporter timetableExcelExporter,
                                     LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                    FitnessEvaluator fitnessEvaluator) {
+                                    FitnessEvaluator fitnessEvaluator,
+                                    ModuleDataHolder moduleDataHolder,
+                                    MainPageStateHolder mainPageStateHolder) {
         super(navService, loginController);
         this.timetableController = timetableController;
         this.preprocessingService = preprocessingService;
@@ -138,6 +144,8 @@ public class GenerateTimetableController extends ContentController {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
+        this.moduleDataHolder = moduleDataHolder;
+        this.mainPageStateHolder = mainPageStateHolder;
     }
 
 
@@ -222,7 +230,9 @@ public class GenerateTimetableController extends ContentController {
                 clustering,
                 timetableExcelExporter,
                 lecturerDayAvailabilityUtil,
-                fitnessEvaluator
+                fitnessEvaluator,
+                moduleDataHolder,
+                mainPageStateHolder
             );
 
             int yearInt = Integer.parseInt(year);

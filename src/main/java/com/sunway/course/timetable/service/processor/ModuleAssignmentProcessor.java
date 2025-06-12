@@ -44,6 +44,8 @@ import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
+import com.sunway.course.timetable.result.MainPageStateHolder;
+import com.sunway.course.timetable.result.ModuleDataHolder;
 import com.sunway.course.timetable.result.SessionAssignmentResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
@@ -99,6 +101,9 @@ public class ModuleAssignmentProcessor {
     private final TimetableExcelExporter timetableExcelExporter;
     public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     public final FitnessEvaluator fitnessEvaluator;
+    private final ModuleDataHolder moduleDataHolder;
+    private final MainPageStateHolder mainPageStateHolder; 
+
 
     // === Singleton Matrices ===
     private final VenueAvailabilityMatrix venueMatrix;
@@ -143,7 +148,9 @@ public class ModuleAssignmentProcessor {
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
                                       LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                      FitnessEvaluator fitnessEvaluator
+                                      FitnessEvaluator fitnessEvaluator,
+                                      ModuleDataHolder moduleDataHolder,
+                                      MainPageStateHolder mainPageStateHolder
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -164,6 +171,8 @@ public class ModuleAssignmentProcessor {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
+        this.moduleDataHolder = moduleDataHolder;
+        this.mainPageStateHolder = mainPageStateHolder;
         this.creditTracker = new CreditHourTracker();
 
     }
@@ -185,6 +194,7 @@ public class ModuleAssignmentProcessor {
         String intake,
         int year) {
 
+        this.moduleDataHolder.store(moduleDataList); 
         this.studentSemesterMap = studentSemesterMap;
         sessionBySemesterAndModule.clear();
         moduleIdToStudentsMap.clear();
@@ -324,7 +334,7 @@ public class ModuleAssignmentProcessor {
         // savePlans(persistedSessions);
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
-
+        mainPageStateHolder.updateSemesterFiles(exportedFiles);
         Set<String> allLecturerNames = sessionBySemesterAndModule.values().stream()
             .flatMap(moduleMap -> moduleMap.values().stream())
             .flatMap(List::stream)

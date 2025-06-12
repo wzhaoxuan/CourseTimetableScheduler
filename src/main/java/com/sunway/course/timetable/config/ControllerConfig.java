@@ -15,22 +15,21 @@ import com.sunway.course.timetable.service.PlanServiceImpl;
 import javafx.application.HostServices;
 
 
-@Configuration
-public class ControllerConfig {
+// @Configuration
+// public class ControllerConfig {
 
-    @Bean
-    public ProgrammeController programmeController(
-        NavigationService navigationService,
-        LoginSceneController loginSceneController,
-        HistoricalTimetableExporter historicalExporter,
-        @Qualifier("moduleDataMap") Map<String, ModuleAssignmentData> moduleDataMap,
-        HostServices hostServices, PlanServiceImpl planService
-    ) {
-        return new ProgrammeController(
-            navigationService, loginSceneController,
-            historicalExporter, moduleDataMap, planService,
-            hostServices
-        );
-    }
-}
+//     @Bean
+//     public ProgrammeController programmeController(
+//         NavigationService navigationService,
+//         LoginSceneController loginSceneController,
+//         HistoricalTimetableExporter historicalExporter,
+        
+//     ) {
+//         return new ProgrammeController(
+//             navigationService, loginSceneController,
+//             historicalExporter, moduleDataMap, planService,
+//             hostServices
+//         );
+//     }
+// }
 
