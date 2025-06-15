@@ -3,11 +3,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Workbook;
@@ -39,16 +39,13 @@ public class HistoricalTimetableExporter {
         this.studentSemesterMap = studentSemesterMap;
     }
 
-    // Export for Programme
     public List<File> exportByProgramme(String programme, String intake, int year) {
-        // 1Get all modules that belong to this programme
         Set<String> moduleIdsForProgramme = moduleDataHolder.getModuleDataList().stream()
             .filter(data -> data.getProgrammeOfferingModules().stream()
                     .anyMatch(p -> p.getProgrammeId().getId().equalsIgnoreCase(programme)))
             .map(data -> data.getModule().getId())
             .collect(Collectors.toSet());
 
-        // 2Get all plans that match these modules
         List<Plan> plans = planService.getAllPlans().stream()
             .filter(plan -> moduleIdsForProgramme.contains(plan.getPlanContent().getModule().getId()))
             .toList();
@@ -56,22 +53,17 @@ public class HistoricalTimetableExporter {
         return generateTimetableFiles(plans, programme, intake, year);
     }
 
-
-    // Export for Lecturer
     public List<File> exportByLecturer(String lecturerName) {
         List<Plan> plans = planService.getPlansByLecturer(lecturerName);
         return generateTimetableFiles(plans, lecturerName, null, 0);
     }
 
-    // Export for Module
     public List<File> exportByModule(String moduleId) {
         List<Plan> plans = planService.getPlansByModule(moduleId);
         return generateTimetableFiles(plans, moduleId, null, 0);
     }
 
-    // Group by semester -> Generate timetable files
     private List<File> generateTimetableFiles(List<Plan> plans, String identifier, String intake, int year) {
-
         Map<Integer, List<Plan>> plansBySemester = plans.stream()
             .collect(Collectors.groupingBy(plan -> {
                 Long studentId = plan.getPlanContent().getSession().getStudent().getId();
@@ -83,31 +75,24 @@ public class HistoricalTimetableExporter {
         for (Map.Entry<Integer, List<Plan>> entry : plansBySemester.entrySet()) {
             int semester = entry.getKey();
 
-            // Build file name
-            String fileName;
-            if (intake != null) {
-                String intakeLabel = IntakeUtils.getIntakeLabel(semester, intake, year);
-                fileName = String.format("%s-%s S%d.xlsx", identifier, intakeLabel, semester);
-            } else{
-                fileName = String.format("%s.xlsx", identifier);
-            }
+            String fileName = (intake != null)
+                ? String.format("%s-%s S%d.xlsx", identifier, IntakeUtils.getIntakeLabel(semester, intake, year), semester)
+                : String.format("%s.xlsx", identifier);
 
-            // DEDUPLICATION STEP
-            Set<Long> seenSessionIds = new HashSet<>();
+            // ✅ DEDUPLICATE properly:
             List<Session> uniqueSessions = entry.getValue().stream()
                 .map(plan -> plan.getPlanContent().getSession())
-                .filter(s -> seenSessionIds.add(s.getId()))
-                .collect(Collectors.toList());      
+                .toList();
 
-            // ✅ Reuse TimetableSheetWriter now
-            Workbook workbook = timetableSheetWriter.generateWorkbookFromSessions("Semester " + semester, uniqueSessions);
+            List<Session> deduplicated = deduplicateSessions(uniqueSessions);
+
+            Workbook workbook = timetableSheetWriter.generateWorkbookFromSessions("Semester " + semester, deduplicated);
             File file = saveWorkbookToFile(workbook, fileName);
             files.add(file);
         }
         return files;
     }
 
-    // ✅ Get all distinct lecturers (used for displaying list of buttons in LecturerController)
     public List<String> getAllLecturerNames() {
         return planService.getAllPlans().stream()
             .map(plan -> plan.getPlanContent().getSession().getLecturer().getName())
@@ -135,7 +120,16 @@ public class HistoricalTimetableExporter {
             .toList();
     }
 
-
+    // Deduplicate function — reused everywhere
+    private List<Session> deduplicateSessions(List<Session> sessions) {
+        return sessions.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getDay() + "|" + s.getStartTime() + "|" + s.getTypeGroup(),
+                        Function.identity(),
+                        (s1, s2) -> s1  // keep first
+                ))
+                .values().stream().toList();
+    }
 
     private File saveWorkbookToFile(Workbook workbook, String filename) {
         File file = new File(System.getProperty("user.home") + "/Downloads/" + filename);
@@ -147,6 +141,7 @@ public class HistoricalTimetableExporter {
         return file;
     }
 }
+
 
 
 
