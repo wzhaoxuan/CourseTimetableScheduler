@@ -4,50 +4,100 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Workbook;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
+import com.sunway.course.timetable.service.ProgrammeHistoryStorageService;
 import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import static com.sunway.course.timetable.util.IntakeUtils.getIntakeLabel;
 
 @Component
 public class TimetableExcelExporter {
 
-    @Autowired private PlanContentServiceImpl planContentService;
-    @Autowired private VenueAssignmentServiceImpl venueAssignmentService;
-    @Autowired private TimetableSheetWriter timetableSheetWriter;
+    private static Logger logger = LoggerFactory.getLogger(TimetableExcelExporter.class);
+
+    private PlanContentServiceImpl planContentService;
+    private VenueAssignmentServiceImpl venueAssignmentService;
+    private TimetableSheetWriter timetableSheetWriter;
+    private ProgrammeHistoryStorageService programmeHistoryStorageService;
+
+    public TimetableExcelExporter(
+        PlanContentServiceImpl planContentService,
+        VenueAssignmentServiceImpl venueAssignmentService,
+        TimetableSheetWriter timetableSheetWriter,
+        ProgrammeHistoryStorageService programmeHistoryStorageService) {
+        this.planContentService = planContentService;
+        this.venueAssignmentService = venueAssignmentService;
+        this.timetableSheetWriter = timetableSheetWriter;
+        this.programmeHistoryStorageService = programmeHistoryStorageService;
+    }
 
     public List<File> exportWithFitnessAnnotation(
-        Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
-        double fitnessScore, String programme, String intake, int year) {
+            Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
+            double fitnessScore, String programme, String intake, int year) {
 
-        return sessionBySemesterAndModule.entrySet().stream()
-            .filter(entry -> entry.getKey() > 0)
-            .sorted(Map.Entry.comparingByKey())
-            .map(entry -> {
-                int semester = entry.getKey();
-                List<Session> sessions = flatten(entry.getValue());
-                List<Session> uniqueSessions = deduplicateSessions(sessions);
+        for(Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
+            logger.info("Semester {}", entry.getKey());
+            for(Map.Entry<String, List<Session>> moduleEntry : entry.getValue().entrySet()) {
+                String moduleId = moduleEntry.getKey();
+                List<Session> sessions = moduleEntry.getValue();
+                logger.info("Module {} has {} sessions", moduleId, sessions.size());
+                for(Session session : sessions) {
+                    logger.info("Session: {} {} {} {}",
+                            session.getDay(), session.getStartTime(), session.getEndTime(), session.getTypeGroup());
+                }
+            }
+        }
 
-                Map<String, List<Session>> grouped = groupSessions(uniqueSessions);
-                Map<Long, String> venueMap = resolveVenueMap(uniqueSessions);
-                Map<Long, String> moduleMap = resolveModuleMap(uniqueSessions);
+        // First, collect all semesters involved (sorted)
+        List<Integer> allSemesters = sessionBySemesterAndModule.keySet().stream()
+                .filter(sem -> sem > 0)
+                .sorted()
+                .toList();
 
-                Workbook workbook = timetableSheetWriter.generateWorkbook("Semester " + semester, grouped, venueMap, moduleMap);
-                timetableSheetWriter.addFitnessScore(workbook, fitnessScore);
+        // Build mapping: moduleId -> list of semesters it belongs to
+        Map<String, Set<Integer>> moduleSemesterMap = new HashMap<>();
+        for (var entry : sessionBySemesterAndModule.entrySet()) {
+            int semester = entry.getKey();
+            for (String moduleId : entry.getValue().keySet()) {
+                moduleSemesterMap.computeIfAbsent(moduleId, k -> new HashSet<>()).add(semester);
+            }
+        }
 
-                return saveWorkbookToFile(workbook, String.format("%s-%s S%d.xlsx", programme, getIntakeLabel(semester, intake, year), semester));
-            })
-            .collect(Collectors.toList());
+        List<File> files = new ArrayList<>();
+
+        for (int semester : allSemesters) {
+            Map<String, List<Session>> moduleMap = sessionBySemesterAndModule.getOrDefault(semester, Map.of());
+            List<Session> combinedSessions = flatten(moduleMap);
+
+            Workbook workbook = timetableSheetWriter.generateWorkbook(
+                    "Semester " + semester,
+                    groupSessions(combinedSessions),
+                    resolveVenueMap(combinedSessions),
+                    resolveModuleMap(combinedSessions)
+            );
+
+            timetableSheetWriter.addFitnessScore(workbook, fitnessScore);
+
+            File file = saveWorkbookToFile(workbook,
+                    String.format("%s-%s S%d.xlsx", programme, getIntakeLabel(semester, intake, year), semester));
+            // programmeHistoryStorageService.saveProgrammeFile(file);
+            files.add(file);
+        }
+
+        return files;
     }
 
     public List<File> exportLecturerTimetable(Map<Integer, List<Session>> sessionsBySemester,
@@ -163,7 +213,6 @@ public class TimetableExcelExporter {
         }
         return file;
     }
-
 }
 
 

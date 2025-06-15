@@ -44,8 +44,6 @@ import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
-import com.sunway.course.timetable.result.MainPageStateHolder;
-import com.sunway.course.timetable.result.ModuleDataHolder;
 import com.sunway.course.timetable.result.SessionAssignmentResult;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.ModuleServiceImpl;
@@ -101,8 +99,6 @@ public class ModuleAssignmentProcessor {
     private final TimetableExcelExporter timetableExcelExporter;
     public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     public final FitnessEvaluator fitnessEvaluator;
-    private final ModuleDataHolder moduleDataHolder;
-    private final MainPageStateHolder mainPageStateHolder; 
 
 
     // === Singleton Matrices ===
@@ -148,9 +144,7 @@ public class ModuleAssignmentProcessor {
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
                                       LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                      FitnessEvaluator fitnessEvaluator,
-                                      ModuleDataHolder moduleDataHolder,
-                                      MainPageStateHolder mainPageStateHolder
+                                      FitnessEvaluator fitnessEvaluator
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -171,8 +165,6 @@ public class ModuleAssignmentProcessor {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
-        this.moduleDataHolder = moduleDataHolder;
-        this.mainPageStateHolder = mainPageStateHolder;
         this.creditTracker = new CreditHourTracker();
 
     }
@@ -194,7 +186,6 @@ public class ModuleAssignmentProcessor {
         String intake,
         int year) {
 
-        this.moduleDataHolder.store(moduleDataList); 
         this.studentSemesterMap = studentSemesterMap;
         sessionBySemesterAndModule.clear();
         moduleIdToStudentsMap.clear();
@@ -353,8 +344,6 @@ public class ModuleAssignmentProcessor {
             );
             this.exportedLecturerFiles.addAll(files);
         }
-
-        mainPageStateHolder.updateSemesterFiles(exportedFiles);
 
         this.exportedModuleFiles = timetableExcelExporter.exportModuleTimetable(
             sessionBySemesterAndModule, intake, year
@@ -596,6 +585,31 @@ public class ModuleAssignmentProcessor {
         return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore, programme, intake, year);
     }
 
+    private void assignStudentsToSession(SessionGroupMetaData meta, String day, LocalTime start, LocalTime end, 
+                                     Lecturer lecturer, Venue venue, List<Student> assignedStudents) {
+        for (Student student : assignedStudents) {
+            Session session = new Session();
+            session.setType(meta.getType());
+            session.setTypeGroup(meta.getTypeGroup());
+            session.setLecturer(lecturer);
+            session.setDay(day);
+            session.setStartTime(start);
+            session.setEndTime(end);
+            session.setStudent(student);
+
+            sessionToModuleIdMap.put(session, meta.getModuleId());
+            sessionVenueMap.put(session, venue);
+
+            String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
+            studentAssignedTypes.computeIfAbsent(student.getId(), k -> new HashSet<>()).add(key);
+
+            sessionBySemesterAndModule
+                .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
+                .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())
+                .add(session);
+        }
+    }
+
 
     private void printFinalizedSchedule(Map<Session, String> sessionToModuleIdMap, Map<Session, Venue> sessionVenueMap) {
         Map<String, Map<String, Map<String, Map<String, List<Session>>>>> categorized = new TreeMap<>();
@@ -646,81 +660,6 @@ public class ModuleAssignmentProcessor {
             }
         }
     }
-
-    private void assignStudentsToSession(SessionGroupMetaData meta, String day, LocalTime start, LocalTime end, 
-                                     Lecturer lecturer, Venue venue, List<Student> assignedStudents) {
-        for (Student student : assignedStudents) {
-            Session session = new Session();
-            session.setType(meta.getType());
-            session.setTypeGroup(meta.getTypeGroup());
-            session.setLecturer(lecturer);
-            session.setDay(day);
-            session.setStartTime(start);
-            session.setEndTime(end);
-            session.setStudent(student);
-
-            sessionToModuleIdMap.put(session, meta.getModuleId());
-            sessionVenueMap.put(session, venue);
-
-            String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
-            studentAssignedTypes.computeIfAbsent(student.getId(), k -> new HashSet<>()).add(key);
-
-            sessionBySemesterAndModule
-                .computeIfAbsent(meta.getSemester(), k -> new HashMap<>())
-                .computeIfAbsent(meta.getModuleId(), k -> new ArrayList<>())
-                .add(session);
-        }
-    }
-
-    private void savePlans(List<Session> persistedSessions) {
-        Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
-                .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
-
-        // Build SessionId -> ModuleId mapping directly from PlanContent table
-        Map<Long, String> sessionToModuleMap = planContentService.getAllPlanContents().stream()
-                .collect(Collectors.toMap(
-                        pc -> pc.getSession().getId(),
-                        pc -> pc.getModule().getId(),
-                        (existing, replacement) -> existing // handle duplicates safely
-                ));
-
-        for (Session session : persistedSessions) {
-            String moduleId = sessionToModuleMap.get(session.getId());
-
-            if (moduleId == null) {
-                log.warn("PlanContent not found for session {}", session.getId());
-                continue;
-            }
-
-            // Construct PlanContentId
-            PlanContentId planContentId = new PlanContentId();
-            planContentId.setSessionId(session.getId());
-            planContentId.setModuleId(moduleId);
-
-            Optional<PlanContent> planContentOpt = planContentService.getPlanContentById(planContentId);
-            if (planContentOpt.isEmpty()) {
-                log.warn("PlanContent entity missing for PlanContentId: {}", planContentId);
-                continue;
-            }
-
-            Plan plan = new Plan();
-            PlanId planId = new PlanId();
-            planId.setPlanContentId(planContentId);
-            planId.setSatisfactionId(savedSatisfaction.getId());
-
-            plan.setPlanId(planId);
-            plan.setPlanContent(planContentOpt.get());
-            plan.setSatisfaction(savedSatisfaction);
-
-            planService.savePlan(plan);
-        }
-    }
-
-
-
-
-
-
 
     private String getDayName(int index) {
         return switch (index) {

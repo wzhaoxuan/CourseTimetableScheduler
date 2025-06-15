@@ -6,7 +6,6 @@
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -19,7 +18,6 @@
                <children>
                   <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" styleClass="profile-vbox" stylesheets="@style.css" VBox.vgrow="ALWAYS">
                      <children>
-                        <ImageView fx:id="profile" fitHeight="69.0" fitWidth="67.0" pickOnBounds="true" preserveRatio="true" styleClass="profile" />
                         <Label fx:id="username" styleClass="username" stylesheets="@style.css" text="Label" />
                      </children>
                      <VBox.margin>

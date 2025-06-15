@@ -41,6 +41,8 @@ public class TimetableSheetWriter {
     @Autowired private PlanContentServiceImpl planContentService;
 
     public Workbook generateWorkbook(String sheetName, Map<String, List<Session>> groupedSessions, Map<Long, String> venueMap, Map<Long, String> moduleMap) {
+        processedSessionIds.clear();
+        
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(sheetName);
 

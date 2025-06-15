@@ -1,29 +1,24 @@
 package com.sunway.course.timetable.controller.base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.service.NavigationService;
-import com.sunway.course.timetable.view.MainApp;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
 
 public abstract class ContentController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentController.class);
 
-    @FXML protected ImageView profile;
     @FXML protected Label username, subheading;
     @FXML protected Button homeButton, generateTimetable, viewTimetable, logOutButton;
 
     protected NavigationService navigationService;
     private final LoginSceneController loginSceneController;
 
-    @Autowired
     public ContentController(NavigationService navigationService, 
                                 LoginSceneController loginSceneController) {
         super(navigationService.getMainApp());

@@ -3,10 +3,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.plan.Plan;
-import com.sunway.course.timetable.result.ModuleDataHolder;
 import com.sunway.course.timetable.service.PlanServiceImpl;
+import com.sunway.course.timetable.service.ProgrammeHistoryStorageService;
 import com.sunway.course.timetable.util.IntakeUtils;
 
 
@@ -25,32 +25,26 @@ public class HistoricalTimetableExporter {
 
     private final PlanServiceImpl planService;
     private final TimetableSheetWriter timetableSheetWriter;
-    private final ModuleDataHolder moduleDataHolder;
     private final Map<Long, Integer> studentSemesterMap;
+    private final ProgrammeHistoryStorageService programmeHistoryStorageService;
 
     public HistoricalTimetableExporter(
             PlanServiceImpl planService,
             TimetableSheetWriter timetableSheetWriter,
-            ModuleDataHolder moduleDataHolder,
-            Map<Long, Integer> studentSemesterMap) {
+            Map<Long, Integer> studentSemesterMap,
+            ProgrammeHistoryStorageService programmeHistoryStorageService) {
         this.planService = planService;
         this.timetableSheetWriter = timetableSheetWriter;
-        this.moduleDataHolder = moduleDataHolder;
         this.studentSemesterMap = studentSemesterMap;
+        this.programmeHistoryStorageService = programmeHistoryStorageService;
     }
 
-    public List<File> exportByProgramme(String programme, String intake, int year) {
-        Set<String> moduleIdsForProgramme = moduleDataHolder.getModuleDataList().stream()
-            .filter(data -> data.getProgrammeOfferingModules().stream()
-                    .anyMatch(p -> p.getProgrammeId().getId().equalsIgnoreCase(programme)))
-            .map(data -> data.getModule().getId())
-            .collect(Collectors.toSet());
-
-        List<Plan> plans = planService.getAllPlans().stream()
-            .filter(plan -> moduleIdsForProgramme.contains(plan.getPlanContent().getModule().getId()))
-            .toList();
-
-        return generateTimetableFiles(plans, programme, intake, year);
+    public List<File> exportByProgramme(String programmeCode) {
+        File[] files = programmeHistoryStorageService.getProgrammeFilesForCode(programmeCode);
+        if (files == null || files.length == 0) {
+            return List.of();
+        }
+        return Arrays.asList(files);
     }
 
     public List<File> exportByLecturer(String lecturerName) {
@@ -79,7 +73,7 @@ public class HistoricalTimetableExporter {
                 ? String.format("%s-%s S%d.xlsx", identifier, IntakeUtils.getIntakeLabel(semester, intake, year), semester)
                 : String.format("%s.xlsx", identifier);
 
-            // ✅ DEDUPLICATE properly:
+            // DEDUPLICATE properly:
             List<Session> uniqueSessions = entry.getValue().stream()
                 .map(plan -> plan.getPlanContent().getSession())
                 .toList();
@@ -111,16 +105,7 @@ public class HistoricalTimetableExporter {
             .toList();
     }
 
-    public List<String> getAllProgrammeCodes() {
-        return moduleDataHolder.getModuleDataList().stream()
-            .flatMap(data -> data.getProgrammeOfferingModules().stream())
-            .map(p -> p.getProgrammeId().getId())
-            .distinct()
-            .sorted()
-            .toList();
-    }
-
-    // Deduplicate function — reused everywhere
+    // Deduplicate function
     private List<Session> deduplicateSessions(List<Session> sessions) {
         return sessions.stream()
                 .collect(Collectors.toMap(

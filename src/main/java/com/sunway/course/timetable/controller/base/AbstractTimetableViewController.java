@@ -52,7 +52,7 @@ public abstract class AbstractTimetableViewController<T> extends SelectionContro
         displayButtons(allItems);
     }
 
-    private void displayButtons(List<T> items) {
+    protected void displayButtons(List<T> items) {
         buttonBox.getChildren().clear();
         for (T item : items) {
             String displayName = nameExtractor.apply(item);
