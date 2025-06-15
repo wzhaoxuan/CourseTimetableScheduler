@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Workbook;
@@ -35,9 +36,11 @@ public class TimetableExcelExporter {
             .map(entry -> {
                 int semester = entry.getKey();
                 List<Session> sessions = flatten(entry.getValue());
-                Map<String, List<Session>> grouped = groupSessions(sessions);
-                Map<Long, String> venueMap = resolveVenueMap(sessions);
-                Map<Long, String> moduleMap = resolveModuleMap(sessions);
+                List<Session> uniqueSessions = deduplicateSessions(sessions);
+
+                Map<String, List<Session>> grouped = groupSessions(uniqueSessions);
+                Map<Long, String> venueMap = resolveVenueMap(uniqueSessions);
+                Map<Long, String> moduleMap = resolveModuleMap(uniqueSessions);
 
                 Workbook workbook = timetableSheetWriter.generateWorkbook("Semester " + semester, grouped, venueMap, moduleMap);
                 timetableSheetWriter.addFitnessScore(workbook, fitnessScore);
@@ -52,7 +55,7 @@ public class TimetableExcelExporter {
         List<File> files = new ArrayList<>();
         for (var entry : sessionsBySemester.entrySet()) {
             int semester = entry.getKey();
-            List<Session> sessions = entry.getValue();
+            List<Session> sessions = deduplicateSessions(entry.getValue());
             if(semester <= 0 || sessions.isEmpty()) continue;
             Map<Long, String> venueMap = resolveVenueMap(sessions);
             Map<Long, String> moduleMap = resolveModuleMap(sessions);
@@ -78,9 +81,8 @@ public class TimetableExcelExporter {
 
             for (var moduleEntry : moduleMap.entrySet()) {
                 String moduleId = moduleEntry.getKey();
-                List<Session> sessions = moduleEntry.getValue();
-
-                if (sessions == null || sessions.isEmpty()) continue;
+                List<Session> sessions = deduplicateSessions(moduleEntry.getValue());
+                if (sessions.isEmpty()) continue;
 
                 // Group directly: no need to re-group using complex keys
                 Map<Long, String> venueMap = resolveVenueMap(sessions);
@@ -110,15 +112,14 @@ public class TimetableExcelExporter {
         return lecturerSessions;
     }
 
-
-    private File saveWorkbookToFile(Workbook workbook, String filename) {
-        File file = new File(System.getProperty("user.home") + "/Downloads/" + filename);
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            workbook.write(out);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return file;
+    private List<Session> deduplicateSessions(List<Session> sessions) {
+        return sessions.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getDay() + "|" + s.getStartTime() + "|" + s.getTypeGroup(),
+                        Function.identity(),
+                        (s1, s2) -> s1  // keep first
+                ))
+                .values().stream().toList();
     }
 
     private List<Session> flatten(Map<String, List<Session>> map) {
@@ -151,6 +152,16 @@ public class TimetableExcelExporter {
             s -> planContentService.getModuleBySessionId(s.getId()).map(p -> p.getModule().getId()).orElse("Unknown"),
             (a, b) -> a
         ));
+    }
+
+    private File saveWorkbookToFile(Workbook workbook, String filename) {
+        File file = new File(System.getProperty("user.home") + "/Downloads/" + filename);
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            workbook.write(out);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return file;
     }
 
 }
