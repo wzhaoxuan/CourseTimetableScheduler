@@ -195,18 +195,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             return this;
         }
 
-        List<AssignmentOption> filteredDomain = msg.prunedDomain;
-
-        if (List.of("Practical", "Tutorial", "Workshop").contains(msg.sessionType)) {
-            filteredDomain = filteredDomain.stream()
-                .filter(opt -> {
-                    String type = opt.venue().getType();
-                    return type.equalsIgnoreCase("Room") || type.equalsIgnoreCase("Lab");
-                })
-                .collect(Collectors.toList());
-        }
-
-
         // Sort pruned domain by preferred venue proximity (if applicable)
         List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);
 

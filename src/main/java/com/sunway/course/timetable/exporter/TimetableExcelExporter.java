@@ -48,18 +48,18 @@ public class TimetableExcelExporter {
             Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
             double fitnessScore, String programme, String intake, int year) {
 
-        for(Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
-            logger.info("Semester {}", entry.getKey());
-            for(Map.Entry<String, List<Session>> moduleEntry : entry.getValue().entrySet()) {
-                String moduleId = moduleEntry.getKey();
-                List<Session> sessions = moduleEntry.getValue();
-                logger.info("Module {} has {} sessions", moduleId, sessions.size());
-                for(Session session : sessions) {
-                    logger.info("Session: {} {} {} {}",
-                            session.getDay(), session.getStartTime(), session.getEndTime(), session.getTypeGroup());
-                }
-            }
-        }
+        // for(Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
+        //     logger.info("Semester {}", entry.getKey());
+        //     for(Map.Entry<String, List<Session>> moduleEntry : entry.getValue().entrySet()) {
+        //         String moduleId = moduleEntry.getKey();
+        //         List<Session> sessions = moduleEntry.getValue();
+        //         logger.info("Module {} has {} sessions", moduleId, sessions.size());
+        //         for(Session session : sessions) {
+        //             logger.info("Session: {} {} {} {}",
+        //                     session.getDay(), session.getStartTime(), session.getEndTime(), session.getTypeGroup());
+        //         }
+        //     }
+        // }
 
         // First, collect all semesters involved (sorted)
         List<Integer> allSemesters = sessionBySemesterAndModule.keySet().stream()

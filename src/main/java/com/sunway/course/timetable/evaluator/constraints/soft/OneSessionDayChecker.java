@@ -30,7 +30,7 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 300.0; // Adjust based on how important this is
+        return 30.0; // Adjust based on how important this is
 
     }
 

@@ -159,17 +159,20 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         prunedDomain.sort(Comparator
             .comparingInt((AssignmentOption opt) -> {
                 // One-session-per-day penalty for students
-                long soloDayPenalty = msg.eligibleStudents.stream()
+                long soloDayCount = msg.eligibleStudents.stream()
                     .filter(s -> causesOnlyOneSessionDay(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
                     .count();
+                double soloDayproportion = (double) soloDayCount / msg.eligibleStudents.size();
+
                 int timePenalty = getTimeOfDayPenalty(opt.startSlot()); // Lower = better
+
                 long gapPenalty = msg.eligibleStudents.stream()
                     .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
                     .count();
                 
-                    long spreadPenaltyStudents = msg.eligibleStudents.stream()
-                    .filter(s -> isNewDayForStudent(s.getId(), opt.day(), msg.studentMatrix))
-                    .count();
+                long spreadPenaltyStudents = msg.eligibleStudents.stream()
+                .filter(s -> isNewDayForStudent(s.getId(), opt.day(), msg.studentMatrix))
+                .count();
 
                 boolean lecturerNewDay = isNewDayForLecturer(msg.lecturerName, opt.day(), msg.lecturerMatrix);
                 int spreadPenaltyLecturer = lecturerNewDay ? 1 : 0;
@@ -179,8 +182,12 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                     sequencingPenalty = calculateLectureAfterPenalty(msg, opt);
                 }
                 
-                return timePenalty * 1000 + (int) gapPenalty + (int) soloDayPenalty * 5 + sequencingPenalty * 500 +
-                (int) spreadPenaltyStudents * 2 + spreadPenaltyLecturer * 3 ;  // Weighted
+                return timePenalty * 500
+                    + (int) gapPenalty * 100
+                    + (int) soloDayproportion * 120  
+                    + (int) spreadPenaltyStudents * 2  
+                    + spreadPenaltyLecturer * 2 // Weighted
+                    + sequencingPenalty * 10;
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );
@@ -232,8 +239,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     private int getTimeOfDayPenalty(int startSlot) {
         LocalTime start = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
 
-        if (start.isBefore(LocalTime.of(11, 0))) return 0;        // Morning
-        else if (start.isBefore(LocalTime.of(16, 0))) return 1;   // Afternoon
+        if (start.isBefore(LocalTime.of(16, 0))) return 0;   // Morning or Afternoon
         else return 2;                                            // Late (after 4:00 PM)
     }
 
@@ -266,6 +272,4 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         List<LocalTime> occupied = studentMatrix.getAssignedTimes(studentId, day);
         return occupied.isEmpty();  // If student has no sessions that day
     }
-
-
 }

@@ -23,7 +23,7 @@ public class PlanServiceImpl implements PlanService {
 
     @Override
     public Plan savePlan(Plan plan) {
-        if (plan == null) throw new IllegalArgumentException("Plan cannot be null");
+        // if (plan == null) throw new IllegalArgumentException("Plan cannot be null");
         return planRepository.save(plan);
     }
 

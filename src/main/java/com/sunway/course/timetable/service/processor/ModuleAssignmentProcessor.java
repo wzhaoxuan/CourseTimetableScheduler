@@ -542,6 +542,8 @@ public class ModuleAssignmentProcessor {
             planContent.setSession(savedSession);
             planContentService.savePlanContent(planContent);
 
+            persistedPlanContentIds.add(planContentId);
+
             // Group by semester and module
             List<Integer> allSemesters = sessionGroupPreprocessorService.getSemestersForModule(moduleId);
             if (allSemesters != null) {

@@ -1,11 +1,14 @@
 package com.sunway.course.timetable.evaluator.constraints.soft;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
-
-import java.util.*;
 
 
 /**
@@ -27,7 +30,7 @@ public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 50.0;
+        return 5.0;
     }
 
     @Override
