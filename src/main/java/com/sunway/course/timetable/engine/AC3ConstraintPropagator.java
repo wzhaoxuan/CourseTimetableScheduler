@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.engine;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,7 +28,18 @@ public class AC3ConstraintPropagator {
 
     private static final Logger log = LoggerFactory.getLogger(AC3ConstraintPropagator.class);
 
-    public static Map<SessionGroupMetaData, List<AssignmentOption>> propagate(
+    public static class AC3Result {
+        public final Map<SessionGroupMetaData, List<AssignmentOption>> domains;
+        public final Map<SessionGroupMetaData, List<DomainRejectionReason>> rejectionLogs;
+
+        public AC3Result(Map<SessionGroupMetaData, List<AssignmentOption>> domains,
+                         Map<SessionGroupMetaData, List<DomainRejectionReason>> rejectionLogs) {
+            this.domains = domains;
+            this.rejectionLogs = rejectionLogs;
+        }
+    }
+
+    public static AC3Result propagate(
         List<SessionGroupMetaData> failedSessionGroups,
         LecturerAvailabilityMatrix lecturerMatrix,
         VenueAvailabilityMatrix venueMatrix,
@@ -37,13 +49,16 @@ public class AC3ConstraintPropagator {
         LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
     ) {
         Map<SessionGroupMetaData, List<AssignmentOption>> domains = new HashMap<>();
+        Map<SessionGroupMetaData, List<DomainRejectionReason>> rejectionLogs = new HashMap<>();
         Map<SessionGroupMetaData, Set<SessionGroupMetaData>> neighbors = new HashMap<>();
         
         // 1. For each SessionGroupMetaData, call AC3DomainPruner.pruneDomain(...) to initialize the domain
         for (SessionGroupMetaData group : failedSessionGroups) {
+            List<DomainRejectionReason> rejectionList = new ArrayList<>();
             List<AssignmentOption> domain = DomainPruner.pruneDomain(
                 lecturerMatrix, venueMatrix, studentMatrix, allVenues,
-                group, group.getEligibleStudents(), lecturerService, lecturerDayAvailabilityUtil
+                group, group.getEligibleStudents(), lecturerService, lecturerDayAvailabilityUtil,
+                rejectionList
             );
 
             domain.sort(Comparator
@@ -51,6 +66,7 @@ public class AC3ConstraintPropagator {
                 .thenComparingInt(AssignmentOption::startSlot)
                 .thenComparingInt(opt -> opt.venue().getCapacity()));
             domains.put(group, domain);
+            rejectionLogs.put(group, rejectionList);
         }
 
         // 2. Build neighbors (arcs) between groups that share lecturers or students
@@ -80,7 +96,7 @@ public class AC3ConstraintPropagator {
             Pair arc = queue.poll();
             if (revise(domains, arc.xi, arc.xj)) {
                 if (domains.get(arc.xi).isEmpty()) {
-                    return Map.of(); // Failure: no valid domain
+                    log.warn("Domain wiped out for: {}", arc.xi.getTypeGroup());
                 }
                 for (SessionGroupMetaData neighbor : neighbors.getOrDefault(arc.xi, Set.of())) {
                     if (!neighbor.equals(arc.xj)) {
@@ -90,7 +106,7 @@ public class AC3ConstraintPropagator {
             }
         }
 
-        return domains;
+        return new AC3Result(domains, rejectionLogs);
     }
 
     private static boolean revise(Map<SessionGroupMetaData, List<AssignmentOption>> domains,
@@ -125,6 +141,6 @@ public class AC3ConstraintPropagator {
 
     private record Pair(SessionGroupMetaData xi, SessionGroupMetaData xj) {}
         
-    
+
 }
 

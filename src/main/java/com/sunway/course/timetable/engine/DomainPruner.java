@@ -30,7 +30,8 @@ public class DomainPruner {
             SessionGroupMetaData meta,
             List<Student> eligibleStudents,
             LecturerServiceImpl lecturerService,
-            LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil
+            LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
+            List<DomainRejectionReason> rejectionLogs
     ) {
         List<AssignmentOption> domain = new ArrayList<>();
 
@@ -38,7 +39,8 @@ public class DomainPruner {
         int maxDay = 5, maxSlot = 20;
         int requiredCapacity;
         
-         Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(meta.getLecturerName());
+        Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(meta.getLecturerName());
+        log.info("Pruning domain for {} with lecturer {}", meta.getTypeGroup(), meta.getLecturerName());
         if (lecturerOpt.isEmpty()) {
             log.warn("Lecturer {} not found, skipping pruning.", meta.getLecturerName());
             return domain;
@@ -72,11 +74,31 @@ public class DomainPruner {
                         requiredCapacity = groupsize;
                     }
 
-                    if (venue.getCapacity() < requiredCapacity) continue;
+                    // capacity check
+                    if (venue.getCapacity() < requiredCapacity) {
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Venue too small"));
+                        continue;
+                    }
 
-                    boolean lecturerAvailable = lecturerMatrix.isAvailable(
-                        meta.getLecturerName(), day, start, end);
+                    // weekday constraint check
+                    if (lecturerDayAvailabilityUtil.isUnavailable(lecturerId, dayName)) {
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Lecturer unavailable (weekday constraint)"));
+                        continue;
+                    }
+
+                    // lecturer schedule conflict
+                    boolean lecturerAvailable = lecturerMatrix.isAvailable(meta.getLecturerName(), day, start, end);
+                    if (!lecturerAvailable) {
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Lecturer busy"));
+                        continue;
+                    }
+
+                    // venue conflict
                     boolean venueAvailable = venueMatrix.isAvailable(venue, start, end, day);
+                    if (!venueAvailable) {
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Venue occupied"));
+                        continue;
+                    }
 
                     final int currentDay = day;
                     final int currentStart = start;
@@ -87,9 +109,18 @@ public class DomainPruner {
                         .filter(id -> studentMatrix.isAvailable(id, currentDay, currentStart, currentEnd))
                         .toList();
 
-                    if (lecturerAvailable && venueAvailable && availableStudentIds.size() >= meta.getTotalStudents()) {
-                        domain.add(new AssignmentOption(day, start, venue));
+                    // if (lecturerAvailable && venueAvailable && availableStudentIds.size() >= meta.getTotalStudents()) {
+                    //     domain.add(new AssignmentOption(day, start, venue));
+                    // }
+
+                    if (availableStudentIds.size() < meta.getTotalStudents()) {
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), 
+                            String.format("Student clash (only %d available, need %d)", 
+                            availableStudentIds.size(), meta.getTotalStudents())));
+                        continue;
                     }
+                    
+                    domain.add(new AssignmentOption(day, start, venue));
                 }
             }
         }

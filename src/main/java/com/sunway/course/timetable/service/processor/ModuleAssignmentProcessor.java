@@ -463,6 +463,24 @@ public class ModuleAssignmentProcessor {
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
         Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
 
+        // log.info("Checking for unassigned students:");
+
+        // for (SessionGroupMetaData meta : allMetaData) {
+        //     List<Student> eligible = meta.getEligibleStudents();
+        //     List<Student> assigned = studentAssignments.getOrDefault(meta, List.of());
+
+        //     Set<Long> assignedIds = assigned.stream()
+        //         .map(Student::getId)
+        //         .collect(Collectors.toSet());
+
+        //     for (Student s : eligible) {
+        //         if (!assignedIds.contains(s.getId())) {
+        //             log.warn("Student {} not assigned to group {}", s.getId(), meta.getTypeGroup());
+        //         }
+        //     }
+        // }
+
+
         for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : result.entrySet()) {
             SessionGroupMetaData meta = entry.getKey();
             AssignmentOption opt = entry.getValue();

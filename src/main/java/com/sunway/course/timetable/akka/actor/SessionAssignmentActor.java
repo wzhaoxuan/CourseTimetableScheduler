@@ -1,12 +1,14 @@
 package com.sunway.course.timetable.akka.actor;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import com.sunway.course.timetable.engine.DomainPruner;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.DomainRejectionReason;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
@@ -145,6 +147,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         meta.setGroupCount(msg.groupCount);
         meta.setTotalStudents(msg.eligibleStudents.size());
 
+        List<DomainRejectionReason> rejectionLogs = new ArrayList<>();
+
         List<AssignmentOption> prunedDomain = DomainPruner.pruneDomain(
             msg.lecturerMatrix,
             msg.venueMatrix,
@@ -153,8 +157,20 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             meta,
             msg.eligibleStudents,
             msg.lecturerService,
-            msg.lecturerDayAvailabilityUtil
+            msg.lecturerDayAvailabilityUtil,
+            rejectionLogs
         );
+
+        if (prunedDomain.isEmpty()) {
+            context.getLog().warn("Session assignment failed: No valid domain options");
+
+            for (DomainRejectionReason reason : rejectionLogs) {
+                context.getLog().warn(reason.toString());
+            }
+
+            msg.replyTo.tell(new SessionAssignmentFailed("No valid domain options"));
+            return this;
+        }
 
         prunedDomain.sort(Comparator
             .comparingInt((AssignmentOption opt) -> {
@@ -196,7 +212,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
             msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
             msg.sessionType, msg.groupIndex, msg.groupCount,
-            context.getSelf(), msg.preferredVenues, prunedDomain
+            context.getSelf(), msg.preferredVenues, prunedDomain, rejectionLogs
         ));
 
         return this;
@@ -239,8 +255,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     private int getTimeOfDayPenalty(int startSlot) {
         LocalTime start = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
 
-        if (start.isBefore(LocalTime.of(16, 0))) return 0;   // Morning or Afternoon
-        else return 2;                                            // Late (after 4:00 PM)
+        if (start.isBefore(LocalTime.of(18, 0))) return 0;   // Morning or Afternoon
+        else return 1;                                            // Late (after 4:00 PM)
     }
 
     private boolean causesOnlyOneSessionDay(Long studentId, int day, int startSlot, StudentAvailabilityMatrix matrix) {

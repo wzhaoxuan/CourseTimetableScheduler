@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
+import com.sunway.course.timetable.engine.DomainRejectionReason;
 import com.sunway.course.timetable.model.Module;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
@@ -59,6 +60,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         public final ActorRef<SessionAssignmentActor.SessionAssignmentCommand> replyTo;
         private final List<String> preferredVenues;
         private final List<AssignmentOption> prunedDomain;
+        private final List<DomainRejectionReason> rejectionReasons;
 
         public RequestVenueAssignment(int durationHours, int minCapacity, String lecturerName,
                                         Module module, List<Student> eligibleStudents,
@@ -67,7 +69,8 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                                         int groupCount,
                                         ActorRef<SessionAssignmentActor.SessionAssignmentCommand> replyTo,
                                         List<String> preferredVenues,
-                                        List<AssignmentOption> prunedDomain) {
+                                        List<AssignmentOption> prunedDomain,
+                                        List<DomainRejectionReason> rejectionReasons) {
             this.durationHours = durationHours;
             this.minCapacity = minCapacity;
             this.lecturerName = lecturerName;
@@ -79,6 +82,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             this.replyTo = replyTo;
             this.preferredVenues = preferredVenues;
             this.prunedDomain = prunedDomain;
+            this.rejectionReasons = rejectionReasons;
         }
     }
 
@@ -191,9 +195,18 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
 
     private Behavior<VenueCoordinatorCommand> onRequestVenueAssignment(RequestVenueAssignment msg) {
         if (msg.prunedDomain == null || msg.prunedDomain.isEmpty()) {
+            getContext().getLog().warn("Session assignment failed: No valid domain options");
+
+            if (msg.rejectionReasons != null) {
+                for (DomainRejectionReason reason : msg.rejectionReasons) {
+                    getContext().getLog().warn(reason.toString());
+                }
+            }
+
             msg.replyTo.tell(new SessionAssignmentActor.SessionAssignmentFailed("No valid domain options"));
             return this;
         }
+
 
         // Sort pruned domain by preferred venue proximity (if applicable)
         List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);

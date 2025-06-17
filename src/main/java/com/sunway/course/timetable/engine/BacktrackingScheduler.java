@@ -43,9 +43,11 @@ public class BacktrackingScheduler {
     private final Map<Long, Integer> studentAssignmentCount = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
     private final FitnessEvaluator fitnessEvaluator;
-    private double bestFitnessScore = -1;
+    private double bestFitnessScore = 0;
     private Map<SessionGroupMetaData, AssignmentOption> bestAssignment = new HashMap<>();
     private Map<SessionGroupMetaData, List<Student>> bestStudentAssignments = new HashMap<>();
+    private final Map<SessionGroupMetaData, List<DomainRejectionReason>> rejections;
+
 
     private final int MIN_GROUP_SIZE = 5;
     private static final int MAX_GROUP_SIZE = 35;
@@ -71,21 +73,27 @@ public class BacktrackingScheduler {
         this.assignment = new HashMap<>();
         this.studentAssignments = new HashMap<>();
 
-        this.domains = new HashMap<>(AC3ConstraintPropagator.propagate(
-            sessions,
-            lecturerMatrix,
-            venueMatrix,
-            studentMatrix,
-            venues,
-            lecturerService,
-            lecturerDayAvailabilityUtil
-        ));
+        // Use upgraded AC3 with rejection reasons
+        AC3ConstraintPropagator.AC3Result result = AC3ConstraintPropagator.propagate(
+            sessions, lecturerMatrix, venueMatrix, studentMatrix,
+            venues, lecturerService, lecturerDayAvailabilityUtil
+        );
+
+        this.domains = result.domains;
+        this.rejections = result.rejectionLogs;
 
         for (SessionGroupMetaData meta : sessions) {
             List<AssignmentOption> pruned = this.domains.getOrDefault(meta, new ArrayList<>());
 
             if (pruned.isEmpty()) {
                 System.out.printf("[BACKTRACK] No valid options for: %s%n", meta.getTypeGroup());
+
+                List<DomainRejectionReason> reasons = this.rejections.get(meta);
+                if (reasons != null) {
+                    for (DomainRejectionReason reason : reasons) {
+                        System.out.println(reason.toString());
+                    }
+                }
             }
 
             String referenceVenue = venues.get(0).getName();
