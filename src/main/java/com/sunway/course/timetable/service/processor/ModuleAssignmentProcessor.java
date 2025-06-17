@@ -31,14 +31,11 @@ import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
-import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
-import com.sunway.course.timetable.model.plan.Plan;
-import com.sunway.course.timetable.model.plan.PlanId;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
@@ -497,8 +494,8 @@ public class ModuleAssignmentProcessor {
         Map<Session, Venue> newSessionVenueMap = new HashMap<>();
         List<PlanContentId> persistedPlanContentIds = new ArrayList<>();
 
-        Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
-            .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
+        // Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
+        //     .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
 
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
             Session originalSession = entry.getKey();
@@ -573,9 +570,9 @@ public class ModuleAssignmentProcessor {
         PlanContent planContent = planContentService.getPlanContentById(planContentId)
                 .orElseThrow(() -> new IllegalStateException("PlanContent not found after save"));
 
-        PlanId planId = new PlanId(planContentId, savedSatisfaction.getId());
-        Plan plan = new Plan(planId, planContent, savedSatisfaction);
-        planService.savePlan(plan);
+        // PlanId planId = new PlanId(planContentId, savedSatisfaction.getId());
+        // Plan plan = new Plan(planId, planContent, savedSatisfaction);
+        // planService.savePlan(plan);
     }
         // Update the sessionVenueMap to use persisted session references
         sessionVenueMap.clear();

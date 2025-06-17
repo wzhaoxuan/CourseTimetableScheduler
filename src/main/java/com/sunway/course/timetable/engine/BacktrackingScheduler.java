@@ -92,7 +92,9 @@ public class BacktrackingScheduler {
             int requiredCapacity = meta.getTotalStudents();
 
             pruned.sort(Comparator
-                .comparingInt((AssignmentOption opt) -> {
+                .comparingInt(AssignmentOption::day)
+                .thenComparingInt(AssignmentOption::startSlot)
+                .thenComparingInt((AssignmentOption opt) -> {
                     int surplus = opt.venue().getCapacity() - requiredCapacity;
                     return (surplus < 0) ? Integer.MAX_VALUE : surplus;
                 })
@@ -118,6 +120,11 @@ public class BacktrackingScheduler {
 
     private boolean backtrack(int index) {
         if (index == sessions.size()) {
+            if (assignment.size() < sessions.size()) {
+                // Not a complete assignment, skip this partial solution
+                return false;
+            }
+            
             List<Session> currentSessions = buildCurrentSessions();
             Map<Session, Venue> venueMap = buildCurrentVenueMap();
             FitnessResult result = fitnessEvaluator.evaluate(currentSessions, venueMap);

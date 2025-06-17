@@ -15,8 +15,6 @@ import com.sunway.course.timetable.repository.VenueAssignmentRepository;
 public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     private final VenueAssignmentRepository venueAssignmentRepository;
-    // private final ActorSystem<VenueCoordinatorActor.Command> venueCoordinatorActor;
-    // private final ActorSystem<?> actorSystem;  // for ask pattern scheduling
 
     public VenueAssignmentServiceImpl(VenueAssignmentRepository repository) {
         this.venueAssignmentRepository = repository;
@@ -34,8 +32,8 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     @Override
     public VenueAssignment saveAssignment(VenueAssignment assignment) {
-        Optional<VenueAssignment> existing = venueAssignmentRepository.findById(assignment.getVenueAssignmentId());
-        return existing.orElseGet(() -> venueAssignmentRepository.save(assignment));
+        venueAssignmentRepository.deleteById(assignment.getVenueAssignmentId());
+        return venueAssignmentRepository.save(assignment);
     }
 
     @Override

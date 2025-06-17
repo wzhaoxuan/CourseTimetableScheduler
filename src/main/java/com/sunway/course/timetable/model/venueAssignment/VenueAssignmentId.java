@@ -51,5 +51,4 @@ public class VenueAssignmentId implements Serializable{
     public int hashCode() {
         return Objects.hash(venueId, sessionId);
     }
-
 }

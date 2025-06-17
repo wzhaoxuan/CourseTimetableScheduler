@@ -3,23 +3,37 @@ import java.util.List;
 
 public class IntakeUtils {
 
-    private static final List<String> NORMALIZED_INTAKES = List.of("January", "April", "August");
+    private static final List<String> INTAKES = List.of("January", "April", "September");
 
     public static String getIntakeLabel(int semester, String userSelectedIntake, int baseYear) {
-        String normalized = userSelectedIntake.equalsIgnoreCase("September") ? "August" : userSelectedIntake;
-        int baseIndex = NORMALIZED_INTAKES.indexOf(normalized);
-        int totalIntakes = NORMALIZED_INTAKES.size();
 
-        int offset = semester - 1;
-        int newIndex = (baseIndex - offset % totalIntakes + totalIntakes) % totalIntakes;
-        int roundsBack = (offset + (totalIntakes - baseIndex)) / totalIntakes;
-        int newYear = baseYear - roundsBack + 1;
+        String capitalizedIntake = capitalize(userSelectedIntake.trim());
+        int baseIndex = INTAKES.indexOf(capitalizedIntake);
+        if (baseIndex == -1) {
+            throw new IllegalArgumentException("Invalid intake: " + userSelectedIntake);
+        }
 
-        String displayIntake = (normalized.equals("August") && userSelectedIntake.equalsIgnoreCase("September"))
-            ? "September"
-            : NORMALIZED_INTAKES.get(newIndex);
+        // calculate how many steps to move backward
+        int stepsBack = semester - 1;
 
-        return displayIntake + "-" + newYear;
+        // calculate new intake index (circular modulo)
+        int newIndex = (baseIndex - stepsBack + INTAKES.size()) % INTAKES.size();
+
+        // calculate how many full cycles moved backward
+        int fullCycles = (baseIndex - stepsBack < 0)
+                ? (Math.abs(baseIndex - stepsBack) + INTAKES.size() - 1) / INTAKES.size()
+                : 0;
+
+        int newYear = baseYear - fullCycles;
+
+        String newIntake = INTAKES.get(newIndex);
+        return newIntake + "-" + newYear;
+    }
+
+     private static String capitalize(String input) {
+        if (input == null || input.isEmpty()) return input;
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
     }
 }
+
 

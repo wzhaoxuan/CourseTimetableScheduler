@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.engine;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -44,6 +45,11 @@ public class AC3ConstraintPropagator {
                 lecturerMatrix, venueMatrix, studentMatrix, allVenues,
                 group, group.getEligibleStudents(), lecturerService, lecturerDayAvailabilityUtil
             );
+
+            domain.sort(Comparator
+                .comparingInt(AssignmentOption::day)
+                .thenComparingInt(AssignmentOption::startSlot)
+                .thenComparingInt(opt -> opt.venue().getCapacity()));
             domains.put(group, domain);
         }
 

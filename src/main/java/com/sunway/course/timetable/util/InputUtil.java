@@ -10,7 +10,7 @@ public class InputUtil {
         List<String> intakeOptions = new ArrayList<String>();
 
         String[] intakes = {
-                "January", "April", "August", "September"
+                "January", "April", "September"
         };
         
         for (String intake : intakes) {

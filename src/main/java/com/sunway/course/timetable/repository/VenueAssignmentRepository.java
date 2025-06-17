@@ -11,5 +11,4 @@ import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
 @Repository
 public interface VenueAssignmentRepository extends JpaRepository<VenueAssignment, VenueAssignmentId>{
     List<VenueAssignment> findBySessionId(Long sessionId);
-
 }

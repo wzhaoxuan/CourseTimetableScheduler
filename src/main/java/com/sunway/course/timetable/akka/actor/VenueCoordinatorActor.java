@@ -203,7 +203,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             sortedDomain = sortedDomain.stream()
                 .filter(opt -> {
                     String type = opt.venue().getType();
-                    return type.equalsIgnoreCase("Room") || type.equalsIgnoreCase("Lab");
+                    return type.equalsIgnoreCase("Room");
                 })
                 .collect(Collectors.toList());
         }
@@ -241,7 +241,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             int venueIndex = venues.indexOf(option.venue());
             if (venueIndex == -1) continue;
 
-            getContext().getLog().info("[TRY AC3] Day={} Slot={} Venue={}",
+            getContext().getLog().info("[TRY] Day={} Slot={} Venue={}",
                 option.day(), option.startSlot(), option.venue().getId());
 
             // Check if the venue is available
@@ -278,7 +278,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             final int MAX_GROUP_SIZE = 35;
             assigned = allEligible.stream()
                 .filter(s -> studentAvailability.isAvailable(s.getId(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots))
-                .sorted(Comparator.comparingLong(Student::getId)) // Optional: stable assignment
+                .sorted(Comparator.comparingLong(Student::getId)) 
                 .limit(MAX_GROUP_SIZE)
                 .toList();
 
