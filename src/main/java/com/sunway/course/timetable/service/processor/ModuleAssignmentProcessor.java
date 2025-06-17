@@ -448,13 +448,13 @@ public class ModuleAssignmentProcessor {
         throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
     }
 
-    private void scheduleWithBacktracking(List<SessionGroupMetaData> allMetaData) {
-        log.info("Starting backtracking scheduling for {} session groups", allMetaData.size());
+    private void scheduleWithBacktracking(List<SessionGroupMetaData> failedMeta) {
+        log.info("Starting backtracking scheduling for {} session groups", failedMeta.size());
 
         studentAssignedTypes.clear();
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
-            allMetaData, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
+            failedMeta, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
             venueDistanceService, lecturerService, lecturerDayAvailabilityUtil,
             fitnessEvaluator
         );
@@ -462,6 +462,16 @@ public class ModuleAssignmentProcessor {
 
         Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
         Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
+
+        // UnassignedStudentResolver resolver = new UnassignedStudentResolver();
+        // List<SessionGroupMetaData> extraGroups = resolver.resolve(failedMeta, studentAssignments);
+
+        // if (!extraGroups.isEmpty()) {
+        //     log.info("Injecting {} additional groups into scheduler", extraGroups.size());
+            
+        //     // You can rerun your actor or backtracking on these extra groups
+        //     scheduleWithBacktracking(extraGroups);
+        // }
 
         // log.info("Checking for unassigned students:");
 

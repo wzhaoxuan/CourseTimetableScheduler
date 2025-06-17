@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
@@ -17,6 +20,8 @@ import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
  * This is a soft constraint, meaning it can be violated but incurs a penalty.
  */
 public class VenueTransitionChecker implements ConstraintChecker {
+
+    private static final Logger log = LoggerFactory.getLogger(VenueTransitionChecker.class);
 
     private final VenueDistanceServiceImpl distanceService;
 
@@ -67,6 +72,7 @@ public class VenueTransitionChecker implements ConstraintChecker {
 
                     double distance = distanceService.getDistanceScore(v1.getName(), v2.getName());
                     if (distance > 300.0) {
+                        log.info("High distance detected: [{}] -> [{}] = {}", v1.getName(), v2.getName(), distance);
                         violations++;
                     }
                 }

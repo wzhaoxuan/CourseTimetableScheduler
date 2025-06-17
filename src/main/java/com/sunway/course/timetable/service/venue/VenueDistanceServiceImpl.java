@@ -46,9 +46,13 @@ public class VenueDistanceServiceImpl implements VenueDistanceService {
     }
 
     public double getDistanceScore(String fromVenue, String toVenue) {
+        // Always sanitize input before querying DB
+        String sanitizedFromVenue = fromVenue.trim().toUpperCase();
+        String sanitizedToVenue = toVenue.trim().toUpperCase();
+
         VenueDistanceId id = new VenueDistanceId();
-        id.setVenueFrom(fromVenue);
-        id.setVenueTo(toVenue);
+        id.setVenueFrom(sanitizedFromVenue);
+        id.setVenueTo(sanitizedToVenue);
 
         VenueDistance distance = venueDistanceRepository.findById(id).orElse(null);
 
@@ -58,8 +62,8 @@ public class VenueDistanceServiceImpl implements VenueDistanceService {
 
         // Optional fallback: reverse direction
         VenueDistanceId reverseId = new VenueDistanceId();
-        reverseId.setVenueFrom(toVenue);
-        reverseId.setVenueTo(fromVenue);
+        reverseId.setVenueFrom(sanitizedToVenue);
+        reverseId.setVenueTo(sanitizedFromVenue);
 
         VenueDistance reverseDistance = venueDistanceRepository.findById(reverseId).orElse(null);
         if (reverseDistance != null) {

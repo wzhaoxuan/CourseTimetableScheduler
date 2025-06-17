@@ -32,10 +32,10 @@ public class VenueDistanceGenerator {
 
         for(Venue from: venues) {
             for(Venue to: venues) {
-                String venueFrom = from.getName();
-                String venueTo = to.getName();
+                String venueFrom = sanitizeVenueName(from.getName());
+                String venueTo = sanitizeVenueName(to.getName());
 
-                VenueDistanceId id = new VenueDistanceId(from.getId(), venueFrom, venueTo);
+                VenueDistanceId id = new VenueDistanceId(venueFrom, venueTo);
 
                 double distance = calculateDistance(from, to); // Replace with actual distance calculation logic
                 VenueDistance distanceEntry = new VenueDistance(id, distance);
@@ -116,5 +116,9 @@ public class VenueDistanceGenerator {
             // Handle the case where floorType does not contain a valid number
             return 0; // Default to ground level if parsing fails
         }
+    }
+
+    private String sanitizeVenueName(String venue) {
+        return venue == null ? null : venue.trim().toUpperCase();
     }
 }

@@ -1,21 +1,29 @@
 package com.sunway.course.timetable.unit.service;
 
-import com.sunway.course.timetable.model.venuedistance.VenueDistance;
-import com.sunway.course.timetable.model.venuedistance.VenueDistanceId;
-import com.sunway.course.timetable.repository.VenueDistanceRepository;
-import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.sunway.course.timetable.model.venuedistance.VenueDistance;
+import com.sunway.course.timetable.model.venuedistance.VenueDistanceId;
+import com.sunway.course.timetable.repository.VenueDistanceRepository;
+import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class VenueDistanceServiceTest {
@@ -31,7 +39,7 @@ public class VenueDistanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        venueDistanceId = new VenueDistanceId(1L, "UW2-10", "UC7-9");
+        venueDistanceId = new VenueDistanceId("UW2-10", "UC7-9");
         venueDistance = new VenueDistance();
         venueDistance.setVenueDistanceId(venueDistanceId);
     }

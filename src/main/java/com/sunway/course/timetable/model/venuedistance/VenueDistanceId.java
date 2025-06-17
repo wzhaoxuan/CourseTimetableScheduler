@@ -7,9 +7,6 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public class VenueDistanceId {
 
-    @Column(name = "venue_id")
-    private Long venueId;
-
     @Column(name = "venue_from")
     private String venueFrom;
 
@@ -20,18 +17,9 @@ public class VenueDistanceId {
         // Default constructor
     }
 
-    public VenueDistanceId(Long venueId, String venueFrom, String venueTo) {
-        this.venueId = venueId;
+    public VenueDistanceId(String venueFrom, String venueTo) {
         this.venueFrom = venueFrom;
         this.venueTo = venueTo;
-    }
-
-    public Long getVenueId() {
-        return venueId;
-    }
-
-    public void setVenueId(Long venueId) {
-        this.venueId = venueId;
     }
 
     public String getVenueFrom() {
@@ -55,11 +43,11 @@ public class VenueDistanceId {
         if (this == o) return true;
         if (!(o instanceof VenueDistanceId)) return false;
         VenueDistanceId that = (VenueDistanceId) o;
-        return venueId.equals(that.venueId) && venueFrom.equals(that.venueFrom) && venueTo.equals(that.venueTo);
+        return venueFrom.equals(that.venueFrom) && venueTo.equals(that.venueTo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(venueId, venueFrom, venueTo);
+        return Objects.hash( venueFrom, venueTo);
     }
 }
