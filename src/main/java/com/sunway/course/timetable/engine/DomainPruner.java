@@ -19,6 +19,7 @@ import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 public class DomainPruner {
     private static final Logger log = LoggerFactory.getLogger(DomainPruner.class);
+    private static final int MIN_GROUP_SIZE = 5; // Minimum group size for non-lecture sessions
 
     public record AssignmentOption(int day, int startSlot, Venue venue) {}
 
@@ -113,12 +114,14 @@ public class DomainPruner {
                     //     domain.add(new AssignmentOption(day, start, venue));
                     // }
 
-                    if (availableStudentIds.size() < meta.getTotalStudents()) {
+                    int minRequired = meta.getType().equalsIgnoreCase("Lecture") ? meta.getTotalStudents() : MIN_GROUP_SIZE;
+                    if (availableStudentIds.size() < minRequired) {
                         rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), 
                             String.format("Student clash (only %d available, need %d)", 
                             availableStudentIds.size(), meta.getTotalStudents())));
                         continue;
                     }
+
                     
                     domain.add(new AssignmentOption(day, start, venue));
                 }

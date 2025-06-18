@@ -208,7 +208,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                     + (int) spreadPenaltyStudents * 2  
                     + spreadPenaltyLecturer * 2 // Weighted
                     + sequencingPenalty * 10
-                    + overconsecutivePenalty * 1000;
+                    + overconsecutivePenalty * 300;
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );

@@ -130,7 +130,7 @@ public class LecturerAvailabilityMatrix {
         for (boolean[][] matrix : availability.values()) {
             for (int day = 0; day < DAYS; day++) {
                 for (int hour = 0; hour < TIME_SLOTS_PER_DAY; hour++) {
-                    matrix[day][hour] = true;
+                    matrix[day][hour] = false; // false = available
                 }
             }
         }

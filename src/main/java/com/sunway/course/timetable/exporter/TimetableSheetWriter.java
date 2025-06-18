@@ -222,10 +222,14 @@ public class TimetableSheetWriter {
     }
 
     private boolean isMerged(Sheet sheet, int row, int start, int end) {
+        // Avoid overlapping merged regions
         for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
-            CellRangeAddress range = sheet.getMergedRegion(i);
-            if (range.getFirstRow() == row && range.getLastRow() == row &&
-                range.getFirstColumn() == start && range.getLastColumn() == end) return true;
+            CellRangeAddress region = sheet.getMergedRegion(i);
+            if (region.getFirstRow() == row && region.getLastRow() == row) {
+                if (!(end < region.getFirstColumn() || start > region.getLastColumn())) {
+                    return true;
+                }
+            }
         }
         return false;
     }

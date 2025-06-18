@@ -21,7 +21,6 @@ public class SessionGroupPreprocessorService {
     private final Map<String, Set<Integer>> moduleSemesterMap = new HashMap<>();
     private final Map<String, Integer> lecturerHourMap = new HashMap<>();
 
-
     /**
      * Prepare session group metadata from raw sessions.
      * Groups sessions by semester, module, and type+group and generates metadata.
@@ -31,6 +30,7 @@ public class SessionGroupPreprocessorService {
      * @return List of SessionGroupMetaData, one per group for scheduling
      */
     public List<SessionGroupMetaData> prepareSessionGroupMetadata(ModuleAssignmentData data, Map<Long, Integer> studentSemesterMap) {
+        
         Module module = data.getModule();
         SubjectPlanInfo plan = data.getSubjectPlanInfo();
         Set<Student> allStudents = data.getEligibleStudents();
@@ -135,6 +135,12 @@ public class SessionGroupPreprocessorService {
     public List<Integer> getSemestersForModule(String moduleId) {
         return new ArrayList<>(moduleSemesterMap.getOrDefault(moduleId, Set.of()));
     }
+
+    public void reset() {
+        lecturerHourMap.clear();
+        moduleSemesterMap.clear(); // Optional, if you don't want to accumulate mapping
+    }
+
 
 }
 

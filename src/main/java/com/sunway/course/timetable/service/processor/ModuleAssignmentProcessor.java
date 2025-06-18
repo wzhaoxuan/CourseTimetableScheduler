@@ -186,8 +186,7 @@ public class ModuleAssignmentProcessor {
         int year) {
 
         this.studentSemesterMap = studentSemesterMap;
-        sessionBySemesterAndModule.clear();
-        moduleIdToStudentsMap.clear();
+        resetState(); // Reset all internal state before processing new assignments
 
         // 1. Prepare student availability
         Set<Student> allStudents = moduleDataList.stream()
@@ -725,6 +724,20 @@ public class ModuleAssignmentProcessor {
 
     private int getStartSlot(LocalTime startTime) {
         return (int) Duration.between(LocalTime.of(8, 0), startTime).toMinutes() / 30;
+    }
+
+    private void resetState() {
+        lecturerMatrix.reset();
+        venueMatrix.reset();
+        studentMatrix.reset();
+
+        studentAssignedTypes.clear();
+        sessionToModuleIdMap.clear();
+        sessionVenueMap.clear();
+        lectureAssignmentsByModule.clear();
+        lastAssignedVenuePerDay.clear();
+
+        sessionGroupPreprocessorService.reset();
     }
 }
 
