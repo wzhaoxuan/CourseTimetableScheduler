@@ -9,20 +9,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.sunway.course.timetable.evaluator.constraints.hard.DuplicateTypeGroupChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.InvalidDayChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.LecturerClashChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.ModuleClashChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.StudentClashChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.LecturerConsecutiveSessionChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.VenueTransitionChecker;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.repository.SatisfactionRepository;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
-import com.sunway.course.timetable.evaluator.constraints.hard.StudentClashChecker;
-import com.sunway.course.timetable.evaluator.constraints.hard.LecturerClashChecker;
-import com.sunway.course.timetable.evaluator.constraints.hard.ModuleClashChecker;
-import com.sunway.course.timetable.evaluator.constraints.hard.InvalidDayChecker;
-import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityChecker;
-import com.sunway.course.timetable.evaluator.constraints.hard.DuplicateTypeGroupChecker;
-import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
-import com.sunway.course.timetable.evaluator.constraints.soft.VenueTransitionChecker;
-import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
 
 @Component
 public class FitnessEvaluator {
@@ -44,7 +45,8 @@ public class FitnessEvaluator {
             new DuplicateTypeGroupChecker(),
             new LateSessionChecker(),
             new VenueTransitionChecker(venueDistanceService),
-            new OneSessionDayChecker() 
+            new OneSessionDayChecker(),
+            new LecturerConsecutiveSessionChecker()
         );
     }
 

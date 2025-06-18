@@ -2,6 +2,7 @@ package com.sunway.course.timetable.akka.actor;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +194,9 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                 boolean lecturerNewDay = isNewDayForLecturer(msg.lecturerName, opt.day(), msg.lecturerMatrix);
                 int spreadPenaltyLecturer = lecturerNewDay ? 1 : 0;
 
+                boolean causes4Consecutive = causesFourConsecutiveLecturerSessions(msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
+                int overconsecutivePenalty = causes4Consecutive ? 1 : 0;
+
                 int sequencingPenalty = 0;
                 if (isDependentSession(msg.sessionType)) {
                     sequencingPenalty = calculateLectureAfterPenalty(msg, opt);
@@ -203,7 +207,8 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                     + (int) soloDayproportion * 120  
                     + (int) spreadPenaltyStudents * 2  
                     + spreadPenaltyLecturer * 2 // Weighted
-                    + sequencingPenalty * 10;
+                    + sequencingPenalty * 10
+                    + overconsecutivePenalty * 1000;
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );
@@ -288,4 +293,30 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         List<LocalTime> occupied = studentMatrix.getAssignedTimes(studentId, day);
         return occupied.isEmpty();  // If student has no sessions that day
     }
+
+    private boolean causesFourConsecutiveLecturerSessions(String lecturerName, int day, int startSlot, LecturerAvailabilityMatrix matrix) {
+        boolean[] slots = matrix.getDailyAvailabilityArray(lecturerName, day);
+        boolean[] newSlots = Arrays.copyOf(slots, slots.length);
+
+        int start = startSlot;
+        int end = start + 4; // each session = 4 slots (2 hours)
+
+        // Mark new session slots as occupied
+        for (int i = start; i < end && i < newSlots.length; i++) {
+            newSlots[i] = true;
+        }
+
+        // Check if there are 4 or more continuous occupied slots
+        int consecutive = 0;
+        for (boolean slot : newSlots) {
+            if (slot) {
+                consecutive++;
+                if (consecutive >= 4) return true;
+            } else {
+                consecutive = 0;
+            }
+        }
+        return false;
+    }
+
 }

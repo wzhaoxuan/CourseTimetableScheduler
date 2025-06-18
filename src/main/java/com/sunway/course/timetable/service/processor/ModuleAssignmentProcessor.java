@@ -108,15 +108,17 @@ public class ModuleAssignmentProcessor {
     private final ActorSystem<Void> actorSystem;
 
     // === Data Structures ===
-    private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>(); // Store all scheduled sessions grouped by semester and module ID
-    private Map<Long, Integer> studentSemesterMap = new HashMap<>();
-    private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
-    private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
-    private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
-    private Map<Session, String> sessionToModuleIdMap = new HashMap<>(); // Tracks which module ID each individual Session belongs to
     private Map<Session, Venue> sessionVenueMap = new HashMap<>();
+    private Map<Long, Integer> studentSemesterMap = new HashMap<>();
+    private Map<Session, String> sessionToModuleIdMap = new HashMap<>(); // Tracks which module ID each individual Session belongs to
+    private final Map<String, Integer> lecturerTeachingHours = new HashMap<>();
     private final Map<Long, Set<String>> studentAssignedTypes = new HashMap<>();
+    private Map<String, List<Student>> moduleIdToStudentsMap = new HashMap<>();
+    private Map<Integer, Map<String, Map<String, Double>>> programmeDistribution = new HashMap<>();
+    private final Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule = new HashMap<>(); // Store all scheduled sessions grouped by semester and module ID
+    private Map<Integer, Map<String, TreeMap<LocalTime, String>>> lastAssignedVenuePerDay = new HashMap<>();
     private Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule = new HashMap<>();
+    
     private double finalScore;
     private List<File> exportedFiles;
     private List<File> exportedLecturerFiles;

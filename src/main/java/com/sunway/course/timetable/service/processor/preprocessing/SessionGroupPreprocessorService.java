@@ -19,6 +19,8 @@ import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
 public class SessionGroupPreprocessorService {
     private final int MAX_GROUP_SIZE = 35;
     private final Map<String, Set<Integer>> moduleSemesterMap = new HashMap<>();
+    private final Map<String, Integer> lecturerHourMap = new HashMap<>();
+
 
     /**
      * Prepare session group metadata from raw sessions.
@@ -52,8 +54,14 @@ public class SessionGroupPreprocessorService {
 
         // === 1. CREATE SINGLE LECTURE (for combined semesters) ===
         if (plan.hasLecture()) {
+            String lecturer = plan.getMainLecturer();
+            lecturerHourMap.merge(lecturer, 2, Integer::sum);  // 2 hours for lecture
+
+            validateHourLimit(lecturer);
+
             String lectureGroup = plan.getSubjectCode() + "-Lecture-G1";
             List<Student> allStudentsCombined = allStudents.stream().toList();
+
 
             SessionGroupMetaData lectureMeta = new SessionGroupMetaData(
                 0, // semester irrelevant for lecture
@@ -87,10 +95,14 @@ public class SessionGroupPreprocessorService {
             List<String> tutors = typeInfo.tutor();
 
             for (int i = 0; i < groupCount; i++) {
-                List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups
-
                 String groupName = plan.getSubjectCode() + "-" + typeInfo.type() + "-G" + (i + 1);
                 String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
+                if (tutor != null) {
+                    lecturerHourMap.merge(tutor, 2, Integer::sum); // 2 hours per session
+                    validateHourLimit(tutor);
+                }
+
+                List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups
 
                 metaDataList.add(new SessionGroupMetaData(
                     0,  // semester not relevant due to merged input
@@ -107,6 +119,15 @@ public class SessionGroupPreprocessorService {
         }
 
         return metaDataList;
+    }
+
+    private void validateHourLimit(String lecturer) {
+        int hours = lecturerHourMap.getOrDefault(lecturer, 0);
+        if (hours > 20) {
+            throw new IllegalStateException(
+                "Lecturer '" + lecturer + "' assigned " + hours + " hours — exceeds 20-hour limit. Please add more tutor."
+            );
+        }
     }
 
     private static record SessionTypeInfo(String type, boolean hasType, List<String> tutor) {}

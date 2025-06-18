@@ -162,4 +162,16 @@ public class LecturerAvailabilityMatrix {
         }
     }
 
+    public boolean[] getDailyAvailabilityArray(String lecturerId, int day) {
+        lock.readLock().lock();
+        try {
+            boolean[][] schedule = availability.get(lecturerId);
+            if (schedule == null || day < 0 || day >= DAYS) {
+                return new boolean[TIME_SLOTS_PER_DAY]; // default empty
+            }
+            return Arrays.copyOf(schedule[day], TIME_SLOTS_PER_DAY); // return a copy to prevent modification
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
 }

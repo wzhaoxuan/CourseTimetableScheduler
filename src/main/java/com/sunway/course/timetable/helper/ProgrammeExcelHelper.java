@@ -13,7 +13,7 @@ import com.sunway.course.timetable.model.Student;
 public class ProgrammeExcelHelper {
 
     private static final List<String> INTAKES = Arrays.asList(
-        "January", "April", "August"
+        "January", "April", "September"
     );
 
     public static Map<String, List<Student>> assignStudentsToProgrammesEqually(List<Student> students) {

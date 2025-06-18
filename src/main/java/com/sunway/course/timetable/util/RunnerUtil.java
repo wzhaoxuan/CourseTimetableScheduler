@@ -1,38 +1,12 @@
 package com.sunway.course.timetable.util;
 
-import java.util.List;
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.evaluator.FitnessEvaluator;
-import com.sunway.course.timetable.model.Session;
-import com.sunway.course.timetable.result.PreprocessingResult;
-import com.sunway.course.timetable.service.LecturerServiceImpl;
-import com.sunway.course.timetable.service.ModuleServiceImpl;
-import com.sunway.course.timetable.service.PlanContentServiceImpl;
-import com.sunway.course.timetable.service.SessionServiceImpl;
-import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClustering;
-import com.sunway.course.timetable.service.excelReader.LecturerAvailablityExcelReaderService;
 import com.sunway.course.timetable.service.generator.VenueDistanceGenerator;
-import com.sunway.course.timetable.service.processor.ModuleAssignmentProcessor;
-import com.sunway.course.timetable.service.processor.preprocessing.PreprocessingService;
-import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
-import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
-import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
-import com.sunway.course.timetable.service.venue.VenueSorterService;
-import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
-import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
-import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
-
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
 
 
 
@@ -76,6 +50,7 @@ public class RunnerUtil {
     //         // Read Excel file and process data
     //         String filePath = "src/main/resources/file/ProgrammeDetails.xlsx";
     //         try {
+    //             logger.info(">>> RUNNING PROGRAMME OUTPUT <<<");
     //             programmeExcelReaderService.processProgrammeExcelData(filePath);
     //         } catch (Exception e) {
     //             System.err.println("Error reading Excel file: " + e.getMessage());

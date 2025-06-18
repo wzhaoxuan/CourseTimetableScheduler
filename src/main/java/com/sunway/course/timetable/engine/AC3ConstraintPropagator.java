@@ -140,7 +140,6 @@ public class AC3ConstraintPropagator {
         }
 
     private record Pair(SessionGroupMetaData xi, SessionGroupMetaData xj) {}
-        
-
+    
 }
 
