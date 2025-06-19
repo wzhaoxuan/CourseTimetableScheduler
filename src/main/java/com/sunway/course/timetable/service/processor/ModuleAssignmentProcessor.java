@@ -31,11 +31,14 @@ import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
+import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.model.plan.Plan;
+import com.sunway.course.timetable.model.plan.PlanId;
 import com.sunway.course.timetable.model.plancontent.PlanContent;
 import com.sunway.course.timetable.model.plancontent.PlanContentId;
 import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
@@ -188,6 +191,8 @@ public class ModuleAssignmentProcessor {
         this.studentSemesterMap = studentSemesterMap;
         resetState(); // Reset all internal state before processing new assignments
 
+        long startTime = System.currentTimeMillis();
+
         // 1. Prepare student availability
         Set<Student> allStudents = moduleDataList.stream()
             .flatMap(data -> data.getEligibleStudents().stream())
@@ -234,6 +239,11 @@ public class ModuleAssignmentProcessor {
 
         processAssignmentsHybrid(allMetaData, programme, intake, year);
 
+        long endTime = System.currentTimeMillis(); // ⏱ End measuring time
+        long durationMs = endTime - startTime;
+
+        log.info("Scheduling process completed in {} ms ({} seconds)", durationMs, durationMs / 1000.0);
+
         log.info("Actor system terminated. Finalizing scheduling...");
         return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, exportedModuleFiles, finalScore);
     }
@@ -249,6 +259,8 @@ public class ModuleAssignmentProcessor {
      */
     private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year) {
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness/fail");
+
+        long actorStart = System.currentTimeMillis();
 
         List<SessionGroupMetaData> failedMeta = new ArrayList<>();
 
@@ -292,6 +304,9 @@ public class ModuleAssignmentProcessor {
                     lecturer, result.getVenue(), result.getAssignedStudents());
         }
 
+        long actorEnd = System.currentTimeMillis();
+        log.info("🎭 Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
+
         List<Session> allScheduledSessions = sessionBySemesterAndModule.values().stream()
             .flatMap(m -> m.values().stream())
             .flatMap(List::stream)
@@ -303,12 +318,19 @@ public class ModuleAssignmentProcessor {
 
         if (!failedMeta.isEmpty()) {
             log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
+            long backtrackStart = System.currentTimeMillis();
+            log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
             scheduleWithBacktracking(failedMeta);
+            long backtrackEnd = System.currentTimeMillis();
+            log.info("🔁 Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
         }
 
         log.info("Total sessions created: {}", sessionToModuleIdMap.size());
         printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+        long persistStart = System.currentTimeMillis();
         persistAndGroupSessions(sessionToModuleIdMap);
+        long persistEnd = System.currentTimeMillis();
+        log.info("💾 Session persistence completed in {} ms", (persistEnd - persistStart));
 
         
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
@@ -452,7 +474,6 @@ public class ModuleAssignmentProcessor {
     private void scheduleWithBacktracking(List<SessionGroupMetaData> failedMeta) {
         log.info("Starting backtracking scheduling for {} session groups", failedMeta.size());
 
-        studentAssignedTypes.clear();
         List<Venue> allVenues = venueMatrix.getSortedVenues();
         BacktrackingScheduler scheduler = new BacktrackingScheduler(
             failedMeta, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
@@ -523,8 +544,7 @@ public class ModuleAssignmentProcessor {
         Map<Session, Venue> newSessionVenueMap = new HashMap<>();
         List<PlanContentId> persistedPlanContentIds = new ArrayList<>();
 
-        // Satisfaction savedSatisfaction = satisfactionService.findLatestSatisfaction()
-        //     .orElseThrow(() -> new IllegalStateException("Satisfaction not found"));
+        Optional<Satisfaction> optionalSatisfaction = satisfactionService.findLatestSatisfaction();
 
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
             Session originalSession = entry.getKey();
@@ -599,9 +619,16 @@ public class ModuleAssignmentProcessor {
         PlanContent planContent = planContentService.getPlanContentById(planContentId)
                 .orElseThrow(() -> new IllegalStateException("PlanContent not found after save"));
 
-        // PlanId planId = new PlanId(planContentId, savedSatisfaction.getId());
-        // Plan plan = new Plan(planId, planContent, savedSatisfaction);
-        // planService.savePlan(plan);
+        if (optionalSatisfaction.isPresent()) {
+            Plan plan = new Plan(
+                new PlanId(planContentId, optionalSatisfaction.get().getId()),
+                planContent,
+                optionalSatisfaction.get()
+            );
+            planService.savePlan(plan);
+        } else {
+            log.warn("Skipping Plan save: no Satisfaction record found (likely first-time scheduling)");
+        }
     }
         // Update the sessionVenueMap to use persisted session references
         sessionVenueMap.clear();

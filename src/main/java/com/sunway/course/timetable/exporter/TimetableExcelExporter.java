@@ -93,7 +93,7 @@ public class TimetableExcelExporter {
 
             File file = saveWorkbookToFile(workbook,
                     String.format("%s-%s S%d.xlsx", programme, getIntakeLabel(semester, intake, year), semester));
-            // programmeHistoryStorageService.saveProgrammeFile(file);
+            programmeHistoryStorageService.saveProgrammeFile(file);
             files.add(file);
         }
 

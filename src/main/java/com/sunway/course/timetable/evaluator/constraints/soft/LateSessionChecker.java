@@ -14,7 +14,7 @@ import com.sunway.course.timetable.model.Venue;
 /**
  * Checks if sessions start late in the day.
  * This is a soft constraint, meaning it is preferred but not mandatory.
- * A penalty is applied for each session that starts at or after 4:00 PM.
+ * A penalty is applied for each session that starts at or after 6:00 PM.
  */
 public class LateSessionChecker implements ConstraintChecker {
 
@@ -42,7 +42,7 @@ public class LateSessionChecker implements ConstraintChecker {
             String key = s.getTypeGroup() + "-" + s.getDay() + "-" + s.getStartTime();
             if (seen.add(key)) {
                 LocalTime start = s.getStartTime();
-                if (!start.isBefore(LocalTime.of(16, 0))) {  // 4:00 PM or later
+                if (!start.isBefore(LocalTime.of(18, 0))) {  // 4:00 PM or later
                     penalty++;
                 }
             }

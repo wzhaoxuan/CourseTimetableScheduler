@@ -208,7 +208,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
                     + (int) spreadPenaltyStudents * 2  
                     + spreadPenaltyLecturer * 2 // Weighted
                     + sequencingPenalty * 10
-                    + overconsecutivePenalty * 300;
+                    + overconsecutivePenalty * 600;
             })
             .thenComparingInt(AssignmentOption::startSlot)
         );
@@ -311,7 +311,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         for (boolean slot : newSlots) {
             if (slot) {
                 consecutive++;
-                if (consecutive >= 4) return true;
+                if (consecutive > 4) return true;
             } else {
                 consecutive = 0;
             }

@@ -1,6 +1,8 @@
 package com.sunway.course.timetable.exporter;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,15 +36,15 @@ public class TimetableSheetWriter {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final List<String> DAYS = List.of("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
 
-    private final Set<Long> processedSessionIds = new HashSet<>();
+    private final Set<String> processedSessionKeys = new HashSet<>();
 
 
     @Autowired private VenueAssignmentServiceImpl venueAssignmentService;
     @Autowired private PlanContentServiceImpl planContentService;
 
     public Workbook generateWorkbook(String sheetName, Map<String, List<Session>> groupedSessions, Map<Long, String> venueMap, Map<Long, String> moduleMap) {
-        processedSessionIds.clear();
-        
+        processedSessionKeys.clear();
+
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(sheetName);
 
@@ -51,22 +53,99 @@ public class TimetableSheetWriter {
         Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
 
         Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
-        Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
+        int currentRow = 1;
 
-        for (List<Session> groupList : groupedSessions.values()) {
-            Session s = groupList.get(0);
-            if (s == null) continue;
+        for (String day : DAYS) {
+            List<Session> daySessions = groupedSessions.values().stream()
+                .flatMap(List::stream)
+                .filter(s -> s.getDay().equals(day))
+                .sorted(Comparator.comparing(Session::getStartTime))
+                .toList();
 
-            Long sessionId = s.getId();
-            if (!processedSessionIds.add(sessionId)) continue;  // skip duplicates
+            List<Row> usedRows = new ArrayList<>();
+            List<boolean[]> occupancy = new ArrayList<>();
 
-            String venue = venueMap.getOrDefault(sessionId, "Unknown");
-            String moduleCode = moduleMap.getOrDefault(sessionId, "Unknown");
+            for (Session session : daySessions) {
+                String venue = venueMap.getOrDefault(session.getId(), "Unknown");
+                String moduleCode = moduleMap.getOrDefault(session.getId(), "Unknown");
+                String group = session.getTypeGroup().split("-")[2];
+                String type = session.getType();
+                String lecturer = session.getLecturer() != null ? session.getLecturer().getName() : "Unknown";
+                String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturer, venue);
 
-            writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
+                String sessionKey = content + session.getDay() + session.getStartTime();
+                if (!processedSessionKeys.add(sessionKey)) continue;
+
+                LocalTime start = session.getStartTime();
+                LocalTime end = session.getEndTime();
+                int firstCol = timeSlotColumnMap.getOrDefault(start, -1);
+                int lastCol = timeSlotColumnMap.getOrDefault(end.minusMinutes(30), -1);
+                if (firstCol == -1 || lastCol == -1) continue;
+
+                int targetRowIdx = -1;
+                for (int i = 0; i < occupancy.size(); i++) {
+                    boolean[] rowOcc = occupancy.get(i);
+                    boolean canFit = true;
+                    for (int c = firstCol; c <= lastCol; c++) {
+                        if (rowOcc[c]) {
+                            canFit = false;
+                            break;
+                        }
+                    }
+                    if (canFit) {
+                        targetRowIdx = i;
+                        break;
+                    }
+                }
+
+                if (targetRowIdx == -1) {
+                    Row row = sheet.createRow(currentRow++);
+                    usedRows.add(row);
+                    occupancy.add(new boolean[21]);
+                    targetRowIdx = usedRows.size() - 1;
+                }
+
+                Row targetRow = usedRows.get(targetRowIdx);
+                boolean[] occRow = occupancy.get(targetRowIdx);
+                for (int c = firstCol; c <= lastCol; c++) occRow[c] = true;
+
+                Cell cell = targetRow.createCell(firstCol);
+                cell.setCellValue(content);
+                cell.setCellStyle(typeColorMap.getOrDefault(type.toLowerCase(), wrapStyle));
+                if (lastCol > firstCol) {
+                    sheet.addMergedRegion(new CellRangeAddress(targetRow.getRowNum(), targetRow.getRowNum(), firstCol, lastCol));
+                }
+            }
+
+            if (!usedRows.isEmpty()) {
+                int firstRow = usedRows.get(0).getRowNum();
+                int lastRow = usedRows.get(usedRows.size() - 1).getRowNum();
+                if (firstRow != lastRow) {
+                    sheet.addMergedRegion(new CellRangeAddress(firstRow, lastRow, 0, 0));
+                }
+                Row labelRow = usedRows.get(0);
+                Cell dayCell = labelRow.createCell(0);
+                dayCell.setCellValue(day);
+                dayCell.setCellStyle(headerStyle);
+
+                for (Row row : usedRows) {
+                    float maxHeight = 16f;
+                    for (int j = 1; j <= timeSlotColumnMap.size(); j++) {
+                        Cell cell = row.getCell(j);
+                        if (cell != null && cell.getStringCellValue() != null) {
+                            int lines = cell.getStringCellValue().split("\\n").length;
+                            maxHeight = Math.max(maxHeight, lines * 16f * 1.3f);
+                        }
+                    }
+                    row.setHeightInPoints(maxHeight);
+                }
+            }
         }
 
-        autoSize(sheet, timeSlotColumnMap, dayRowMap);
+        for (int i = 0; i <= timeSlotColumnMap.size(); i++) {
+            sheet.autoSizeColumn(i);
+        }
+
         return workbook;
     }
 
@@ -123,16 +202,16 @@ public class TimetableSheetWriter {
     private Map<LocalTime, Integer> generateTimeSlots(Sheet sheet, CellStyle headerStyle) {
         Map<LocalTime, Integer> map = new HashMap<>();
         Row headerRow = sheet.createRow(0);
-        Cell dayCell = headerRow.createCell(0);
-        dayCell.setCellValue("Day / Time");
-        dayCell.setCellStyle(headerStyle);
+        Cell title = headerRow.createCell(0);
+        title.setCellValue("Day / Time");
+        title.setCellStyle(headerStyle);
 
-        int colIndex = 1;
+        int col = 1;
         for (LocalTime t = LocalTime.of(8, 0); !t.isAfter(LocalTime.of(18, 0)); t = t.plusMinutes(30)) {
-            Cell cell = headerRow.createCell(colIndex);
+            Cell cell = headerRow.createCell(col);
             cell.setCellValue(t.format(TIME_FORMATTER));
             cell.setCellStyle(headerStyle);
-            map.put(t, colIndex++);
+            map.put(t, col++);
         }
         return map;
     }
