@@ -17,12 +17,15 @@ import com.sunway.course.timetable.evaluator.constraints.hard.StudentClashChecke
 import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LecturerConsecutiveSessionChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.LongBreakChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.PracticalBeforeLectureChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.SpreadDaysChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.VenueTransitionChecker;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
-import com.sunway.course.timetable.repository.SatisfactionRepository;
+import com.sunway.course.timetable.service.SatisfactionServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 
 @Component
@@ -30,12 +33,12 @@ public class FitnessEvaluator {
 
     private static final Logger log = LoggerFactory.getLogger(FitnessEvaluator.class);
 
-    private final SatisfactionRepository satisfactionRepository;
+    private final SatisfactionServiceImpl satisfactionService;
     private final List<ConstraintChecker> constraintCheckers;
 
-    public FitnessEvaluator(SatisfactionRepository satisfactionRepository,
+    public FitnessEvaluator(SatisfactionServiceImpl satisfactionService,
                             VenueDistanceServiceImpl venueDistanceService) {
-        this.satisfactionRepository = satisfactionRepository;
+        this.satisfactionService = satisfactionService;
         this.constraintCheckers = List.of(
             new StudentClashChecker(),
             new LecturerClashChecker(),
@@ -46,11 +49,14 @@ public class FitnessEvaluator {
             new LateSessionChecker(),
             new VenueTransitionChecker(venueDistanceService),
             new OneSessionDayChecker(),
+            new LongBreakChecker(),
+            new PracticalBeforeLectureChecker(),
+            new SpreadDaysChecker(),
             new LecturerConsecutiveSessionChecker()
         );
     }
 
-    public FitnessResult evaluate(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
+    public FitnessResult evaluate(List<Session> sessions, Map<Session, Venue> sessionVenueMap, String versionTag) {
         double totalPenalty = 0.0;
         double maxPenalty = 0.0;
 
@@ -70,7 +76,7 @@ public class FitnessEvaluator {
 
         int totalViolations = results.stream().mapToInt(r -> (int) r.penalty()).sum();
 
-        satisfactionRepository.save(new Satisfaction(percentage, totalViolations));
+        satisfactionService.saveSatisfaction(new Satisfaction(percentage, totalViolations, versionTag));
 
         List<FitnessResult.Violation> hard = results.stream()
             .filter(r -> r.type() == ConstraintType.HARD)

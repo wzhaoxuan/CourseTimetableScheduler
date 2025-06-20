@@ -21,13 +21,17 @@ public class Satisfaction {
     @Column(nullable = false)
     private int conflict;
 
+    @Column(name = "version_tag", nullable = false)
+    private String versionTag;
+
     public Satisfaction() {
         // Default constructor
     }
 
-    public Satisfaction(Double score, int conflict) {
+    public Satisfaction(Double score, int conflict, String versionTag) {
         this.score = score;
         this.conflict = conflict;
+        this.versionTag = versionTag;
     }
 
     public Long getId() {
@@ -52,6 +56,14 @@ public class Satisfaction {
 
     public void setConflict(int conflict) {
         this.conflict = conflict;
+    }
+
+    public String getVersionTag() {
+        return versionTag;
+    }
+
+    public void setVersionTag(String versionTag) {
+        this.versionTag = versionTag;
     }
 
 }

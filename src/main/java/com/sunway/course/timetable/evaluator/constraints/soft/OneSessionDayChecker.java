@@ -20,7 +20,7 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
     @Override
     public String getName() {
-        return "Single Session Day (Student + Lecturer)";
+        return "Single Session Day (Student)";
     }
 
     @Override

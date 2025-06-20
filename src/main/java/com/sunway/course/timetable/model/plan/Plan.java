@@ -26,7 +26,8 @@ public class Plan {
     private PlanContent planContent;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "satisfaction_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @MapsId("satisfactionId")  // Tell JPA that satisfactionId inside embeddedId maps to satisfaction
+    @JoinColumn(name = "satisfaction_id", referencedColumnName = "id")
     private Satisfaction satisfaction;
 
     public Plan() {}

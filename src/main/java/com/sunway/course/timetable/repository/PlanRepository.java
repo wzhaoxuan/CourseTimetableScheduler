@@ -14,14 +14,34 @@ public interface PlanRepository extends JpaRepository<Plan, PlanId> {
     // Custom query methods can be defined here if needed
 
     @Query("""
-        SELECT p FROM Plan p
-        WHERE LOWER(p.planContent.session.lecturer.name) = LOWER(:lecturerName)
+    SELECT p FROM Plan p
+    WHERE LOWER(p.planContent.session.lecturer.name) = LOWER(:lecturerName)
+      AND p.satisfaction.versionTag = :versionTag
     """)
-    List<Plan> findPlansByLecturer(@Param("lecturerName") String lecturerName);
+    List<Plan> findPlansByLecturerAndVersion(@Param("lecturerName") String lecturerName,
+                                            @Param("versionTag") String versionTag);
+
 
     @Query("""
-        SELECT p FROM Plan p
-        WHERE p.planContent.module.id = :moduleId
+    SELECT p FROM Plan p
+    WHERE p.planContent.module.id = :moduleId
+      AND p.satisfaction.versionTag = :versionTag
     """)
-    List<Plan> findPlansByModule(@Param("moduleId") String moduleId);
+    List<Plan> findPlansByModuleAndVersion(@Param("moduleId") String moduleId,
+                                        @Param("versionTag") String versionTag);
+
+    @Query("""
+        SELECT DISTINCT p.satisfaction.versionTag FROM Plan p
+        WHERE LOWER(p.planContent.session.lecturer.name) = LOWER(:lecturerName)
+        ORDER BY p.satisfaction.versionTag
+    """)
+    List<String> findDistinctVersionsByLecturer(@Param("lecturerName") String lecturerName);
+
+    @Query("""
+    SELECT DISTINCT p.satisfaction.versionTag FROM Plan p
+    WHERE p.planContent.module.id = :moduleId
+    """)
+    List<String> findDistinctVersionsByModule(@Param("moduleId") String moduleId);
+
+
 }

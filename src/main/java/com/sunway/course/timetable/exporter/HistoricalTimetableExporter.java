@@ -47,17 +47,18 @@ public class HistoricalTimetableExporter {
         return Arrays.asList(files);
     }
 
-    public List<File> exportByLecturer(String lecturerName) {
-        List<Plan> plans = planService.getPlansByLecturer(lecturerName);
-        return generateTimetableFiles(plans, lecturerName, null, 0);
+    public List<File> exportByLecturer(String lecturerName, String versionTag) {
+        List<Plan> plans = planService.getPlansByLecturerAndVersion(lecturerName, versionTag);
+        return generateTimetableFiles(plans, lecturerName, null, 0, versionTag);
     }
 
-    public List<File> exportByModule(String moduleId) {
-        List<Plan> plans = planService.getPlansByModule(moduleId);
-        return generateTimetableFiles(plans, moduleId, null, 0);
+
+    public List<File> exportByModule(String moduleId, String versionTag) {
+        List<Plan> plans = planService.getPlansByModuleAndVersion(moduleId, versionTag);
+        return generateTimetableFiles(plans, moduleId, null, 0,versionTag);
     }
 
-    private List<File> generateTimetableFiles(List<Plan> plans, String identifier, String intake, int year) {
+    private List<File> generateTimetableFiles(List<Plan> plans, String identifier, String intake, int year, String versionTag) {
         Map<Integer, List<Plan>> plansBySemester = plans.stream()
             .collect(Collectors.groupingBy(plan -> {
                 Long studentId = plan.getPlanContent().getSession().getStudent().getId();
@@ -70,8 +71,8 @@ public class HistoricalTimetableExporter {
             int semester = entry.getKey();
 
             String fileName = (intake != null)
-                ? String.format("%s-%s S%d.xlsx", identifier, IntakeUtils.getIntakeLabel(semester, intake, year), semester)
-                : String.format("%s.xlsx", identifier);
+                ? String.format("%s-%s S%d-%s.xlsx", identifier, IntakeUtils.getIntakeLabel(semester, intake, year), semester, versionTag)
+                : String.format("%s-%s.xlsx", identifier, versionTag);
 
             // DEDUPLICATE properly:
             List<Session> uniqueSessions = entry.getValue().stream()

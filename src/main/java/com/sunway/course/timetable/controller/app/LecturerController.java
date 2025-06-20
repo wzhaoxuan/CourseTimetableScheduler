@@ -1,5 +1,6 @@
 package com.sunway.course.timetable.controller.app;
 import java.io.File;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,6 +12,7 @@ import com.sunway.course.timetable.controller.authentication.LoginSceneControlle
 import com.sunway.course.timetable.controller.base.AbstractTimetableViewController;
 import com.sunway.course.timetable.exporter.HistoricalTimetableExporter;
 import com.sunway.course.timetable.model.Lecturer;
+import com.sunway.course.timetable.result.LecturerVersionItem;
 import com.sunway.course.timetable.result.SelectionStateHolder;
 import com.sunway.course.timetable.service.LecturerServiceImpl;
 import com.sunway.course.timetable.service.NavigationService;
@@ -22,7 +24,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
 @Component
-public class LecturerController extends AbstractTimetableViewController<String> {
+public class LecturerController extends AbstractTimetableViewController<LecturerVersionItem> {
 
     @FXML private RadioButton full_time, part_time, teaching_assistant;
 
@@ -38,7 +40,7 @@ public class LecturerController extends AbstractTimetableViewController<String> 
         LecturerServiceImpl lecturerService,
         HostServices hostServices,
         PlanServiceImpl planService) {
-        super(navService, loginController, stateHolder, hostServices, name -> name); 
+        super(navService, loginController, stateHolder, hostServices, LecturerVersionItem::getDisplayName); 
         this.lecturerService = lecturerService;
         this.exporter = exporter;
         this.planService = planService;
@@ -66,13 +68,20 @@ public class LecturerController extends AbstractTimetableViewController<String> 
     }
 
     private void loadLecturersWithPlans() {
-        Set<String> lecturersWithPlans = planService.getAllPlans().stream()
+        Set<String> lecturers = planService.getAllPlans().stream()
             .map(plan -> plan.getPlanContent().getSession().getLecturer().getName())
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-        loadItems(lecturersWithPlans.stream().sorted().toList());
+        List<LecturerVersionItem> items = lecturers.stream()
+            .flatMap(name -> planService.getAllVersionsByLecturer(name).stream()
+                .map(version -> new LecturerVersionItem(name, version)))
+            .sorted(Comparator.comparing(LecturerVersionItem::getDisplayName))
+            .toList();
+
+        loadItems(items);
     }
+
 
     private void loadLecturersByType(String type) {
         Set<String> lecturersWithPlans = planService.getAllPlans().stream()
@@ -80,21 +89,24 @@ public class LecturerController extends AbstractTimetableViewController<String> 
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-        List<String> lecturers = lecturerService.getLecturersByType(type)
+        List<LecturerVersionItem> items = lecturerService.getLecturersByType(type)
             .orElse(List.of())
             .stream()
             .map(Lecturer::getName)
             .filter(lecturersWithPlans::contains)
-            .sorted()
+            .flatMap(name -> planService.getAllVersionsByLecturer(name).stream()
+                .map(version -> new LecturerVersionItem(name, version)))
+            .sorted(Comparator.comparing(LecturerVersionItem::getDisplayName))
             .toList();
 
-        loadItems(lecturers);
+        loadItems(items);
     }
 
+
     @Override
-    protected void handleButtonClick(String lecturerName) {
+    protected void handleButtonClick(LecturerVersionItem item) {
         try {
-            List<File> files = exporter.exportByLecturer(lecturerName);
+            List<File> files = exporter.exportByLecturer(item.getName(), item.getVersion());
             for (File file : files) {
                 hostServices.showDocument(file.toURI().toString());
             }

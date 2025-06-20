@@ -2,9 +2,6 @@ package com.sunway.course.timetable.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.interfaces.services.SatisfactionService;
@@ -56,10 +53,14 @@ public class SatisfactionServiceImpl implements SatisfactionService{
         return satisfactionRepository.findTopByOrderByIdDesc();
     }
 
-    public List<Satisfaction> getLatestSatisfactions(int count) {
-        Pageable pageable = PageRequest.of(0, count, Sort.by(Sort.Direction.DESC, "id"));
-        return satisfactionRepository.findAll(pageable).getContent();
+    public String getNextVersionTag() {
+        List<Satisfaction> all = satisfactionRepository.findAll();
+        int maxVersion = all.stream()
+            .map(Satisfaction::getVersionTag)
+            .filter(tag -> tag.startsWith("v"))
+            .mapToInt(tag -> Integer.parseInt(tag.substring(1)))
+            .max()
+            .orElse(0);
+        return "v" + (maxVersion + 1);
     }
-
-
 }

@@ -9,8 +9,6 @@ import com.sunway.course.timetable.model.WeekDayConstraint;
 import com.sunway.course.timetable.repository.WeekDayConstraintRepository;
 
 
-
-
 @Service
 public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
 

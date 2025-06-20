@@ -127,6 +127,7 @@ public class ModuleAssignmentProcessor {
     private List<File> exportedLecturerFiles;
     private List<File> exportedModuleFiles;
 
+    public static String CURRENT_VERSION_TAG;
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                      ModuleServiceImpl moduleService,
@@ -187,6 +188,9 @@ public class ModuleAssignmentProcessor {
         String programme,
         String intake,
         int year) {
+        
+        String versionTag = satisfactionService.getNextVersionTag();
+        CURRENT_VERSION_TAG = versionTag;
 
         this.studentSemesterMap = studentSemesterMap;
         resetState(); // Reset all internal state before processing new assignments
@@ -237,9 +241,9 @@ public class ModuleAssignmentProcessor {
 
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
 
-        processAssignmentsHybrid(allMetaData, programme, intake, year);
+        processAssignmentsHybrid(allMetaData, programme, intake, year, versionTag);
 
-        long endTime = System.currentTimeMillis(); // ⏱ End measuring time
+        long endTime = System.currentTimeMillis(); // End measuring time
         long durationMs = endTime - startTime;
 
         log.info("Scheduling process completed in {} ms ({} seconds)", durationMs, durationMs / 1000.0);
@@ -257,7 +261,7 @@ public class ModuleAssignmentProcessor {
      * 
      * @param allMetaData
      */
-    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year) {
+    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year, String versionTag) {
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness/fail");
 
         long actorStart = System.currentTimeMillis();
@@ -320,29 +324,26 @@ public class ModuleAssignmentProcessor {
             log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
             long backtrackStart = System.currentTimeMillis();
             log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
-            scheduleWithBacktracking(failedMeta);
+            scheduleWithBacktracking(failedMeta, versionTag);
             long backtrackEnd = System.currentTimeMillis();
-            log.info("🔁 Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
+            log.info(" Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
         }
-
-        log.info("Total sessions created: {}", sessionToModuleIdMap.size());
-        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
-        long persistStart = System.currentTimeMillis();
-        persistAndGroupSessions(sessionToModuleIdMap);
-        long persistEnd = System.currentTimeMillis();
-        log.info("💾 Session persistence completed in {} ms", (persistEnd - persistStart));
-
-        
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
         .toList();
 
-        FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap);
+        log.info("Total sessions created: {}", sessionToModuleIdMap.size());
+        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+
+        FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
-
-        // savePlans(persistedSessions);
+        
+        long persistStart = System.currentTimeMillis();
+        persistAndGroupSessions(sessionToModuleIdMap);
+        long persistEnd = System.currentTimeMillis();
+        log.info(" Session persistence completed in {} ms", (persistEnd - persistStart));
 
         this.exportedFiles = exportPersistedTimetable(programme, intake, year, finalScore);
         Set<String> allLecturerNames = sessionBySemesterAndModule.values().stream()
@@ -471,7 +472,7 @@ public class ModuleAssignmentProcessor {
         throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
     }
 
-    private void scheduleWithBacktracking(List<SessionGroupMetaData> failedMeta) {
+    private void scheduleWithBacktracking(List<SessionGroupMetaData> failedMeta, String versionTag) {
         log.info("Starting backtracking scheduling for {} session groups", failedMeta.size());
 
         List<Venue> allVenues = venueMatrix.getSortedVenues();
@@ -482,7 +483,7 @@ public class ModuleAssignmentProcessor {
         );
         
 
-        Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve();
+        Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve(versionTag);
         Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
 
         // UnassignedStudentResolver resolver = new UnassignedStudentResolver();
@@ -616,20 +617,20 @@ public class ModuleAssignmentProcessor {
         }
 
         for (PlanContentId planContentId : persistedPlanContentIds) {
-        PlanContent planContent = planContentService.getPlanContentById(planContentId)
-                .orElseThrow(() -> new IllegalStateException("PlanContent not found after save"));
+            PlanContent planContent = planContentService.getPlanContentById(planContentId)
+                    .orElseThrow(() -> new IllegalStateException("PlanContent not found after save"));
 
-        if (optionalSatisfaction.isPresent()) {
-            Plan plan = new Plan(
-                new PlanId(planContentId, optionalSatisfaction.get().getId()),
-                planContent,
-                optionalSatisfaction.get()
-            );
-            planService.savePlan(plan);
-        } else {
-            log.warn("Skipping Plan save: no Satisfaction record found (likely first-time scheduling)");
+            if (optionalSatisfaction.isPresent()) {
+                Plan plan = new Plan(
+                    new PlanId(planContentId, optionalSatisfaction.get().getId()),
+                    planContent,
+                    optionalSatisfaction.get()
+                );
+                planService.savePlan(plan);
+            } else {
+                log.warn("Skipping Plan save: no Satisfaction record found (likely first-time scheduling)");
+            }
         }
-    }
         // Update the sessionVenueMap to use persisted session references
         sessionVenueMap.clear();
         sessionVenueMap.putAll(newSessionVenueMap);

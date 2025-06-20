@@ -113,8 +113,8 @@ public class BacktrackingScheduler {
         }
     }
 
-    public Map<SessionGroupMetaData, AssignmentOption> solve() {
-        backtrack(0);
+    public Map<SessionGroupMetaData, AssignmentOption> solve(String versionTag) {
+        backtrack(0, versionTag);
         assignment.clear();
         assignment.putAll(bestAssignment);
         studentAssignments.clear();
@@ -126,7 +126,7 @@ public class BacktrackingScheduler {
         return studentAssignments;
     }
 
-    private boolean backtrack(int index) {
+    private boolean backtrack(int index, String versionTag) {
         if (index == sessions.size()) {
             if (assignment.size() < sessions.size()) {
                 // Not a complete assignment, skip this partial solution
@@ -135,7 +135,7 @@ public class BacktrackingScheduler {
             
             List<Session> currentSessions = buildCurrentSessions();
             Map<Session, Venue> venueMap = buildCurrentVenueMap();
-            FitnessResult result = fitnessEvaluator.evaluate(currentSessions, venueMap);
+            FitnessResult result = fitnessEvaluator.evaluate(currentSessions, venueMap, versionTag);
 
             if (result.getPercentage() > bestFitnessScore) {
                 bestFitnessScore = result.getPercentage();
@@ -153,7 +153,7 @@ public class BacktrackingScheduler {
         for (AssignmentOption option : options) {
             if (isConsistent(meta, option)) {
                 assign(meta, option);
-                backtrack(index + 1);
+                backtrack(index + 1, versionTag);
                 unassign(meta, option);
             }
         }
