@@ -40,6 +40,13 @@ public class SatisfactionServiceImpl implements SatisfactionService{
         if (satisfaction.getConflict() < 0) {
             throw new IllegalArgumentException("Conflict count cannot be negative.");
         }
+
+        boolean exists = satisfactionRepository.existsByScheduleHash(satisfaction.getScheduleHash());
+        if (exists) {
+            // Optionally return existing version instead
+            System.out.println("Duplicate schedule hash detected, skipping save: " + satisfaction.getScheduleHash());
+            return null;
+        }
         return satisfactionRepository.save(satisfaction);
     }
 
@@ -57,7 +64,7 @@ public class SatisfactionServiceImpl implements SatisfactionService{
         List<Satisfaction> all = satisfactionRepository.findAll();
         int maxVersion = all.stream()
             .map(Satisfaction::getVersionTag)
-            .filter(tag -> tag.startsWith("v"))
+            .filter(tag -> tag != null && tag.startsWith("v"))
             .mapToInt(tag -> Integer.parseInt(tag.substring(1)))
             .max()
             .orElse(0);

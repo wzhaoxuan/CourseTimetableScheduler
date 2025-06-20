@@ -1,6 +1,9 @@
 package com.sunway.course.timetable.evaluator;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -75,8 +78,13 @@ public class FitnessEvaluator {
         logFitnessDebug(results, sessions.size(), totalPenalty, maxPenalty, percentage);
 
         int totalViolations = results.stream().mapToInt(r -> (int) r.penalty()).sum();
+        String hash = computeScheduleHash(sessions, sessionVenueMap);
 
-        satisfactionService.saveSatisfaction(new Satisfaction(percentage, totalViolations, versionTag));
+        Satisfaction satisfaction = new Satisfaction(percentage, totalViolations, versionTag);
+        satisfaction.setScheduleHash(hash); 
+        
+        satisfactionService.saveSatisfaction(satisfaction);
+        
 
         List<FitnessResult.Violation> hard = results.stream()
             .filter(r -> r.type() == ConstraintType.HARD)
@@ -100,7 +108,30 @@ public class FitnessEvaluator {
         System.out.printf("Total penalty: %.2f\nMax penalty: %.2f\nFinal Fitness %%: %.2f\n",
             totalPenalty, maxPenalty, fitness);
     }
+
+    private String computeScheduleHash(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            List<String> sessionStrings = sessions.stream()
+                .map(s -> {
+                    Venue v = sessionVenueMap.getOrDefault(s, null);
+                    return s.getDay() + "-" + s.getStartTime() + "-" + s.getTypeGroup() + "-" + (v != null ? v.getName() : "");
+                })
+                .sorted() // sort to ensure consistent hash
+                .toList();
+
+            String combined = String.join("|", sessionStrings);
+            byte[] hash = digest.digest(combined.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Error computing schedule hash", e);
+        }
+    }
+
+
 }
+
+
 
 record ConstraintResult(String name, double weight, double penalty, double score, ConstraintType type) {}
 

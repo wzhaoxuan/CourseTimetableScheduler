@@ -24,6 +24,10 @@ public class Satisfaction {
     @Column(name = "version_tag", nullable = false)
     private String versionTag;
 
+    @Column(name = "schedule_hash", nullable = false, unique = true)
+    private String scheduleHash;
+
+
     public Satisfaction() {
         // Default constructor
     }
@@ -64,6 +68,14 @@ public class Satisfaction {
 
     public void setVersionTag(String versionTag) {
         this.versionTag = versionTag;
+    }
+
+    public String getScheduleHash() {
+        return scheduleHash;
+    }
+
+    public void setScheduleHash(String scheduleHash) {
+        this.scheduleHash = scheduleHash;
     }
 
 }

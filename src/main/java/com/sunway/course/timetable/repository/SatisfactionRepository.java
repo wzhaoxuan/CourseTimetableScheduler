@@ -10,4 +10,5 @@ import com.sunway.course.timetable.model.Satisfaction;
 public interface SatisfactionRepository extends JpaRepository<Satisfaction, Long> {
     // Custom query methods can be defined here if needed
     Optional<Satisfaction> findTopByOrderByIdDesc();
+    boolean existsByScheduleHash(String scheduleHash);
 }
