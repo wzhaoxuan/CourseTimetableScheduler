@@ -12,5 +12,4 @@ public interface LecturerRepository extends JpaRepository<Lecturer, Long> {
     Optional<Lecturer> findById(Long id);
     Optional<Lecturer> findByName(String name);
     Optional<List<Lecturer>> findByType(String type);
-
 }

@@ -137,7 +137,6 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
         if (!lecturerAvailability.isAvailable(msg.lecturerId, msg.dayIndex, msg.startIndex, msg.endIndex)) {
             getContext().getLog().warn("Lecturer {} unavailable at day {} slots {}-{}", 
                 msg.lecturerId, msg.dayIndex, msg.startIndex, msg.endIndex);
-            lecturerAvailability.printAvailability(msg.lecturerId);
             msg.replyTo.tell(new VenueRejected(venue, "Lecturer unavailable"));
             return this;
         }

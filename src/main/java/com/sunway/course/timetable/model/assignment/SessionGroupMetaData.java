@@ -24,9 +24,9 @@ public class SessionGroupMetaData {
      * @param typeGroup     The group type for the session.
      * @param lecturerName    The ID of the lecturer assigned to the session.
      * @param totalStudents The total number of students in the session group.
-     * @param assignedStudents The list of students assigned to this session group.
      * @param groupIndex   The index of this group within the total groups.
      * @param groupCount   The total number of groups for this session type.
+     * @param eligibleStudents List of students eligible for this session group.
      */
     public SessionGroupMetaData(int semester, String moduleId, String type, String typeGroup, String lecturerName, int totalStudents, 
                                 int groupIndex, int groupCount, List<Student> eligibleStudents) {

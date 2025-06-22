@@ -1,9 +1,13 @@
 package com.sunway.course.timetable.evaluator.constraints.soft;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
@@ -18,6 +22,8 @@ import com.sunway.course.timetable.model.Venue;
  */
 public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
+    private static final Logger log = LoggerFactory.getLogger(PracticalBeforeLectureChecker.class);
+
     @Override
     public String getName() {
         return "Practical Before Lecture";
@@ -30,7 +36,7 @@ public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 5.0;
+        return 10.0;
     }
 
     @Override
@@ -38,32 +44,61 @@ public class PracticalBeforeLectureChecker implements ConstraintChecker {
         Map<String, List<Session>> sessionsByModule = new HashMap<>();
 
         for (Session s : sessions) {
-            String moduleKey = s.getTypeGroup() != null ? s.getTypeGroup().split("-G")[0] : null;
-            if (moduleKey != null) {
-                sessionsByModule.computeIfAbsent(moduleKey, k -> new ArrayList<>()).add(s);
-            }
+            String typeGroup = s.getTypeGroup();
+            if (typeGroup == null || !typeGroup.contains("-")) continue;
+
+            String moduleId = typeGroup.split("-")[0]; // e.g., CSC1024
+            sessionsByModule.computeIfAbsent(moduleId, k -> new ArrayList<>()).add(s);
         }
 
-        int count = 0;
-        for (List<Session> moduleSessions : sessionsByModule.values()) {
+        int violations = 0;
+
+        for (Map.Entry<String, List<Session>> entry : sessionsByModule.entrySet()) {
+            String moduleId = entry.getKey();
+            List<Session> moduleSessions = entry.getValue();
+
+            // Find the lecture session
             Session lecture = moduleSessions.stream()
                 .filter(s -> s.getType().equalsIgnoreCase("Lecture"))
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElse(null);
 
             if (lecture == null) continue;
 
-            for (Session s : moduleSessions) {
-                if (!s.getType().equalsIgnoreCase("Practical") &&
-                    !s.getType().equalsIgnoreCase("Tutorial") &&
-                    !s.getType().equalsIgnoreCase("Workshop")) continue;
+            int lectureDay = dayToIndex(lecture.getDay());
+            LocalTime lectureTime = lecture.getStartTime();
 
-                if (s.getDay().compareTo(lecture.getDay()) < 0 ||
-                    (s.getDay().equals(lecture.getDay()) && s.getStartTime().isBefore(lecture.getEndTime()))) {
-                    count++;
-                }
+            boolean hasEarlySession = moduleSessions.stream()
+                .filter(s -> {
+                    String type = s.getType();
+                    return type.equalsIgnoreCase("Practical") ||
+                           type.equalsIgnoreCase("Tutorial") ||
+                           type.equalsIgnoreCase("Workshop");
+                })
+                .anyMatch(s -> {
+                    int sessionDay = dayToIndex(s.getDay());
+                    LocalTime sessionTime = s.getStartTime();
+                    return sessionDay < lectureDay ||
+                           (sessionDay == lectureDay && sessionTime.isBefore(lectureTime));
+                });
+
+            if (hasEarlySession) {
+                violations++;
+                log.warn("[PracticalBeforeLectureViolation] Module {} has a practical/tutorial/workshop scheduled before its lecture.", moduleId);
             }
         }
 
-        return count;
+        return violations;
+    }
+
+    private int dayToIndex(String day) {
+        return switch (day.toLowerCase()) {
+            case "monday" -> 0;
+            case "tuesday" -> 1;
+            case "wednesday" -> 2;
+            case "thursday" -> 3;
+            case "friday" -> 4;
+            default -> 5; // weekend or unknown
+        };
     }
 }

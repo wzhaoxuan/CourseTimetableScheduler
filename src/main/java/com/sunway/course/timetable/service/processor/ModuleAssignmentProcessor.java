@@ -309,7 +309,7 @@ public class ModuleAssignmentProcessor {
         }
 
         long actorEnd = System.currentTimeMillis();
-        log.info("🎭 Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
+        log.info("Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
 
         List<Session> allScheduledSessions = sessionBySemesterAndModule.values().stream()
             .flatMap(m -> m.values().stream())

@@ -28,7 +28,7 @@ public class SpreadDaysChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 5.0;  // You may adjust weight
+        return 20.0;  // You may adjust weight
 
     }
 

@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LecturerAvailabilityMatrix {
+
+    private static final Logger log = LoggerFactory.getLogger(LecturerAvailabilityMatrix.class);
     private final int DAYS = 5;
     private final int TIME_SLOTS_PER_DAY = 20;
 
@@ -64,6 +68,7 @@ public class LecturerAvailabilityMatrix {
             }
             return true;
         } finally {
+            // log.info("Object Hash:{}", this.hashCode());
             lock.readLock().unlock();
         }
     }
@@ -171,6 +176,7 @@ public class LecturerAvailabilityMatrix {
             }
             return Arrays.copyOf(schedule[day], TIME_SLOTS_PER_DAY); // return a copy to prevent modification
         } finally {
+
             lock.readLock().unlock();
         }
     }

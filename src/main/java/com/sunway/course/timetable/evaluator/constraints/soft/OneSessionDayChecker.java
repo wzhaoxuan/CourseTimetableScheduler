@@ -20,7 +20,7 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
     @Override
     public String getName() {
-        return "Single Session Day (Student)";
+        return "Single Session Day (Student + Lecturer)";
     }
 
     @Override
@@ -30,7 +30,7 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 30.0; // Adjust based on how important this is
+        return 120.0; // Adjust based on how important this is
 
     }
 
@@ -62,11 +62,9 @@ public class OneSessionDayChecker implements ConstraintChecker {
 
         int penalty = 0;
         for (Map<String, Set<String>> perDay : studentDaySlots.values()) {
-            // log.info("Student day slots: {}", perDay);
             penalty += perDay.values().stream().filter(set -> set.size() == 1).count();
         }
         for (Map<String, Set<String>> perDay : lecturerDaySlots.values()) {
-            // log.info("Lecturer day slots: {}", perDay);
             penalty += perDay.values().stream().filter(set -> set.size() == 1).count();
         }
 

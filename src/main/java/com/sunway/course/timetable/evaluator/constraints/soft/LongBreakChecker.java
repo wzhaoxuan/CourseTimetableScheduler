@@ -7,12 +7,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sunway.course.timetable.evaluator.ConstraintChecker;
 import com.sunway.course.timetable.evaluator.ConstraintType;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 
 public class LongBreakChecker implements ConstraintChecker {
+
+    private static final Logger log = LoggerFactory.getLogger(LongBreakChecker.class);
 
     @Override
     public String getName() {

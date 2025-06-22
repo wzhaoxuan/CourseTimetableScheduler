@@ -4,8 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -18,8 +20,8 @@ import com.sunway.course.timetable.evaluator.constraints.hard.LecturerClashCheck
 import com.sunway.course.timetable.evaluator.constraints.hard.ModuleClashChecker;
 import com.sunway.course.timetable.evaluator.constraints.hard.StudentClashChecker;
 import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityChecker;
+import com.sunway.course.timetable.evaluator.constraints.soft.ConsecutiveSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
-import com.sunway.course.timetable.evaluator.constraints.soft.LecturerConsecutiveSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LongBreakChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.PracticalBeforeLectureChecker;
@@ -39,6 +41,9 @@ public class FitnessEvaluator {
     private final SatisfactionServiceImpl satisfactionService;
     private final List<ConstraintChecker> constraintCheckers;
 
+    public static Set<String> CURRENT_SESSION_KEYS = new HashSet<>();
+
+
     public FitnessEvaluator(SatisfactionServiceImpl satisfactionService,
                             VenueDistanceServiceImpl venueDistanceService) {
         this.satisfactionService = satisfactionService;
@@ -55,7 +60,7 @@ public class FitnessEvaluator {
             new LongBreakChecker(),
             new PracticalBeforeLectureChecker(),
             new SpreadDaysChecker(),
-            new LecturerConsecutiveSessionChecker()
+            new ConsecutiveSessionChecker()
         );
     }
 
@@ -82,7 +87,7 @@ public class FitnessEvaluator {
 
         Satisfaction satisfaction = new Satisfaction(percentage, totalViolations, versionTag);
         satisfaction.setScheduleHash(hash); 
-        
+
         satisfactionService.saveSatisfaction(satisfaction);
         
 
@@ -120,6 +125,9 @@ public class FitnessEvaluator {
                 .sorted() // sort to ensure consistent hash
                 .toList();
 
+             // Update current session keys
+             CURRENT_SESSION_KEYS = new HashSet<>(sessionStrings);
+
             String combined = String.join("|", sessionStrings);
             byte[] hash = digest.digest(combined.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
@@ -127,10 +135,7 @@ public class FitnessEvaluator {
             throw new RuntimeException("Error computing schedule hash", e);
         }
     }
-
-
 }
-
 
 
 record ConstraintResult(String name, double weight, double penalty, double score, ConstraintType type) {}

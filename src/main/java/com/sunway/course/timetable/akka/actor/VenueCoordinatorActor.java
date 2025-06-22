@@ -186,6 +186,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     // === Message Handlers ===
     @Override
     public Receive<VenueCoordinatorCommand> createReceive() {
+        log.info("Actor");
         return newReceiveBuilder()
                 .onMessage(RequestVenueAssignment.class, this::onRequestVenueAssignment)
                 .onMessage(VenueAcceptedMsg.class, this::onVenueAccepted)
@@ -254,8 +255,8 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             int venueIndex = venues.indexOf(option.venue());
             if (venueIndex == -1) continue;
 
-            getContext().getLog().info("[TRY] Day={} Slot={} Venue={}",
-                option.day(), option.startSlot(), option.venue().getId());
+            // getContext().getLog().info("[TRY] Day={} Slot={} Venue={}",
+            //     option.day(), option.startSlot(), option.venue().getId());
 
             // Check if the venue is available
             venueActors.get(venueIndex).tell(new VenueActor.CheckAndAssignSlot(
@@ -316,7 +317,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     }
 
     private Behavior<VenueCoordinatorCommand> onVenueRejected(VenueRejectedMsg msg) {
-        log.info("Venue rejected assignment, moving to next option.");
+        // log.info("Venue rejected assignment, moving to next option.");
         return tryNextDomainOption();
     }
 

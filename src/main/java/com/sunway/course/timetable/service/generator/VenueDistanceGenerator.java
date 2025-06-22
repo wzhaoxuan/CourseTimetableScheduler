@@ -47,7 +47,7 @@ public class VenueDistanceGenerator {
         venueDistanceRepository.saveAll(venueDistances);
     }
 
-    private double calculateDistance(Venue from, Venue to) {
+    double calculateDistance(Venue from, Venue to) {
         // Placeholder for actual distance calculation logic
         // For example, you could use Haversine formula or any other method to calculate distance between two venues
         if (from.getName().equals(to.getName())) return 0.0; // Same venue distance is 0
@@ -106,7 +106,7 @@ public class VenueDistanceGenerator {
         return 20.0;
     }
 
-    private int extractFloorLevel(String floorLevel) {
+    int extractFloorLevel(String floorLevel) {
         if(floorLevel == null || floorLevel.isEmpty()) return 0;
         if(floorLevel.toLowerCase().contains("ground")) return 0;
 
@@ -118,7 +118,7 @@ public class VenueDistanceGenerator {
         }
     }
 
-    private String sanitizeVenueName(String venue) {
+    String sanitizeVenueName(String venue) {
         return venue == null ? null : venue.trim().toUpperCase();
     }
 }

@@ -110,10 +110,6 @@ public class DomainPruner {
                         .filter(id -> studentMatrix.isAvailable(id, currentDay, currentStart, currentEnd))
                         .toList();
 
-                    // if (lecturerAvailable && venueAvailable && availableStudentIds.size() >= meta.getTotalStudents()) {
-                    //     domain.add(new AssignmentOption(day, start, venue));
-                    // }
-
                     int minRequired = meta.getType().equalsIgnoreCase("Lecture") ? meta.getTotalStudents() : MIN_GROUP_SIZE;
                     if (availableStudentIds.size() < minRequired) {
                         rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), 
