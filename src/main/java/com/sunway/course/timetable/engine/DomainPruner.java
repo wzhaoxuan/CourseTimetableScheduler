@@ -1,8 +1,9 @@
 package com.sunway.course.timetable.engine;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,27 +78,27 @@ public class DomainPruner {
 
                     // capacity check
                     if (venue.getCapacity() < requiredCapacity) {
-                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Venue too small"));
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "[pruning error] Venue too small"));
                         continue;
                     }
 
                     // weekday constraint check
                     if (lecturerDayAvailabilityUtil.isUnavailable(lecturerId, dayName)) {
-                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Lecturer unavailable (weekday constraint)"));
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "[pruning error] Lecturer unavailable (weekday constraint)"));
                         continue;
                     }
 
                     // lecturer schedule conflict
                     boolean lecturerAvailable = lecturerMatrix.isAvailable(meta.getLecturerName(), day, start, end);
                     if (!lecturerAvailable) {
-                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Lecturer busy"));
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), " [pruning error] Lecturer busy"));
                         continue;
                     }
 
                     // venue conflict
                     boolean venueAvailable = venueMatrix.isAvailable(venue, start, end, day);
                     if (!venueAvailable) {
-                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "Venue occupied"));
+                        rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), "[pruning error] Venue occupied"));
                         continue;
                     }
 
@@ -113,7 +114,7 @@ public class DomainPruner {
                     int minRequired = meta.getType().equalsIgnoreCase("Lecture") ? meta.getTotalStudents() : MIN_GROUP_SIZE;
                     if (availableStudentIds.size() < minRequired) {
                         rejectionLogs.add(new DomainRejectionReason(meta, day, start, venue.getName(), 
-                            String.format("Student clash (only %d available, need %d)", 
+                            String.format("[pruning error] Student clash (only %d available, need %d)", 
                             availableStudentIds.size(), meta.getTotalStudents())));
                         continue;
                     }
@@ -123,6 +124,24 @@ public class DomainPruner {
                 }
             }
         }
+
+        if (domain.isEmpty() && !rejectionLogs.isEmpty()) {
+            // Group reasons by frequency
+            Map<String, Long> reasonCounts = rejectionLogs.stream()
+                .collect(Collectors.groupingBy(DomainRejectionReason::getReason, Collectors.counting()));
+
+            // Find most frequent reason
+            String topReason = reasonCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("Unknown reason");
+
+            DomainRejectionReason example = rejectionLogs.get(0);
+            String typeGroup = example.getMeta().getTypeGroup();
+
+            log.warn("[DOMAIN FAILURE] No valid assignment for {}. Most common reason: {}", typeGroup, topReason);
+        }
+
 
         return domain;
     }

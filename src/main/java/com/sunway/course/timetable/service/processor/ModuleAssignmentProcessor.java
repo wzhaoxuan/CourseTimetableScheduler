@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.service.processor;
+package com.sunway.course.timetable.service.processor; 
 import java.io.File;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,6 +130,9 @@ public class ModuleAssignmentProcessor {
 
     public static String CURRENT_VERSION_TAG;
 
+
+    private JdbcTemplate jdbcTemplate;
+
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                      ModuleServiceImpl moduleService,
                                       SessionServiceImpl sessionService,
@@ -147,7 +151,8 @@ public class ModuleAssignmentProcessor {
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
                                       LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                      FitnessEvaluator fitnessEvaluator
+                                      FitnessEvaluator fitnessEvaluator,
+                                      JdbcTemplate jdbcTemplate
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -168,6 +173,7 @@ public class ModuleAssignmentProcessor {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
+        this.jdbcTemplate = jdbcTemplate;
         this.creditTracker = new CreditHourTracker();
 
     }
@@ -188,11 +194,13 @@ public class ModuleAssignmentProcessor {
         String programme,
         String intake,
         int year) {
-        
+
+
         String versionTag = satisfactionService.getNextVersionTag();
         CURRENT_VERSION_TAG = versionTag;
 
         this.studentSemesterMap = studentSemesterMap;
+        // resetSchedulingTables();
         resetState(); // Reset all internal state before processing new assignments
 
         long startTime = System.currentTimeMillis();
@@ -320,21 +328,21 @@ public class ModuleAssignmentProcessor {
         // double initialScore = initialFitness.getPercentage();
         // log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
 
-        if (!failedMeta.isEmpty()) {
-            log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
-            long backtrackStart = System.currentTimeMillis();
-            log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
-            scheduleWithBacktracking(failedMeta, versionTag);
-            long backtrackEnd = System.currentTimeMillis();
-            log.info(" Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
-        }
+        // if (!failedMeta.isEmpty()) {
+        //     log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
+        //     long backtrackStart = System.currentTimeMillis();
+        //     log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
+        //     scheduleWithBacktracking(failedMeta, versionTag);
+        //     long backtrackEnd = System.currentTimeMillis();
+        //     log.info(" Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
+        // }
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
         .toList();
 
         log.info("Total sessions created: {}", sessionToModuleIdMap.size());
-        printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
+        // printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
 
         FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
         this.finalScore = finalFitness.getPercentage();
@@ -754,6 +762,16 @@ public class ModuleAssignmentProcessor {
         return (int) Duration.between(LocalTime.of(8, 0), startTime).toMinutes() / 30;
     }
 
+    @Transactional
+    public void resetSchedulingTables() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS plan");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS plan_content");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS venue_assignment");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS session");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS satisfaction");
+        
+    }
+
     private void resetState() {
         lecturerMatrix.reset();
         venueMatrix.reset();
@@ -764,6 +782,10 @@ public class ModuleAssignmentProcessor {
         sessionVenueMap.clear();
         lectureAssignmentsByModule.clear();
         lastAssignedVenuePerDay.clear();
+        // sessionBySemesterAndModule.clear();
+        // moduleIdToStudentsMap.clear();
+        lecturerTeachingHours.clear();
+        programmeDistribution.clear();
 
         sessionGroupPreprocessorService.reset();
     }

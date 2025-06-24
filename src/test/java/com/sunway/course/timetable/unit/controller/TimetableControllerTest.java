@@ -1,151 +1,112 @@
-package com.sunway.course.timetable.unit.controller;
-// package com.sunway.course.timetable.controller.app;
+// package com.sunway.course.timetable.unit.controller;
 
-// import javafx.scene.Node;
 // import java.io.File;
-// import java.io.IOException;
-// import java.util.concurrent.CountDownLatch;
-// import java.util.concurrent.TimeUnit;
-
+// import java.lang.reflect.Method;
+// import java.util.List;
+// import com.sunway.course.timetable.controller.app.TimetableController;
+// import com.sunway.course.timetable.controller.authentication.LoginSceneController;
+// import com.sunway.course.timetable.service.NavigationService;
+// import javafx.application.HostServices;
+// import javafx.application.Platform;
+// import javafx.embed.swing.JFXPanel;
+// import javafx.scene.Scene;
+// import javafx.scene.control.Button;
+// import javafx.scene.control.ScrollPane;
+// import javafx.scene.layout.StackPane;
+// import javafx.scene.layout.VBox;
+// import javafx.stage.FileChooser;
+// import javafx.stage.Stage;
 // import org.junit.jupiter.api.BeforeAll;
 // import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.DisplayName;
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.api.extension.ExtendWith;
-
-// import static org.junit.jupiter.api.Assertions.assertThrows;
-// import static org.mockito.ArgumentMatchers.any;
-// import static org.mockito.ArgumentMatchers.eq;
-// import org.mockito.InjectMocks;
 // import org.mockito.Mock;
-// import org.mockito.MockedStatic;
-// import static org.mockito.Mockito.times;
-// import static org.mockito.Mockito.verify;
-// import static org.mockito.Mockito.doNothing;
-// import static org.mockito.Mockito.doThrow;
-// import static org.mockito.Mockito.mock;
-// import static org.mockito.Mockito.mockStatic;
-// import static org.mockito.Mockito.never;
-// import static org.mockito.Mockito.when;
 // import org.mockito.junit.jupiter.MockitoExtension;
+// import static org.junit.jupiter.api.Assertions.fail;
 
-// import com.sunway.course.timetable.controller.authentication.LoginSceneController;
-// import com.sunway.course.timetable.interfaces.PdfExportService;
-// import com.sunway.course.timetable.service.NavigationService;
-// import com.sunway.course.timetable.util.grid.DynamicGridManager;
-// import com.sunway.course.timetable.util.pdf.PdfExporter;
-
-// import javafx.application.Platform;
-// import javafx.collections.FXCollections;
-// import javafx.collections.ObservableList;
-// import javafx.scene.layout.GridPane;
-// import javafx.stage.FileChooser;
 
 // @ExtendWith(MockitoExtension.class)
 // public class TimetableControllerTest {
 
 //     @Mock private NavigationService navigationService;
 //     @Mock private LoginSceneController loginController;
-//     @Mock private PdfExportService pdfExportService;
-//     @Mock private DynamicGridManager gridManager; 
-//     @Mock private FileChooser fileChooser;
-//     @Mock private File file;
-//     @Mock private GridPane timetableGrid;
+//     @Mock private HostServices hostServices;
 
-//     private TimetableController timetableController;
+//     private TimetableController controller;
 
 //     @BeforeAll
-//     static void initJFX() throws Exception {
-//         Platform.startup(() -> {}); // Initialize the JavaFX toolkit
+//     static void initFx() {
+//         new JFXPanel(); // Initialize JavaFX platform
 //     }
 
 //     @BeforeEach
 //     void setUp() {
-//         // Initialize mocks and other setup code here
-//         timetableController = new TimetableController(navigationService, loginController, pdfExportService) {
-//             @Override
-//             protected DynamicGridManager createTimetableGridManager() {
-//                 return gridManager;
-//             }
-//         };
+//         controller = new TimetableController(navigationService, loginController, hostServices);
 
-//         timetableController.timetableGrid = timetableGrid;
-//         timetableController.setFileChooser(fileChooser);
+//         // Inject fake scene/window for FileChooser
+//         Button dummyDownloadButton = new Button();
+//         Scene scene = new Scene(new StackPane(dummyDownloadButton));
+//         Stage stage = new Stage();
+//         stage.setScene(scene);
+//         stage.show();
 
-//         // Mock the column and row constraints to avoid the NullPointerException
-//         ObservableList<javafx.scene.layout.ColumnConstraints> columnConstraints = FXCollections.observableArrayList();
-//         ObservableList<javafx.scene.layout.RowConstraints> rowConstraints = FXCollections.observableArrayList();
+//         dummyDownloadButton.setId("dummy");
+//         controller.downloadAll = dummyDownloadButton;
 
-//         // Add dummy constraints to avoid NPE
-//         columnConstraints.add(new javafx.scene.layout.ColumnConstraints());
-//         rowConstraints.add(new javafx.scene.layout.RowConstraints());
-
-//         when(timetableGrid.getColumnConstraints()).thenReturn(columnConstraints);
-//         when(timetableGrid.getRowConstraints()).thenReturn(rowConstraints);
-
-//         // Mock the getChildren() method to return a non-null list
-//         ObservableList<Node> children = FXCollections.observableArrayList();
-//         Node mockNode = mock(Node.class); // Mock a simple node
-//         children.add(mockNode);
-
-//         when(timetableGrid.getChildren()).thenReturn(children);
-
+//         // Set a dummy scrollPane and VBox so controller initializes without error
+//         controller.timetableScrollPane = new ScrollPane();
+//         controller.timetableList = new VBox();
 //     }
-
 
 //     @Test
-//     @DisplayName("Test downloadTimetable - successful export")
-//     void testDownloadTimetable() throws IOException, InterruptedException {
-//         File mockFile = mock(File.class);
-//         when(mockFile.getAbsolutePath()).thenReturn("dummy.pdf");
-//         when(fileChooser.showSaveDialog(null)).thenReturn(mockFile);
+//     void testDownloadAll_whenNoFiles_exported_shouldSkip() {
+//         controller.downloadAll(); // Should just print and return
 
-//         CountDownLatch latch = new CountDownLatch(1);
-
-//         Platform.runLater(() -> {
-//             timetableController.downloadTimetable();
-//             latch.countDown();
-//         });
-
-//         latch.await(3, TimeUnit.SECONDS);
-
-//         verify(pdfExportService, times(1)).export(timetableGrid, mockFile);
+//         // No exception expected; log message would be printed
 //     }
 
-//     // @Test
-//     // @DisplayName("Test downloadTimetable - no file selected")
-//     // void testDownloadTimetableNoFileSelected() throws InterruptedException {
-//     //     when(fileChooser.showSaveDialog(null)).thenReturn(null);
+//     @Test
+//     void testDownloadAll_withFiles_shouldCallZip() throws Exception {
+//         // Prepare dummy files
+//         File semesterFile = File.createTempFile("semester", ".xlsx");
+//         File lecturerFile = File.createTempFile("lecturer", ".xlsx");
+//         File moduleFile = File.createTempFile("module", ".xlsx");
 
-//     //     CountDownLatch latch = new CountDownLatch(1);
+//         controller.loadExportedTimetables(
+//             List.of(semesterFile),
+//             List.of(lecturerFile),
+//             List.of(moduleFile),
+//             85.0
+//         );
 
-//     //     Platform.runLater(() -> {
-//     //         timetableController.downloadTimetable();
-//     //         latch.countDown();
-//     //     });
+//         // Override FileChooser for test
+//         FileChooser chooser = new FileChooser();
+//         File outputZip = File.createTempFile("output", ".zip");
+//         outputZip.delete(); // so it doesn't exist before test
 
-//     //     latch.await(3, TimeUnit.SECONDS);
+//         FileChooser finalChooser = chooser;
+//         Platform.runLater(() -> {
+//             try {
+//                 Method m = TimetableController.class.getDeclaredMethod("downloadAll");
+//                 m.setAccessible(true);
 
-//     //     verify(pdfExportService, never()).export(any(), any());
-//     // }
+//                 // Simulate chooser result (mock file save dialog)
+//                 FileChooser originalChooser = new FileChooser() {
+//                     @Override
+//                     public File showSaveDialog(Window window) {
+//                         return outputZip;
+//                     }
+//                 };
 
-//     // @Test
-//     // @DisplayName("Test downloadTimetable - IOException handling")
-//     // void testDownloadTimetableIOException() throws InterruptedException, IOException {
-//     //     when(fileChooser.showSaveDialog(null)).thenReturn(file);
-//     //     when(file.getAbsolutePath()).thenReturn("timetable.pdf");
+//                 // Monkey-patch with reflection if necessary (or extract FileChooser logic into a method for testability)
 
-//     //     doThrow(new IOException("Simulated IO error")).when(pdfExportService).export(timetableGrid, file);
+//                 // Since zipFilesWithStructure is static, we recommend wrapping it in a class you can mock
 
-//     //     CountDownLatch latch = new CountDownLatch(1);
-
-//     //     Platform.runLater(() -> {
-//     //         timetableController.downloadTimetable();
-//     //         latch.countDown();
-//     //     });
-
-//     //     latch.await(3, TimeUnit.SECONDS);
-
-//     //     verify(pdfExportService, times(1)).export(timetableGrid, file);
-//     // }
+//                 // Assuming you did that, verify the zip logic is called and the file exists
+//                 controller.downloadAll();
+//             } catch (Exception e) {
+//                 fail("Download failed with exception: " + e.getMessage());
+//             }
+//         });
+//     }
 // }

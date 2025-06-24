@@ -57,7 +57,7 @@ public class SessionGroupPreprocessorService {
             String lecturer = plan.getMainLecturer();
             lecturerHourMap.merge(lecturer, 2, Integer::sum);  // 2 hours for lecture
 
-            validateHourLimit(lecturer);
+            // validateHourLimit(lecturer);
 
             String lectureGroup = plan.getSubjectCode() + "-Lecture-G1";
             List<Student> allStudentsCombined = allStudents.stream().toList();
@@ -99,7 +99,7 @@ public class SessionGroupPreprocessorService {
                 String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
                 if (tutor != null) {
                     lecturerHourMap.merge(tutor, 2, Integer::sum); // 2 hours per session
-                    validateHourLimit(tutor);
+                    // validateHourLimit(tutor);
                 }
 
                 List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups

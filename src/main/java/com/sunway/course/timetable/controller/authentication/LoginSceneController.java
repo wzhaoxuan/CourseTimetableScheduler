@@ -3,8 +3,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.controller.base.AuthBaseController;
-import com.sunway.course.timetable.service.NavigationService;
 import com.sunway.course.timetable.interfaces.services.UserService;
+import com.sunway.course.timetable.service.NavigationService;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -30,7 +30,7 @@ public class LoginSceneController extends AuthBaseController {
     }
 
     @FXML
-    private void login() {
+    public void login() {
         username = trimUsername();
         password = trimPassword();
 
@@ -51,4 +51,9 @@ public class LoginSceneController extends AuthBaseController {
     public String getUsername() {
         return username;
     }
+
+    public void setUserService(UserService userService) {
+        this.userService = userService;
+    }
+
 }

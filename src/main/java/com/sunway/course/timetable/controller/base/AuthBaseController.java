@@ -73,4 +73,14 @@ public abstract class AuthBaseController extends BaseController{
         return passwordField.getText().trim();
     }
 
+    // Add inside AuthBaseController.java
+    public void setUsernameField(TextField usernameField) {
+        this.usernameField = usernameField;
+    }
+
+    public void setPasswordField(PasswordField passwordField) {
+        this.passwordField = passwordField;
+    }
+
+
 }

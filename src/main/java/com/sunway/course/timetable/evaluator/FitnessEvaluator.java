@@ -126,7 +126,8 @@ public class FitnessEvaluator {
                 .toList();
 
              // Update current session keys
-             CURRENT_SESSION_KEYS = new HashSet<>(sessionStrings);
+             CURRENT_SESSION_KEYS.clear();
+             CURRENT_SESSION_KEYS.addAll(sessionStrings);
 
             String combined = String.join("|", sessionStrings);
             byte[] hash = digest.digest(combined.getBytes(StandardCharsets.UTF_8));

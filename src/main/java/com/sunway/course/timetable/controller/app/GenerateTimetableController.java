@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
@@ -82,6 +83,7 @@ public class GenerateTimetableController extends ContentController {
     private final TimetableExcelExporter timetableExcelExporter;
     private final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     private final FitnessEvaluator fitnessEvaluator;
+    private JdbcTemplate jdbcTemplate;
 
     // == matches file names in the ListView ==
     private File subjectPlanFile;
@@ -114,7 +116,8 @@ public class GenerateTimetableController extends ContentController {
                                     ProgrammeDistributionClustering clustering,
                                     TimetableExcelExporter timetableExcelExporter,
                                     LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                    FitnessEvaluator fitnessEvaluator) {
+                                    FitnessEvaluator fitnessEvaluator,
+                                    JdbcTemplate jdbcTemplate) {
         super(navService, loginController);
         this.timetableController = timetableController;
         this.preprocessingService = preprocessingService;
@@ -138,6 +141,7 @@ public class GenerateTimetableController extends ContentController {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
 
@@ -222,7 +226,8 @@ public class GenerateTimetableController extends ContentController {
                 clustering,
                 timetableExcelExporter,
                 lecturerDayAvailabilityUtil,
-                fitnessEvaluator
+                fitnessEvaluator,
+                jdbcTemplate
             );
 
             int yearInt = Integer.parseInt(year);

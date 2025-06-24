@@ -64,7 +64,9 @@ public class LecturerAvailabilityMatrix {
             }
 
             for (int i = start; i < end; i++) {
-                if (schedule[day][i]) return false;
+                if (schedule[day][i]){
+                    return false;
+                }
             }
             return true;
         } finally {
@@ -90,6 +92,10 @@ public class LecturerAvailabilityMatrix {
 
             for (int i = start; i < end; i++) {
                 schedule[day][i] = true; // mark as busy
+                if(lecturerId.equalsIgnoreCase("Tan Yue Hern")) {
+                    printAvailability(lecturerId);
+                    System.out.printf("[LecturerMatrix] %s assigned on day=%d from %d to %d%n", lecturerId, day, start, end);
+                }
             }
             // System.out.printf("[LecturerMatrix] Assigned %s on day=%d from %d to %d%n", lecturerId, day, start, end);
         } finally {

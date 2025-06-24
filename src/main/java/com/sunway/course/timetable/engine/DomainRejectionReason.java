@@ -16,6 +16,15 @@ public class DomainRejectionReason {
         this.reason = reason;
     }
 
+    public SessionGroupMetaData getMeta() {
+        return meta;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+
     @Override
     public String toString() {
         return String.format(

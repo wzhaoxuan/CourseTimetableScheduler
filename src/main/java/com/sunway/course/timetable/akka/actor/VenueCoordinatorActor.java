@@ -212,7 +212,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         // Sort pruned domain by preferred venue proximity (if applicable)
         List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);
 
-        // Optional: filter for practical/tutorial/workshop
+        // Optional: filter for practical/tutorial/workshop to take only "Room" type venues
         if (List.of("Practical", "Tutorial", "Workshop").contains(msg.sessionType)) {
             sortedDomain = sortedDomain.stream()
                 .filter(opt -> {
@@ -237,7 +237,12 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
                 })
                 .thenComparing(opt -> opt.venue().getName()));
         } else {
-            sortedDomain.sort(Comparator.comparingInt(opt -> opt.venue().getCapacity()));
+            sortedDomain.sort(
+                        Comparator
+                        .comparingInt((AssignmentOption opt) -> opt.day())        // 0=Mon,1=Tue…
+                        .thenComparingInt(opt -> opt.startSlot())                  // 0=8:00,1=8:30…
+                        .thenComparingInt(opt -> opt.venue().getCapacity())        // smallest room within each slot
+                    );
         }
 
         // Store for retry
