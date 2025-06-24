@@ -25,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.engine.BacktrackingScheduler;
-import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
 import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.evaluator.FitnessResult;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
@@ -270,11 +268,10 @@ public class ModuleAssignmentProcessor {
      * @param allMetaData
      */
     private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year, String versionTag) {
-        log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness/fail");
+        log.info("Running scheduling with actors for {} session groups", allMetaData.size());
 
         long actorStart = System.currentTimeMillis();
 
-        List<SessionGroupMetaData> failedMeta = new ArrayList<>();
 
         for (SessionGroupMetaData meta : allMetaData) {
             List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
@@ -291,12 +288,6 @@ public class ModuleAssignmentProcessor {
                 meta.getTotalStudents(), lecturerName, filteredEligibleStudents,
                 meta.getGroupIndex(), meta.getGroupCount(), lectureAssignmentsByModule
             );
-
-            if (result == null) {
-                log.warn("[HYBRID] Actor scheduling failed for {}", meta.getTypeGroup());
-                failedMeta.add(meta);
-                continue;
-            }
 
             // Reconstruct SessionAssigned and store if type is Lecture
             if (meta.getType().equalsIgnoreCase("Lecture")) {
@@ -319,23 +310,7 @@ public class ModuleAssignmentProcessor {
         long actorEnd = System.currentTimeMillis();
         log.info("Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
 
-        List<Session> allScheduledSessions = sessionBySemesterAndModule.values().stream()
-            .flatMap(m -> m.values().stream())
-            .flatMap(List::stream)
-            .toList();
 
-        // FitnessResult initialFitness = fitnessEvaluator.evaluate(allScheduledSessions, sessionVenueMap);
-        // double initialScore = initialFitness.getPercentage();
-        // log.info("Initial fitness score after actor-based scheduling: {}%", initialScore);
-
-        // if (!failedMeta.isEmpty()) {
-        //     log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
-        //     long backtrackStart = System.currentTimeMillis();
-        //     log.info("[HYBRID] Fallback triggered. Using backtracking to improve fitness.");
-        //     scheduleWithBacktracking(failedMeta, versionTag);
-        //     long backtrackEnd = System.currentTimeMillis();
-        //     log.info(" Backtracking scheduling completed in {} ms", (backtrackEnd - backtrackStart));
-        // }
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
@@ -346,7 +321,7 @@ public class ModuleAssignmentProcessor {
 
         FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
         this.finalScore = finalFitness.getPercentage();
-        log.info("Final fitness score after hybrid scheduling: {}%", finalScore);
+        log.info("Final fitness score after scheduling: {}%", finalScore);
         
         long persistStart = System.currentTimeMillis();
         persistAndGroupSessions(sessionToModuleIdMap);
@@ -478,74 +453,6 @@ public class ModuleAssignmentProcessor {
         }
 
         throw new IllegalStateException("Unexpected response from SessionAssignmentActor");
-    }
-
-    private void scheduleWithBacktracking(List<SessionGroupMetaData> failedMeta, String versionTag) {
-        log.info("Starting backtracking scheduling for {} session groups", failedMeta.size());
-
-        List<Venue> allVenues = venueMatrix.getSortedVenues();
-        BacktrackingScheduler scheduler = new BacktrackingScheduler(
-            failedMeta, lecturerMatrix, venueMatrix, studentMatrix, allVenues, 
-            venueDistanceService, lecturerService, lecturerDayAvailabilityUtil,
-            fitnessEvaluator
-        );
-        
-
-        Map<SessionGroupMetaData, AssignmentOption> result = scheduler.solve(versionTag);
-        Map<SessionGroupMetaData, List<Student>> studentAssignments = scheduler.getStudentAssignments();
-
-        // UnassignedStudentResolver resolver = new UnassignedStudentResolver();
-        // List<SessionGroupMetaData> extraGroups = resolver.resolve(failedMeta, studentAssignments);
-
-        // if (!extraGroups.isEmpty()) {
-        //     log.info("Injecting {} additional groups into scheduler", extraGroups.size());
-            
-        //     // You can rerun your actor or backtracking on these extra groups
-        //     scheduleWithBacktracking(extraGroups);
-        // }
-
-        // log.info("Checking for unassigned students:");
-
-        // for (SessionGroupMetaData meta : allMetaData) {
-        //     List<Student> eligible = meta.getEligibleStudents();
-        //     List<Student> assigned = studentAssignments.getOrDefault(meta, List.of());
-
-        //     Set<Long> assignedIds = assigned.stream()
-        //         .map(Student::getId)
-        //         .collect(Collectors.toSet());
-
-        //     for (Student s : eligible) {
-        //         if (!assignedIds.contains(s.getId())) {
-        //             log.warn("Student {} not assigned to group {}", s.getId(), meta.getTypeGroup());
-        //         }
-        //     }
-        // }
-
-
-        for (Map.Entry<SessionGroupMetaData, AssignmentOption> entry : result.entrySet()) {
-            SessionGroupMetaData meta = entry.getKey();
-            AssignmentOption opt = entry.getValue();
-
-            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
-            Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(lecturerName);
-            if (lecturerOpt.isEmpty()) {
-                log.warn("Lecturer {} not found in DB, skipping session creation.", lecturerName);
-                continue;
-            }
-
-            Lecturer lecturer = lecturerOpt.get();
-            String day = getDayName(opt.day());
-
-            LocalTime start = LocalTime.of(8, 0).plusMinutes(opt.startSlot() * 30L);
-            LocalTime end = start.plusMinutes(4 * 30L); // 2 hours assumed
-
-            // Assign eligible + available students
-            List<Student> assignedStudents = studentAssignments.getOrDefault(meta, List.of());
-
-            assignStudentsToSession(meta, day, start, end, lecturer, opt.venue(), assignedStudents);
-        }
-
-        log.info("Backtracking scheduling completed. Total sessions created: {}", sessionToModuleIdMap.size());
     }
 
 

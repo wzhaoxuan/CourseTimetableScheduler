@@ -322,7 +322,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     }
 
     private Behavior<VenueCoordinatorCommand> onVenueRejected(VenueRejectedMsg msg) {
-        // log.info("Venue rejected assignment, moving to next option.");
         return tryNextDomainOption();
     }
 

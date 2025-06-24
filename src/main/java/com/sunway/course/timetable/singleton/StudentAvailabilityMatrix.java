@@ -122,21 +122,18 @@ public class StudentAvailabilityMatrix {
         boolean[][] matrix = availabilityMap.get(studentId);
         if (matrix == null) return false;
 
-        int occupiedCount = 0;
-
         for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+            // If student is busy in some slot
             if (!matrix[day][slot]) {
-                // Already has another session that day
-                for (int i = 0; i < duration; i++) {
-                    if (slot != candidateStart + i) {
-                        return false; // Found another different session block
-                    }
+                boolean isInsideCandidate = slot >= candidateStart && slot < candidateStart + duration;
+                if (!isInsideCandidate) {
+                    // Found another session outside the one being checked
+                    return false;
                 }
-                occupiedCount++;
             }
         }
 
-        // If none or all occupied slots match the current assignment, it's a solo session day
-        return occupiedCount == 0;
+        // Either no sessions at all, or only sessions match the candidate block
+        return true;
     }
 }
