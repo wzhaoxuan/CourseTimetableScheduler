@@ -127,8 +127,6 @@ public class VenueActor extends AbstractBehavior<VenueActor.VenueCommand> {
 
     private Behavior<VenueCommand> onCheckAndAssignSlot(CheckAndAssignSlot msg) {
 
-        // getContext().getLog().info("Checking venue '{}' day {} slots {}-{}", venue.getName(), msg.dayIndex, msg.startIndex, msg.endIndex);
-
         if (msg.dayIndex < 0 || msg.dayIndex >= DAYS || msg.startIndex < 0 || msg.endIndex > TIME_SLOTS_PER_DAY || msg.startIndex >= msg.endIndex) {
             msg.replyTo.tell(new VenueRejected(venue, "Invalid day or time slots"));
             return this;

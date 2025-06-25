@@ -325,7 +325,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
         return tryNextDomainOption();
     }
 
-
     private String getVenueNameById(String idStr) {
         try {
             Long id = Long.parseLong(idStr);

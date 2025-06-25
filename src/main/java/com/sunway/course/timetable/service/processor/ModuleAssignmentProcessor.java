@@ -247,7 +247,7 @@ public class ModuleAssignmentProcessor {
 
         log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
 
-        processAssignmentsHybrid(allMetaData, programme, intake, year, versionTag);
+        processAssignments(allMetaData, programme, intake, year, versionTag);
 
         long endTime = System.currentTimeMillis(); // End measuring time
         long durationMs = endTime - startTime;
@@ -267,7 +267,7 @@ public class ModuleAssignmentProcessor {
      * 
      * @param allMetaData
      */
-    private void processAssignmentsHybrid(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year, String versionTag) {
+    private void processAssignments(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year, String versionTag) {
         log.info("Running scheduling with actors for {} session groups", allMetaData.size());
 
         long actorStart = System.currentTimeMillis();
