@@ -28,6 +28,7 @@ import com.sunway.course.timetable.service.processor.preprocessing.Preprocessing
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
 import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
@@ -66,6 +67,7 @@ public class GenerateTimetableController extends ContentController {
     private final LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService;
     private final LecturerServiceImpl lecturerService;
     private final ModuleServiceImpl moduleService;
+    private final VenueServiceImpl venueService;
     private final SessionServiceImpl sessionService;
     private final PlanContentServiceImpl planContentService;
     private final VenueDistanceServiceImpl venueDistanceService;
@@ -100,6 +102,7 @@ public class GenerateTimetableController extends ContentController {
                                     LecturerAvailablityExcelReaderService lecturerAvailablityExcelReaderService,
                                     LecturerServiceImpl lecturerService,
                                     ModuleServiceImpl moduleService,
+                                    VenueServiceImpl venueService,
                                     SessionServiceImpl sessionService,
                                     PlanContentServiceImpl planContentService,
                                     VenueDistanceServiceImpl venueDistanceService,
@@ -124,6 +127,7 @@ public class GenerateTimetableController extends ContentController {
         this.lecturerAvailablityExcelReaderService = lecturerAvailablityExcelReaderService;
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
+        this.venueService = venueService;
         this.sessionService = sessionService;
         this.planContentService = planContentService;
         this.venueDistanceService = venueDistanceService;
@@ -210,6 +214,7 @@ public class GenerateTimetableController extends ContentController {
             ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(
                 lecturerService,
                 moduleService,
+                venueService,
                 sessionService,
                 planContentService,
                 venueDistanceService,
@@ -360,11 +365,6 @@ public class GenerateTimetableController extends ContentController {
         HBox.setHgrow(spacer1, Priority.ALWAYS);
         HBox.setHgrow(spacer2, Priority.ALWAYS);
         HBox.setHgrow(spacer4, Priority.ALWAYS);
-    }
-
-
-    private void showError(String message) {
-        System.err.println(message); // You can also show this in a Label or Alert
     }
 
     private void showSuccess(String message) {

@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.unit.actor;
+package com.sunway.course.timetable.integration.actor;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;

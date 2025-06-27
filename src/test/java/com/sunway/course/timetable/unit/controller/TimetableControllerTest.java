@@ -1,112 +1,107 @@
-// package com.sunway.course.timetable.unit.controller;
+package com.sunway.course.timetable.unit.controller;
 
-// import java.io.File;
-// import java.lang.reflect.Method;
-// import java.util.List;
-// import com.sunway.course.timetable.controller.app.TimetableController;
-// import com.sunway.course.timetable.controller.authentication.LoginSceneController;
-// import com.sunway.course.timetable.service.NavigationService;
-// import javafx.application.HostServices;
-// import javafx.application.Platform;
-// import javafx.embed.swing.JFXPanel;
-// import javafx.scene.Scene;
-// import javafx.scene.control.Button;
-// import javafx.scene.control.ScrollPane;
-// import javafx.scene.layout.StackPane;
-// import javafx.scene.layout.VBox;
-// import javafx.stage.FileChooser;
-// import javafx.stage.Stage;
-// import org.junit.jupiter.api.BeforeAll;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.extension.ExtendWith;
-// import org.mockito.Mock;
-// import org.mockito.junit.jupiter.MockitoExtension;
-// import static org.junit.jupiter.api.Assertions.fail;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-// @ExtendWith(MockitoExtension.class)
+import com.sunway.course.timetable.controller.app.TimetableController;
+import com.sunway.course.timetable.controller.authentication.LoginSceneController;
+import com.sunway.course.timetable.service.NavigationService;
+import com.sunway.course.timetable.view.MainApp;
+
+import javafx.application.HostServices;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
+
 // public class TimetableControllerTest {
 
-//     @Mock private NavigationService navigationService;
-//     @Mock private LoginSceneController loginController;
-//     @Mock private HostServices hostServices;
-
 //     private TimetableController controller;
-
-//     @BeforeAll
-//     static void initFx() {
-//         new JFXPanel(); // Initialize JavaFX platform
-//     }
+//     private VBox timetableList;
+//     private ScrollPane timetableScrollPane;
+//     private HostServices hostServices;
 
 //     @BeforeEach
-//     void setUp() {
-//         controller = new TimetableController(navigationService, loginController, hostServices);
+//     void setUp() throws Exception {
+//         // Mock dependencies
+//         hostServices = mock(HostServices.class);
 
-//         // Inject fake scene/window for FileChooser
-//         Button dummyDownloadButton = new Button();
-//         Scene scene = new Scene(new StackPane(dummyDownloadButton));
-//         Stage stage = new Stage();
-//         stage.setScene(scene);
-//         stage.show();
-
-//         dummyDownloadButton.setId("dummy");
-//         controller.downloadAll = dummyDownloadButton;
-
-//         // Set a dummy scrollPane and VBox so controller initializes without error
-//         controller.timetableScrollPane = new ScrollPane();
-//         controller.timetableList = new VBox();
-//     }
-
-//     @Test
-//     void testDownloadAll_whenNoFiles_exported_shouldSkip() {
-//         controller.downloadAll(); // Should just print and return
-
-//         // No exception expected; log message would be printed
-//     }
-
-//     @Test
-//     void testDownloadAll_withFiles_shouldCallZip() throws Exception {
-//         // Prepare dummy files
-//         File semesterFile = File.createTempFile("semester", ".xlsx");
-//         File lecturerFile = File.createTempFile("lecturer", ".xlsx");
-//         File moduleFile = File.createTempFile("module", ".xlsx");
-
-//         controller.loadExportedTimetables(
-//             List.of(semesterFile),
-//             List.of(lecturerFile),
-//             List.of(moduleFile),
-//             85.0
+//         // Override the static used by the controller
+//         MainApp.hostServices = hostServices;
+        
+//         // Instantiate controller
+//         controller = new TimetableController(
+//             mock(NavigationService.class),
+//             mock(LoginSceneController.class),
+//             hostServices
 //         );
+//         // Using reflection to inject private FXML fields
+//         timetableList = new VBox();
+//         timetableScrollPane = new ScrollPane();
+//         setField(controller, "timetableList", timetableList);
+//         setField(controller, "timetableScrollPane", timetableScrollPane);
+//     }
 
-//         // Override FileChooser for test
-//         FileChooser chooser = new FileChooser();
-//         File outputZip = File.createTempFile("output", ".zip");
-//         outputZip.delete(); // so it doesn't exist before test
+//     @Test
+//     @DisplayName("loadExportedTimetables populates sections and buttons correctly")
+//     void testLoadExportedTimetables() throws Exception {
+//         // Prepare three lists
+//         File semFile = new File("semester.xlsx");
+//         File lecFile = new File("lecturer.xlsx");
+//         File modFile = new File("module.xlsx");
+//         List<File> sems = List.of(semFile);
+//         List<File> lecs = List.of(lecFile);
+//         List<File> mods = List.of(modFile);
 
-//         FileChooser finalChooser = chooser;
-//         Platform.runLater(() -> {
-//             try {
-//                 Method m = TimetableController.class.getDeclaredMethod("downloadAll");
-//                 m.setAccessible(true);
+//         // Call method
+//         controller.loadExportedTimetables(sems, lecs, mods, 90.0);
 
-//                 // Simulate chooser result (mock file save dialog)
-//                 FileChooser originalChooser = new FileChooser() {
-//                     @Override
-//                     public File showSaveDialog(Window window) {
-//                         return outputZip;
-//                     }
-//                 };
+//         // Expect labels + one button per list
+//         // 3 sections: Semester, Lecturer, Module
+//         assertEquals(6, timetableList.getChildren().size()); // 3 labels + 3 buttons
+//         // Check label texts
+//         assertEquals("Semester Timetables", ((Label) timetableList.getChildren().get(0)).getText());
+//         assertEquals("Lecturer Timetables", ((Label) timetableList.getChildren().get(2)).getText());
+//         assertEquals("Module Timetables", ((Label) timetableList.getChildren().get(4)).getText());
+//         // Check button labels (without .xlsx)
+//         assertEquals("semester", ((Button) timetableList.getChildren().get(1)).getText());
+//         assertEquals("lecturer", ((Button) timetableList.getChildren().get(3)).getText());
+//         assertEquals("module", ((Button) timetableList.getChildren().get(5)).getText());
+//     }
 
-//                 // Monkey-patch with reflection if necessary (or extract FileChooser logic into a method for testability)
+//     @Test
+//     @DisplayName("addDownloadButton fires HostServices.showDocument correctly")
+//     void testAddDownloadButtonCallsHostServices() throws Exception {
+//         // Inject list
+//         timetableList.getChildren().clear();
 
-//                 // Since zipFilesWithStructure is static, we recommend wrapping it in a class you can mock
+//         File file = new File("C:/tmp/test.xlsx");
+//         controller.addDownloadButton(file);
+//         // Last child is the button
+//         Node last = timetableList.getChildren().get(timetableList.getChildren().size() - 1);
+//         assertTrue(last instanceof Button);
+//         Button btn = (Button) last;
+//         // Simulate click
+//         btn.getOnAction().handle(null);
+//         // Verify hostServices called with file URI
+//         String expectedUri = file.toURI().toString();
+//         verify(hostServices).showDocument(expectedUri);
+//     }
 
-//                 // Assuming you did that, verify the zip logic is called and the file exists
-//                 controller.downloadAll();
-//             } catch (Exception e) {
-//                 fail("Download failed with exception: " + e.getMessage());
-//             }
-//         });
+//     // Helper to set private fields
+//     private static void setField(Object target, String name, Object value) throws Exception {
+//         Field field = TimetableController.class.getDeclaredField(name);
+//         field.setAccessible(true);
+//         field.set(target, value);
 //     }
 // }

@@ -14,6 +14,7 @@ import com.sunway.course.timetable.model.Student;
 import com.sunway.course.timetable.model.SubjectPlanInfo;
 import com.sunway.course.timetable.model.assignment.ModuleAssignmentData;
 import com.sunway.course.timetable.model.assignment.SessionGroupMetaData;
+import com.sunway.course.timetable.util.SchedulingUtils;
 
 @Service
 public class SessionGroupPreprocessorService {
@@ -56,8 +57,8 @@ public class SessionGroupPreprocessorService {
         if (plan.hasLecture()) {
             String lecturer = plan.getMainLecturer();
             lecturerHourMap.merge(lecturer, 2, Integer::sum);  // 2 hours for lecture
-
-            // validateHourLimit(lecturer);
+            SchedulingUtils.resetTeachingHours(lecturerHourMap);
+            SchedulingUtils.recordTeachingHours(lecturerHourMap, lecturer, 2);
 
             String lectureGroup = plan.getSubjectCode() + "-Lecture-G1";
             List<Student> allStudentsCombined = allStudents.stream().toList();
@@ -99,7 +100,8 @@ public class SessionGroupPreprocessorService {
                 String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
                 if (tutor != null) {
                     lecturerHourMap.merge(tutor, 2, Integer::sum); // 2 hours per session
-                    // validateHourLimit(tutor);
+                    SchedulingUtils.resetTeachingHours(lecturerHourMap);
+                    SchedulingUtils.recordTeachingHours(lecturerHourMap, tutor, 2);
                 }
 
                 List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups
@@ -121,15 +123,6 @@ public class SessionGroupPreprocessorService {
         return metaDataList;
     }
 
-    private void validateHourLimit(String lecturer) {
-        int hours = lecturerHourMap.getOrDefault(lecturer, 0);
-        if (hours > 20) {
-            throw new IllegalStateException(
-                "Lecturer '" + lecturer + "' assigned " + hours + " hours — exceeds 20-hour limit. Please add more tutor."
-            );
-        }
-    }
-
     private static record SessionTypeInfo(String type, boolean hasType, List<String> tutor) {}
 
     public List<Integer> getSemestersForModule(String moduleId) {
@@ -138,9 +131,7 @@ public class SessionGroupPreprocessorService {
 
     public void reset() {
         lecturerHourMap.clear();
-        moduleSemesterMap.clear(); // Optional, if you don't want to accumulate mapping
+        moduleSemesterMap.clear(); 
     }
-
-
 }
 

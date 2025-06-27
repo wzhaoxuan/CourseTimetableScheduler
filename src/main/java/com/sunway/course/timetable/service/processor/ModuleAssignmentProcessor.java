@@ -54,12 +54,14 @@ import com.sunway.course.timetable.service.cluster.ProgrammeDistributionClusteri
 import com.sunway.course.timetable.service.processor.preprocessing.SessionGroupPreprocessorService;
 import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
+import com.sunway.course.timetable.service.venue.VenueServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueSorterService;
 import com.sunway.course.timetable.singleton.LecturerAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.StudentAvailabilityMatrix;
 import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.FilterUtil;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
+import com.sunway.course.timetable.util.SchedulingUtils;
 import com.sunway.course.timetable.util.tracker.CreditHourTracker;
 
 import akka.actor.typed.ActorRef;
@@ -80,7 +82,6 @@ import akka.actor.typed.javadsl.AskPattern;
 public class ModuleAssignmentProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(ModuleAssignmentProcessor.class);
-    private static final double FITNESS_THRESHOLD = 85.0;
 
     // === Dependencies ===
     private final CreditHourTracker creditTracker;
@@ -90,6 +91,7 @@ public class ModuleAssignmentProcessor {
     private final VenueDistanceServiceImpl venueDistanceService;
     private final VenueAssignmentServiceImpl venueAssignmentService;
     private final ModuleServiceImpl moduleService;
+    private final VenueServiceImpl venueService;
     private final PlanServiceImpl planService;
     private final SatisfactionServiceImpl satisfactionService;
     private final ProgrammeDistributionClustering clustering;
@@ -133,6 +135,7 @@ public class ModuleAssignmentProcessor {
 
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                      ModuleServiceImpl moduleService,
+                                     VenueServiceImpl venueService,
                                       SessionServiceImpl sessionService,
                                       PlanContentServiceImpl planContentService,
                                       VenueDistanceServiceImpl venueDistanceService,
@@ -154,6 +157,7 @@ public class ModuleAssignmentProcessor {
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
+        this.venueService = venueService;
         this.sessionService = sessionService;
         this.planContentService = planContentService;
         this.venueDistanceService = venueDistanceService;
@@ -193,13 +197,15 @@ public class ModuleAssignmentProcessor {
         String intake,
         int year) {
 
+        
 
         String versionTag = satisfactionService.getNextVersionTag();
         CURRENT_VERSION_TAG = versionTag;
-
         this.studentSemesterMap = studentSemesterMap;
-        // resetSchedulingTables();
-        resetState(); // Reset all internal state before processing new assignments
+        resetState();// Reset all internal state before processing new assignments
+        // Fail fast if no room can hold the group
+        List<Venue> allVenues = venueService.getAllVenues();
+        SchedulingUtils.validateSemesterCapacity(moduleDataList, studentSemesterMap, allVenues);
 
         long startTime = System.currentTimeMillis();
 
@@ -371,6 +377,21 @@ public class ModuleAssignmentProcessor {
 
         Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
         Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
+
+        // lookup lecturer
+        long lecturerId = lecturerService
+            .getLecturerByName(lecturerName)
+            .orElseThrow(() -> new IllegalArgumentException("Lecturer not found: " + lecturerName))
+            .getId();
+
+        // fail early if they’ve marked off too many days
+        SchedulingUtils.validateLecturerWeekdays(
+            lecturerDayAvailabilityUtil,
+            lecturerId,
+            lecturerName
+        );
+
+
 
         String majorityProgramme = progMap.entrySet().stream()
             .max(Map.Entry.comparingByValue())
@@ -667,16 +688,6 @@ public class ModuleAssignmentProcessor {
 
     private int getStartSlot(LocalTime startTime) {
         return (int) Duration.between(LocalTime.of(8, 0), startTime).toMinutes() / 30;
-    }
-
-    @Transactional
-    public void resetSchedulingTables() {
-        jdbcTemplate.execute("DROP TABLE IF EXISTS plan");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS plan_content");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS venue_assignment");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS session");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS satisfaction");
-        
     }
 
     private void resetState() {

@@ -1,7 +1,8 @@
 package com.sunway.course.timetable.util;
 
-import com.sunway.course.timetable.service.WeekDayConstraintServiceImpl;
 import org.springframework.stereotype.Component;
+
+import com.sunway.course.timetable.service.WeekDayConstraintServiceImpl;
 
 @Component
 public class LecturerDayAvailabilityUtil {
