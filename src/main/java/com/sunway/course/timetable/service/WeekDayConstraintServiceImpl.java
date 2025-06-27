@@ -1,7 +1,6 @@
 package com.sunway.course.timetable.service;
 import java.util.Optional;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.sunway.course.timetable.interfaces.services.WeekDayConstraintService;
@@ -14,14 +13,11 @@ public class WeekDayConstraintServiceImpl implements WeekDayConstraintService {
 
     private final WeekDayConstraintRepository weekDayConstraintRepository;
     private final LecturerServiceImpl lecturerService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public WeekDayConstraintServiceImpl(WeekDayConstraintRepository weekDayConstraintRepository,
-                                        LecturerServiceImpl lecturerService,
-                                        ApplicationEventPublisher eventPublisher) {
+                                        LecturerServiceImpl lecturerService) {
         this.weekDayConstraintRepository = weekDayConstraintRepository;
         this.lecturerService = lecturerService;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override

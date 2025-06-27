@@ -1,6 +1,5 @@
 package com.sunway.course.timetable.unit.service;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -111,68 +110,5 @@ public class ProgrammeServiceTest{
         Optional<Programme> result = programmeService.getProgrammeByName("Unknown");
 
         assertFalse(result.isPresent());
-    }
-
-    @Test
-    @DisplayName("Get Programmes By Year")
-    void testGetProgrammesByYear() {
-        when(programmeRepository.findByYear(1)).thenReturn(List.of(programme));
-
-        List<Programme> result = programmeService.getProgrammesByYear(1);
-
-        assertEquals(1, result.size());
-        assertEquals("Computer Science", result.get(0).getName());
-    }
-
-    @Test
-    @DisplayName("Return empty list if programme not found by year")
-    void testGetProgrammesByYearNotFound() {
-        when(programmeRepository.findByYear(2)).thenReturn(List.of());
-
-        List<Programme> result = programmeService.getProgrammesByYear(2);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    @DisplayName("Get Programmes By Intake")
-    void testGetProgrammesByIntake() {
-        when(programmeRepository.findByIntake("Jan")).thenReturn(List.of(programme));
-
-        List<Programme> result = programmeService.getProgrammesByIntake("Jan");
-
-        assertEquals(1, result.size());
-        assertEquals("Computer Science", result.get(0).getName());
-    }
-
-    @Test
-    @DisplayName("Return empty list if programme not found by intake")
-    void testGetProgrammesByIntakeNotFound() {
-        when(programmeRepository.findByIntake("Feb")).thenReturn(List.of());
-
-        List<Programme> result = programmeService.getProgrammesByIntake("Feb");
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    @DisplayName("Get Programmes By Semester")
-    void testGetProgrammesBySemester() {
-        when(programmeRepository.findBySemester(1)).thenReturn(List.of(programme));
-
-        List<Programme> result = programmeService.getProgrammesBySemester(1);
-
-        assertEquals(1, result.size());
-        assertEquals("Computer Science", result.get(0).getName());
-    }
-
-    @Test
-    @DisplayName("Return empty list if programme not found by semester")
-    void testGetProgrammesBySemesterNotFound() {
-        when(programmeRepository.findBySemester(2)).thenReturn(List.of());
-
-        List<Programme> result = programmeService.getProgrammesBySemester(2);
-
-        assertTrue(result.isEmpty());
     }
 }

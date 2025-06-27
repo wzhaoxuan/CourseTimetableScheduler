@@ -12,8 +12,5 @@ import com.sunway.course.timetable.model.programme.ProgrammeId;
 public interface ProgrammeRepository extends JpaRepository<Programme, ProgrammeId> {
     Optional<Programme> findByName(String name); // Example method to find by name
     Optional<Programme> findById(ProgrammeId id); // Example method to find by ID
-    List<Programme> findByYear(int year);
-    List<Programme> findByIntake(String intake);
-    List<Programme> findBySemester(int semester);
     List<Programme> findByModuleId(String moduleCode); 
 }
