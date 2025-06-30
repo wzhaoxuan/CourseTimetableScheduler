@@ -67,6 +67,40 @@ public class SessionGroupMetaData {
         this.eligibleStudents = eligibleStudents;
     }
 
+    /**
+     * Clone metadata for a new overflow group with only these students.
+     */
+    public SessionGroupMetaData withEligibleStudents(List<Student> students) {
+        return new SessionGroupMetaData(
+            this.semester,
+            this.moduleId,
+            this.type,
+            this.typeGroup,
+            this.lecturerName,
+            students.size(),
+            this.groupIndex,
+            this.groupCount,
+            students
+        );
+    }
+
+    /**
+     * Clone metadata under a new typeGroup (e.g. append suffix '-X1').
+     */
+    public SessionGroupMetaData withNewTypeGroup(String newTypeGroup) {
+        return new SessionGroupMetaData(
+            this.semester,
+            this.moduleId,
+            this.type,
+            newTypeGroup,
+            this.lecturerName,
+            this.totalStudents,
+            this.groupIndex,
+            this.groupCount,
+            this.eligibleStudents
+        );
+    }
+
     @Override
     public String toString() {
         return "SessionGroupMetaData{" +

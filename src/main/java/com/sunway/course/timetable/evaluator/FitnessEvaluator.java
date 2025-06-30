@@ -83,6 +83,7 @@ public class FitnessEvaluator {
         logFitnessDebug(results, sessions.size(), totalPenalty, maxPenalty, percentage);
 
         int totalViolations = results.stream().mapToInt(r -> (int) r.penalty()).sum();
+        CURRENT_SESSION_KEYS.clear();
         String hash = computeScheduleHash(sessions, sessionVenueMap);
 
         Satisfaction satisfaction = new Satisfaction(percentage, totalViolations, versionTag);
@@ -115,6 +116,7 @@ public class FitnessEvaluator {
     }
 
     private String computeScheduleHash(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
+        CURRENT_SESSION_KEYS.clear();
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             List<String> sessionStrings = sessions.stream()
@@ -126,7 +128,7 @@ public class FitnessEvaluator {
                 .toList();
 
              // Update current session keys
-             CURRENT_SESSION_KEYS.clear();
+            //  CURRENT_SESSION_KEYS.clear();
              CURRENT_SESSION_KEYS.addAll(sessionStrings);
 
             String combined = String.join("|", sessionStrings);

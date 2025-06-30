@@ -85,7 +85,6 @@ public class GenerateTimetableController extends ContentController {
     private final TimetableExcelExporter timetableExcelExporter;
     private final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
     private final FitnessEvaluator fitnessEvaluator;
-    private JdbcTemplate jdbcTemplate;
 
     // == matches file names in the ListView ==
     private File subjectPlanFile;
@@ -145,7 +144,6 @@ public class GenerateTimetableController extends ContentController {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
 
@@ -231,8 +229,7 @@ public class GenerateTimetableController extends ContentController {
                 clustering,
                 timetableExcelExporter,
                 lecturerDayAvailabilityUtil,
-                fitnessEvaluator,
-                jdbcTemplate
+                fitnessEvaluator
             );
 
             int yearInt = Integer.parseInt(year);

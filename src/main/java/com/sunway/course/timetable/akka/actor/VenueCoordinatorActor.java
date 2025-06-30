@@ -2,9 +2,7 @@ package com.sunway.course.timetable.akka.actor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -34,7 +32,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     private static final Logger log = LoggerFactory.getLogger(VenueCoordinatorActor.class);
     
     // === Constants ===
-    private static final int MAX_SLOTS_PER_DAY = 20;
 
     public interface VenueCoordinatorCommand {}
 
@@ -195,7 +192,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
     }
 
     private Behavior<VenueCoordinatorCommand> onRequestVenueAssignment(RequestVenueAssignment msg) {
-        if (msg.prunedDomain == null || msg.prunedDomain.isEmpty()) {
+        if (msg.prunedDomain.isEmpty()) {
             getContext().getLog().warn("Session assignment failed: No valid domain options");
 
             if (msg.rejectionReasons != null) {
@@ -208,42 +205,18 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             return this;
         }
 
-
-        // Sort pruned domain by preferred venue proximity (if applicable)
-        List<AssignmentOption> sortedDomain = new ArrayList<>(msg.prunedDomain);
-
-        // Optional: filter for practical/tutorial/workshop to take only "Room" type venues
-        if (List.of("Practical", "Tutorial", "Workshop").contains(msg.sessionType)) {
-            sortedDomain = sortedDomain.stream()
-                .filter(opt -> {
-                    String type = opt.venue().getType();
-                    return type.equalsIgnoreCase("Room");
-                })
-                .collect(Collectors.toList());
-        }
-
-        // Optimization: avoid unnecessary sort
-        if (sortedDomain.size() > 1 && msg.preferredVenues != null && !msg.preferredVenues.isEmpty()) {
-            Map<String, Double> distanceCache = new HashMap<>();
-            String from = getVenueNameById(msg.preferredVenues.get(0));
-
-            sortedDomain.sort(Comparator
-                .comparingDouble((AssignmentOption opt) -> {
-                    double distance = distanceCache.computeIfAbsent(opt.venue().getName(),
-                        k -> venueDistanceService.getDistanceScore(from, k));
-
-                    int surplus = opt.venue().getCapacity() - msg.minCapacity;
-                    return (surplus < 0 ? 100.0 : surplus) + distance;
-                })
-                .thenComparing(opt -> opt.venue().getName()));
-        } else {
-            sortedDomain.sort(
-                        Comparator
-                        .comparingInt((AssignmentOption opt) -> opt.day())        // 0=Mon,1=Tue…
-                        .thenComparingInt(opt -> opt.startSlot())                  // 0=8:00,1=8:30…
-                        .thenComparingInt(opt -> opt.venue().getCapacity())        // smallest room within each slot
-                    );
-        }
+        // Determine base venue for distance
+        String lastVenue = msg.preferredVenues.isEmpty() ? null
+            : getVenueNameById(msg.preferredVenues.get(0));
+        // Sort domain chronologically then by capacity surplus and distance
+        List<AssignmentOption> sortedDomain = msg.prunedDomain.stream()
+            .sorted(Comparator
+                .comparingInt((AssignmentOption o) -> o.day())
+                .thenComparingInt(o -> o.startSlot())
+                .thenComparingInt(o -> o.venue().getCapacity() - msg.minCapacity)
+                .thenComparingDouble(o -> lastVenue == null ? 0.0
+                    : venueDistanceService.getDistanceScore(lastVenue, o.venue().getName())))
+            .collect(Collectors.toList());
 
         // Store for retry
         this.domainQueue = sortedDomain;

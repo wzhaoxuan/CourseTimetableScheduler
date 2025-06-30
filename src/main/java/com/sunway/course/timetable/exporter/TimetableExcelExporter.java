@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.sunway.course.timetable.evaluator.FitnessEvaluator;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.service.PlanContentServiceImpl;
@@ -82,13 +81,13 @@ public class TimetableExcelExporter {
         for (int semester : allSemesters) {
             Map<String, List<Session>> moduleMap = sessionBySemesterAndModule.getOrDefault(semester, Map.of());
             // Filter out modules that are not in the current semester
-            List<Session> combinedSessions = flatten(moduleMap).stream()
-                .filter(s -> {
-                    Venue venue = venueAssignmentService.getVenueBySessionId(s.getId()).orElse(null);
-                    String key = s.getDay() + "-" + s.getStartTime() + "-" + s.getTypeGroup() + "-" + (venue != null ? venue.getName() : "");
-                    return FitnessEvaluator.CURRENT_SESSION_KEYS.contains(key);
-                })
-                .toList();
+            List<Session> combinedSessions = deduplicateSessions(flatten(moduleMap));
+                // .filter(s -> {
+                //     Venue venue = venueAssignmentService.getVenueBySessionId(s.getId()).orElse(null);
+                //     String key = s.getDay() + "-" + s.getStartTime() + "-" + s.getTypeGroup() + "-" + (venue != null ? venue.getName() : "");
+                //     // return FitnessEvaluator.CURRENT_SESSION_KEYS.contains(key);
+                // })
+                // .toList();
 
 
             Workbook workbook = timetableSheetWriter.generateWorkbook(

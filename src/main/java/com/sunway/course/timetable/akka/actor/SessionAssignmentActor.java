@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.sunway.course.timetable.engine.DomainPruner;
 import com.sunway.course.timetable.engine.DomainPruner.AssignmentOption;
@@ -117,6 +118,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
     private final ActorContext<SessionAssignmentCommand> context;
     private ActorRef<SessionAssignmentResult> originalRequester;
+    private static final int SLOTS_PER_CLASS = 4;
 
     public static Behavior<SessionAssignmentCommand> create() {
         return Behaviors.setup(SessionAssignmentActor::new);
@@ -150,76 +152,39 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
 
         List<DomainRejectionReason> rejectionLogs = new ArrayList<>();
 
+        // 1) Hard prune
         List<AssignmentOption> prunedDomain = DomainPruner.pruneDomain(
-            msg.lecturerMatrix,
-            msg.venueMatrix,
-            msg.studentMatrix,
-            msg.allVenues,
-            meta,
-            msg.eligibleStudents,
-            msg.lecturerService,
-            msg.lecturerDayAvailabilityUtil,
-            rejectionLogs
-        );
+            msg.lecturerMatrix, msg.venueMatrix, msg.studentMatrix,
+            msg.allVenues, meta, msg.eligibleStudents,
+            msg.lecturerService, msg.lecturerDayAvailabilityUtil, rejectionLogs);
 
         if (prunedDomain.isEmpty()) {
             context.getLog().warn("Session assignment failed: No valid domain options");
-
-            for (DomainRejectionReason reason : rejectionLogs) {
-                context.getLog().warn(reason.toString());
-            }
-
+            rejectionLogs.forEach(r -> context.getLog().warn(r.toString()));
             msg.replyTo.tell(new SessionAssignmentFailed("No valid domain options"));
             return this;
         }
 
+
+         // 2) Soft-penalty sort
         prunedDomain.sort(Comparator
-            .comparingInt((AssignmentOption opt) -> {
-                // One-session-per-day penalty for students
-                long soloDayCount = msg.eligibleStudents.stream()
-                    .filter(s -> causesOnlyOneSessionDay(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
-                    .count();
-                double soloDayproportion = (double) soloDayCount / msg.eligibleStudents.size();
-
-                int timePenalty = getTimeOfDayPenalty(opt.startSlot()); // Lower = better
-
-                long gapPenalty = msg.eligibleStudents.stream()
-                    .filter(s -> causesLongGap(s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
-                    .count();
-                
-                long spreadPenaltyStudents = msg.eligibleStudents.stream()
-                .filter(s -> isNewDayForStudent(s.getId(), opt.day(), msg.studentMatrix))
-                .count();
-
-                boolean lecturerNewDay = isNewDayForLecturer(msg.lecturerName, opt.day(), msg.lecturerMatrix);
-                int spreadPenaltyLecturer = lecturerNewDay ? 1 : 0;
-
-                boolean causes4Consecutive = causesFourConsecutiveLecturerSessions(msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
-                int overconsecutivePenalty = causes4Consecutive ? 1 : 0;
-
-                int sequencingPenalty = 0;
-                if (isDependentSession(msg.sessionType)) {
-                    sequencingPenalty = calculateLectureAfterPenalty(msg, opt);
-                }
-                
-                return timePenalty * 500
-                    + (int) gapPenalty * 100
-                    + (int) soloDayproportion * 120  
-                    + (int) spreadPenaltyStudents * 20
-                    + spreadPenaltyLecturer * 20 // Weighted
-                    + sequencingPenalty * 10
-                    + overconsecutivePenalty * 1000;
-            })
+            .comparingInt((AssignmentOption opt) -> softPenalty(opt, msg))
             .thenComparingInt(AssignmentOption::startSlot)
         );
 
+        // 3) Avoid 4 consecutive classes when possible
+        List<AssignmentOption> good = prunedDomain.stream()
+            .filter(opt -> !causesTooManyConsecutiveClasses(
+                msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix))
+            .collect(Collectors.toList());
+        List<AssignmentOption> finalDomain = good.isEmpty() ? prunedDomain : good;
 
+        // 4) Delegate
         msg.coordinator.tell(new VenueCoordinatorActor.RequestVenueAssignment(
-            msg.durationHours, msg.minCapacity, msg.lecturerName, msg.module, msg.eligibleStudents,
-            msg.sessionType, msg.groupIndex, msg.groupCount,
-            context.getSelf(), msg.preferredVenues, prunedDomain, rejectionLogs
-        ));
-
+            msg.durationHours, msg.minCapacity, msg.lecturerName,
+            msg.module, msg.eligibleStudents, msg.sessionType,
+            msg.groupIndex, msg.groupCount, context.getSelf(),
+            msg.preferredVenues, finalDomain, rejectionLogs));
         return this;
     }
 
@@ -240,6 +205,34 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         originalRequester = null;
         return this;
     }
+
+    private int softPenalty(AssignmentOption opt, AssignSession msg) {
+        long solo = msg.eligibleStudents.stream()
+            .filter(s -> causesOnlyOneSessionDay(
+                s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+            .count();
+        double soloProp = (double) solo / msg.eligibleStudents.size();
+        int timePen = getTimeOfDayPenalty(opt.startSlot());
+        long gapPen = msg.eligibleStudents.stream()
+            .filter(s -> causesLongGap(
+                s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+            .count();
+        long spreadStu = msg.eligibleStudents.stream()
+            .filter(s -> isNewDayForStudent(
+                s.getId(), opt.day(), msg.studentMatrix))
+            .count();
+        boolean lecNewDay = isNewDayForLecturer(
+            msg.lecturerName, opt.day(), msg.lecturerMatrix);
+        int spreadLec = lecNewDay ? 1 : 0;
+        int seqPen = isDependentSession(msg.sessionType)
+            ? calculateLectureAfterPenalty(msg, opt) : 0;
+        boolean tooMany = causesTooManyConsecutiveClasses(
+            msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
+        int overCon = tooMany ? 1 : 0;
+        return timePen * 500 + (int) gapPen * 100 + (int) soloProp * 120
+            + (int) spreadStu * 20 + spreadLec * 20 + seqPen * 10 + overCon * 1000;
+    }
+
 
 
     private boolean causesLongGap(long studentId, int day, int startSlot, StudentAvailabilityMatrix studentMatrix) {
@@ -294,29 +287,20 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         return occupied.isEmpty();  // If student has no sessions that day
     }
 
-    private boolean causesFourConsecutiveLecturerSessions(String lecturerName, int day, int startSlot, LecturerAvailabilityMatrix matrix) {
-        boolean[] slots = matrix.getDailyAvailabilityArray(lecturerName, day);
-        boolean[] newSlots = Arrays.copyOf(slots, slots.length);
-
-        int start = startSlot;
-        int end = start + 4; // each session = 4 slots (2 hours)
-
-        // Mark new session slots as occupied
-        for (int i = start; i < end && i < newSlots.length; i++) {
-            newSlots[i] = true;
+    private boolean causesTooManyConsecutiveClasses(
+            String lecturerName, int day, int startSlot,
+            LecturerAvailabilityMatrix matrix) {
+        boolean[] occ = matrix.getDailyAvailabilityArray(lecturerName, day);
+        boolean[] newOcc = Arrays.copyOf(occ, occ.length);
+        int end = Math.min(startSlot + SLOTS_PER_CLASS, newOcc.length);
+        for (int i = startSlot; i < end; i++) newOcc[i] = true;
+        int maxRun = 0, run = 0;
+        for (boolean o : newOcc) {
+            if (o) { run++; maxRun = Math.max(maxRun, run); }
+            else run = 0;
         }
-
-        // Check if there are 4 or more continuous occupied slots
-        int consecutive = 0;
-        for (boolean slot : newSlots) {
-            if (slot) {
-                consecutive++;
-                if (consecutive > 4) return true;
-            } else {
-                consecutive = 0;
-            }
-        }
-        return false;
+        int maxSlots = SLOTS_PER_CLASS * 4; // avoid 4 classes back-to-back
+        return maxRun >= maxSlots;
     }
 
 }

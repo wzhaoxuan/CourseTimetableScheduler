@@ -1,5 +1,4 @@
-package com.sunway.course.timetable.service.processor; 
-import java.io.File;
+package com.sunway.course.timetable.service.processor; import java.io.File;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -7,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -130,9 +129,6 @@ public class ModuleAssignmentProcessor {
 
     public static String CURRENT_VERSION_TAG;
 
-
-    private JdbcTemplate jdbcTemplate;
-
     public ModuleAssignmentProcessor(LecturerServiceImpl lecturerService,
                                      ModuleServiceImpl moduleService,
                                      VenueServiceImpl venueService,
@@ -152,8 +148,7 @@ public class ModuleAssignmentProcessor {
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
                                       LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                      FitnessEvaluator fitnessEvaluator,
-                                      JdbcTemplate jdbcTemplate
+                                      FitnessEvaluator fitnessEvaluator
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -175,7 +170,6 @@ public class ModuleAssignmentProcessor {
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
         this.fitnessEvaluator = fitnessEvaluator;
-        this.jdbcTemplate = jdbcTemplate;
         this.creditTracker = new CreditHourTracker();
 
     }
@@ -197,12 +191,13 @@ public class ModuleAssignmentProcessor {
         String intake,
         int year) {
 
-        
 
         String versionTag = satisfactionService.getNextVersionTag();
         CURRENT_VERSION_TAG = versionTag;
         this.studentSemesterMap = studentSemesterMap;
+
         resetState();// Reset all internal state before processing new assignments
+
         // Fail fast if no room can hold the group
         List<Venue> allVenues = venueService.getAllVenues();
         SchedulingUtils.validateSemesterCapacity(moduleDataList, studentSemesterMap, allVenues);
@@ -247,76 +242,40 @@ public class ModuleAssignmentProcessor {
             }));
 
 
-        for (SessionGroupMetaData meta : allMetaData) {
-            meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
-        }
+        // for (SessionGroupMetaData meta : allMetaData) {
+        //     meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
+        // }
 
-        log.info("Running hybrid scheduling: actor-first, fallback to AC3/backtracking if low fitness");
-
-        processAssignments(allMetaData, programme, intake, year, versionTag);
-
-        long endTime = System.currentTimeMillis(); // End measuring time
-        long durationMs = endTime - startTime;
-
-        log.info("Scheduling process completed in {} ms ({} seconds)", durationMs, durationMs / 1000.0);
-
-        log.info("Actor system terminated. Finalizing scheduling...");
-        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, exportedModuleFiles, finalScore);
-    }
-
-
-    /**
-     * Hybrid Scheduling
-     * 1. Attempt actor-based scheduling for each SessionGroupMetaData
-     * 2. If any session fails, collect the remaining unshceduled ones
-     * 3. Run backtracking only on those that failed.
-     * 
-     * @param allMetaData
-     */
-    private void processAssignments(List<SessionGroupMetaData> allMetaData, String programme, String intake, int year, String versionTag) {
-        log.info("Running scheduling with actors for {} session groups", allMetaData.size());
+        // ====== UPDATED LOOP: Interleave Lecture → Practical per module ======
+        // Group session-groups by module preserving original module order
+        Map<String, List<SessionGroupMetaData>> byModule = allMetaData.stream()
+            .collect(Collectors.groupingBy(SessionGroupMetaData::getModuleId,
+                    LinkedHashMap::new, Collectors.toList()));
 
         long actorStart = System.currentTimeMillis();
 
+        // For each module, schedule its Lecture(s) first, then Practicals/Tutorials
+        for (List<SessionGroupMetaData> groups : byModule.values()) {
+            // 1) Schedule Lecture groups
+            groups.stream()
+                .filter(g -> g.getType().equalsIgnoreCase("Lecture"))
+                .sorted(Comparator.comparingInt(SessionGroupMetaData::getGroupIndex))
+                .forEach(g -> callActorSchedule(g, lectureAssignmentsByModule));
 
-        for (SessionGroupMetaData meta : allMetaData) {
-            List<Student> eligibleStudents = moduleIdToStudentsMap.get(meta.getModuleId());
-            String lecturerName = FilterUtil.extractName(meta.getLecturerName());
-            List<Student> filteredEligibleStudents = eligibleStudents.stream()
-                .filter(s -> {
-                    String key = meta.getModuleId() + "-" + meta.getType().toUpperCase();
-                    return !studentAssignedTypes.getOrDefault(s.getId(), Set.of()).contains(key);
-                })
-                .toList();
-
-            SessionAssignmentResult result = scheduleSessionViaActors(
-                meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
-                meta.getTotalStudents(), lecturerName, filteredEligibleStudents,
-                meta.getGroupIndex(), meta.getGroupCount(), lectureAssignmentsByModule
-            );
-
-            // Reconstruct SessionAssigned and store if type is Lecture
-            if (meta.getType().equalsIgnoreCase("Lecture")) {
-                int dayIndex = getDayIndex(result.getDay());
-                int startSlot = getStartSlot(result.getStartTime());
-                int durationSlots = (int) (Duration.between(result.getStartTime(), result.getEndTime()).toMinutes() / 30);
-
-                SessionAssignmentActor.SessionAssigned assigned = new SessionAssignmentActor.SessionAssigned(
-                    result.getVenue(), dayIndex, startSlot, durationSlots, result.getAssignedStudents()
-                );
-
-                lectureAssignmentsByModule.put(meta.getModuleId(), assigned);
-            }
-
-            Lecturer lecturer = lecturerService.getLecturerByName(lecturerName).orElse(null);
-            assignStudentsToSession(meta, result.getDay(), result.getStartTime(), result.getEndTime(),
-                    lecturer, result.getVenue(), result.getAssignedStudents());
+            // 2) Schedule Practical/Tutorial groups
+            groups.stream()
+                .filter(g -> !g.getType().equalsIgnoreCase("Lecture"))
+                .sorted(Comparator
+                    .comparing((SessionGroupMetaData g) -> g.getType())  // e.g. Practical before Tutorial
+                    .thenComparingInt(SessionGroupMetaData::getGroupIndex))
+                .forEach(g -> callActorSchedule(g, lectureAssignmentsByModule));
+            
         }
 
         long actorEnd = System.currentTimeMillis();
         log.info("Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
 
-
+        // 3) Cluster programmes & sort
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
@@ -325,11 +284,14 @@ public class ModuleAssignmentProcessor {
         log.info("Total sessions created: {}", sessionToModuleIdMap.size());
         // printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
 
+
         FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after scheduling: {}%", finalScore);
         
         long persistStart = System.currentTimeMillis();
+
+        // 4) Persist & Export
         persistAndGroupSessions(sessionToModuleIdMap);
         long persistEnd = System.currentTimeMillis();
         log.info(" Session persistence completed in {} ms", (persistEnd - persistStart));
@@ -358,6 +320,79 @@ public class ModuleAssignmentProcessor {
         this.exportedModuleFiles = timetableExcelExporter.exportModuleTimetable(
             sessionBySemesterAndModule, intake, year
         );
+
+        // processAssignments(allMetaData, programme, intake, year, versionTag);
+
+        long endTime = System.currentTimeMillis(); // End measuring time
+        long durationMs = endTime - startTime;
+
+        log.info("Scheduling process completed in {} ms ({} seconds)", durationMs, durationMs / 1000.0);
+
+        log.info("Actor system terminated. Finalizing scheduling...");
+        return new FinalAssignmentResult(sessionBySemesterAndModule, exportedFiles, exportedLecturerFiles, exportedModuleFiles, finalScore);
+    }
+
+    private void callActorSchedule(SessionGroupMetaData meta,
+                                     Map<String, SessionAssignmentActor.SessionAssigned> lectureAssignmentsByModule) {
+
+        long actorStart = System.currentTimeMillis();
+
+        // build a key that’s unique per module‐type‐group
+        String groupKey = meta.getModuleId()
+                    + "-" + meta.getType().toUpperCase();
+
+        // filter out anyone already placed in *this* group
+        List<Student> studentToScheduleInOneGroup = meta.getEligibleStudents().stream()
+            .filter(s -> !studentAssignedTypes
+                            .getOrDefault(s.getId(), Set.of())
+                            .contains(groupKey))
+            .toList();
+
+        // 1) Run the actor and get the result
+        SessionAssignmentResult result = scheduleSessionViaActors(
+            meta.getSemester(), meta.getModuleId(), meta.getType(), meta.getTypeGroup(),
+            meta.getTotalStudents(), FilterUtil.extractName(meta.getLecturerName()),
+            studentToScheduleInOneGroup, meta.getGroupIndex(), meta.getGroupCount(),
+            lectureAssignmentsByModule
+        );
+
+        // 2) If it’s a lecture, remember its assignment for sequencing logic
+        if (meta.getType().equalsIgnoreCase("Lecture") && result != null) {
+            int dayIdx = getDayIndex(result.getDay());
+            int start = getStartSlot(result.getStartTime());
+            int durSlots = (int) Duration.between(result.getStartTime(), result.getEndTime()).toMinutes() / 30;
+            SessionAssignmentActor.SessionAssigned assigned =
+                new SessionAssignmentActor.SessionAssigned(
+                    result.getVenue(), dayIdx, start, durSlots, result.getAssignedStudents()
+                );
+            lectureAssignmentsByModule.put(meta.getModuleId(), assigned);
+        }
+
+        // 3) Resolve the Lecturer entity
+        String lecturerName = FilterUtil.extractName(meta.getLecturerName());
+        Lecturer lecturer = lecturerService.getLecturerByName(lecturerName)
+            .orElseThrow(() -> new IllegalArgumentException("Lecturer not found: " + lecturerName));
+
+        // 4) Unpack scheduling details
+        String       day             = result.getDay();
+        LocalTime    startTime       = result.getStartTime();
+        LocalTime    endTime         = result.getEndTime();
+        Venue        venue           = result.getVenue();
+        List<Student> assignedStudents = result.getAssignedStudents();
+
+        // 5) Persist session & assign students with the correct signature
+        assignStudentsToSession(
+            meta,
+            day,
+            startTime,
+            endTime,
+            lecturer,
+            venue,
+            assignedStudents
+        );
+
+        long actorEnd = System.currentTimeMillis();
+        log.info("Scheduled {}-{} in {} ms", meta.getModuleId(), meta.getTypeGroup(), (actorEnd - actorStart));
     }
 
 
@@ -390,8 +425,6 @@ public class ModuleAssignmentProcessor {
             lecturerId,
             lecturerName
         );
-
-
 
         String majorityProgramme = progMap.entrySet().stream()
             .max(Map.Entry.comparingByValue())
@@ -704,6 +737,8 @@ public class ModuleAssignmentProcessor {
         // moduleIdToStudentsMap.clear();
         lecturerTeachingHours.clear();
         programmeDistribution.clear();
+        // drop any leftover session‐keys so we start fresh
+        FitnessEvaluator.CURRENT_SESSION_KEYS.clear();
 
         sessionGroupPreprocessorService.reset();
     }
