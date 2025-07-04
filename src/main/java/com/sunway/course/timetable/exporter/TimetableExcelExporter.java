@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,6 +47,7 @@ public class TimetableExcelExporter {
 
     public List<File> exportWithFitnessAnnotation(
             Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
+            Map<Session,Venue> sessionVenueMap,
             double fitnessScore, String programme, String intake, int year) {
 
         // for(Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
@@ -82,18 +84,12 @@ public class TimetableExcelExporter {
             Map<String, List<Session>> moduleMap = sessionBySemesterAndModule.getOrDefault(semester, Map.of());
             // Filter out modules that are not in the current semester
             List<Session> combinedSessions = deduplicateSessions(flatten(moduleMap));
-                // .filter(s -> {
-                //     Venue venue = venueAssignmentService.getVenueBySessionId(s.getId()).orElse(null);
-                //     String key = s.getDay() + "-" + s.getStartTime() + "-" + s.getTypeGroup() + "-" + (venue != null ? venue.getName() : "");
-                //     // return FitnessEvaluator.CURRENT_SESSION_KEYS.contains(key);
-                // })
-                // .toList();
 
 
             Workbook workbook = timetableSheetWriter.generateWorkbook(
                     "Semester " + semester,
-                    groupSessions(combinedSessions),
-                    resolveVenueMap(combinedSessions),
+                    groupSessions(combinedSessions, sessionVenueMap),
+                    resolveVenueMap(combinedSessions, sessionVenueMap),
                     resolveModuleMap(combinedSessions)
             );
 
@@ -109,13 +105,14 @@ public class TimetableExcelExporter {
     }
 
     public List<File> exportLecturerTimetable(Map<Integer, List<Session>> sessionsBySemester,
+                                                Map<Session, Venue> sessionVenueMap,
                                                String lecturerName, String intake, int year) {
         List<File> files = new ArrayList<>();
         for (var entry : sessionsBySemester.entrySet()) {
             int semester = entry.getKey();
             List<Session> sessions = deduplicateSessions(entry.getValue());
             if(semester <= 0 || sessions.isEmpty()) continue;
-            Map<Long, String> venueMap = resolveVenueMap(sessions);
+            Map<Long, String> venueMap = resolveVenueMap(sessions, sessionVenueMap);
             Map<Long, String> moduleMap = resolveModuleMap(sessions);
             
 
@@ -128,6 +125,7 @@ public class TimetableExcelExporter {
 
     public List<File> exportModuleTimetable(
         Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
+        Map<Session, Venue> sessionVenueMap,
         String intake, int year) {
 
         List<File> files = new ArrayList<>();
@@ -143,7 +141,7 @@ public class TimetableExcelExporter {
                 if (sessions.isEmpty()) continue;
 
                 // Group directly: no need to re-group using complex keys
-                Map<Long, String> venueMap = resolveVenueMap(sessions);
+                Map<Long, String> venueMap = resolveVenueMap(sessions, sessionVenueMap);
                 Map<Long, String> moduleCodeMap = resolveModuleMap(sessions);
 
                 // We simply write all sessions for this module directly:
@@ -184,23 +182,42 @@ public class TimetableExcelExporter {
         return map.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
 
-    private Map<String, List<Session>> groupSessions(List<Session> sessions) {
-        return sessions.stream().collect(Collectors.groupingBy(
-            s -> String.join("|",
-                s.getDay(),
-                s.getStartTime().toString(),
-                s.getTypeGroup(),
-                s.getType(),
-                s.getLecturer().getName(),
-                venueAssignmentService.getVenueBySessionId(s.getId()).map(v -> v.getName()).orElse("Unknown")
-            )));
+    private Map<String, List<Session>> groupSessions(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
+        return sessions.stream().collect(Collectors.groupingBy(s -> {
+            String venueName = Optional.ofNullable(sessionVenueMap.get(s))
+                    .map(Venue::getName)
+                    .orElse("Unknown");
+            return String.join("|",
+                    s.getDay(),
+                    s.getStartTime().toString(),
+                    s.getTypeGroup(),
+                    s.getType(),
+                    s.getLecturer().getName(),
+                    venueName
+            );
+        }));
     }
 
-    private Map<Long, String> resolveVenueMap(List<Session> sessions) {
+    private Map<Long, String> resolveVenueMap(List<Session> sessions, Map<Session,Venue> sessionVenueMap) {
         return sessions.stream().collect(Collectors.toMap(
             Session::getId,
-            s -> venueAssignmentService.getVenueBySessionId(s.getId()).map(Venue::getName).orElse("Unknown"),
+            s -> {
+                    Venue v = sessionVenueMap.get(s);
+                    return v != null ? v.getName() : "Unknown";
+                },
             (a, b) -> a
+        ));
+    }
+
+     /** Legacy, DB-backed resolver (no longer used in primary exports). */
+    private Map<Long, String> resolveVenueMap(List<Session> sessions) {
+        return sessions.stream().collect(Collectors.toMap(
+                Session::getId,
+                s -> venueAssignmentService
+                        .getVenueBySessionId(s.getId())
+                        .map(Venue::getName)
+                        .orElse("Unknown"),
+                (a, b) -> a
         ));
     }
 

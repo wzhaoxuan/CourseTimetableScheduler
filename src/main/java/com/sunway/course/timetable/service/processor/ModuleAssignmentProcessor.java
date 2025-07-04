@@ -275,7 +275,7 @@ public class ModuleAssignmentProcessor {
         long actorEnd = System.currentTimeMillis();
         log.info("Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
 
-        // 3) Cluster programmes & sort
+        // 3) Compute fitness
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)
@@ -312,13 +312,13 @@ public class ModuleAssignmentProcessor {
             );
 
             List<File> files = timetableExcelExporter.exportLecturerTimetable(
-                lecturerSessions, lecturerName, intake, year
+                lecturerSessions, sessionVenueMap, lecturerName, intake, year
             );
             this.exportedLecturerFiles.addAll(files);
         }
 
         this.exportedModuleFiles = timetableExcelExporter.exportModuleTimetable(
-            sessionBySemesterAndModule, intake, year
+            sessionBySemesterAndModule, sessionVenueMap, intake, year
         );
 
         // processAssignments(allMetaData, programme, intake, year, versionTag);
@@ -516,6 +516,7 @@ public class ModuleAssignmentProcessor {
 
         Optional<Satisfaction> optionalSatisfaction = satisfactionService.findLatestSatisfaction();
 
+        sessionBySemesterAndModule.clear();
         for (Map.Entry<Session, String> entry : sessionToModuleIdMap.entrySet()) {
             Session originalSession = entry.getKey();
             String moduleId = entry.getValue();
@@ -525,7 +526,6 @@ public class ModuleAssignmentProcessor {
             Venue venue = sessionVenueMap.get(originalSession);
             if (venue != null) {
                 VenueAssignment assignment = new VenueAssignment();
-
                 VenueAssignmentId id = new VenueAssignmentId();
                 id.setVenueId(venue.getId());
                 id.setSessionId(savedSession.getId());
@@ -566,7 +566,7 @@ public class ModuleAssignmentProcessor {
                 for (Integer semester : allSemesters) {
                     sessionBySemesterAndModule
                         .computeIfAbsent(semester, k -> new HashMap<>())
-                        .computeIfAbsent(module.getId(), k -> new ArrayList<>())
+                        .computeIfAbsent(moduleId, k -> new ArrayList<>())
                         .add(savedSession);
                 }
             } else {
@@ -579,7 +579,7 @@ public class ModuleAssignmentProcessor {
                 if (fallbackSemester != null) {
                     sessionBySemesterAndModule
                         .computeIfAbsent(fallbackSemester, k -> new HashMap<>())
-                        .computeIfAbsent(module.getId(), k -> new ArrayList<>())
+                        .computeIfAbsent(moduleId, k -> new ArrayList<>())
                         .add(savedSession);
                 }
             }
@@ -607,7 +607,7 @@ public class ModuleAssignmentProcessor {
 
     @Transactional(readOnly = true)
     public List<File> exportPersistedTimetable(String programme, String intake, int year, double finalScore) {
-        return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, finalScore, programme, intake, year);
+        return timetableExcelExporter.exportWithFitnessAnnotation(sessionBySemesterAndModule, sessionVenueMap, finalScore, programme, intake, year);
     }
 
     private void assignStudentsToSession(SessionGroupMetaData meta, String day, LocalTime start, LocalTime end, 
@@ -733,7 +733,7 @@ public class ModuleAssignmentProcessor {
         sessionVenueMap.clear();
         lectureAssignmentsByModule.clear();
         lastAssignedVenuePerDay.clear();
-        // sessionBySemesterAndModule.clear();
+        sessionBySemesterAndModule.clear();
         // moduleIdToStudentsMap.clear();
         lecturerTeachingHours.clear();
         programmeDistribution.clear();

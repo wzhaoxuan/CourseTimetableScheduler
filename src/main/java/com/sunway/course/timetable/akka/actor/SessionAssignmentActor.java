@@ -165,7 +165,6 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             return this;
         }
 
-
          // 2) Soft-penalty sort
         prunedDomain.sort(Comparator
             .comparingInt((AssignmentOption opt) -> softPenalty(opt, msg))
@@ -177,6 +176,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             .filter(opt -> !causesTooManyConsecutiveClasses(
                 msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix))
             .collect(Collectors.toList());
+
         List<AssignmentOption> finalDomain = good.isEmpty() ? prunedDomain : good;
 
         // 4) Delegate
@@ -230,7 +230,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
             msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
         int overCon = tooMany ? 1 : 0;
         return timePen * 500 + (int) gapPen * 100 + (int) soloProp * 120
-            + (int) spreadStu * 20 + spreadLec * 20 + seqPen * 10 + overCon * 1000;
+            + (int) spreadStu * 20 + spreadLec * 20 + seqPen * 10 + overCon * 700;
     }
 
 
