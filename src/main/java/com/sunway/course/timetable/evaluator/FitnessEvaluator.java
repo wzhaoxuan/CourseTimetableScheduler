@@ -86,10 +86,12 @@ public class FitnessEvaluator {
         CURRENT_SESSION_KEYS.clear();
         String hash = computeScheduleHash(sessions, sessionVenueMap);
 
-        Satisfaction satisfaction = new Satisfaction(percentage, totalViolations, versionTag);
-        satisfaction.setScheduleHash(hash); 
-
-        satisfactionService.saveSatisfaction(satisfaction);
+        Satisfaction sat = new Satisfaction();
+        sat.setVersionTag(versionTag);    // store the human‐readable version
+        sat.setScheduleHash(hash);        // store the SHA-256
+        sat.setScore(percentage);
+        sat.setConflict(totalViolations);
+        satisfactionService.saveSatisfaction(sat);
         
 
         List<FitnessResult.Violation> hard = results.stream()

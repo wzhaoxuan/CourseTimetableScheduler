@@ -42,6 +42,4 @@ public interface PlanRepository extends JpaRepository<Plan, PlanId> {
     WHERE p.planContent.module.id = :moduleId
     """)
     List<String> findDistinctVersionsByModule(@Param("moduleId") String moduleId);
-
-
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -42,7 +43,7 @@ public class TimetableSheetWriter {
     @Autowired private VenueAssignmentServiceImpl venueAssignmentService;
     @Autowired private PlanContentServiceImpl planContentService;
 
-    public Workbook generateWorkbook(String sheetName, Map<String, List<Session>> groupedSessions, Map<Long, String> venueMap, Map<Long, String> moduleMap) {
+    public Workbook generateCoreWorkbook(String sheetName, List<Session> sessions, Map<Long, String> venueMap, Map<Long, String> moduleMap) {
         processedSessionKeys.clear();
 
         Workbook workbook = new XSSFWorkbook();
@@ -56,11 +57,11 @@ public class TimetableSheetWriter {
         int currentRow = 1;
 
         for (String day : DAYS) {
-            List<Session> daySessions = groupedSessions.values().stream()
-                .flatMap(List::stream)
-                .filter(s -> s.getDay().equals(day))
+            // extract sessions for this day
+            List<Session> daySessions = sessions.stream()
+                .filter(s -> day.equals(s.getDay()))
                 .sorted(Comparator.comparing(Session::getStartTime))
-                .toList();
+                .collect(Collectors.toList());
 
             List<Row> usedRows = new ArrayList<>();
             List<boolean[]> occupancy = new ArrayList<>();
@@ -139,6 +140,11 @@ public class TimetableSheetWriter {
                     }
                     row.setHeightInPoints(maxHeight);
                 }
+            } else {
+                Row emptyRow = sheet.createRow(currentRow++);
+                Cell dayCell = emptyRow.createCell(0);
+                dayCell.setCellValue(day);
+                dayCell.setCellStyle(headerStyle);
             }
         }
 
@@ -149,54 +155,89 @@ public class TimetableSheetWriter {
         return workbook;
     }
 
+    /** Original method signature preserved, now delegates to core */
+    public Workbook generateWorkbook(
+            String sheetName,
+            Map<String, List<Session>> groupedSessions,
+            Map<Long, String> venueMap,
+            Map<Long, String> moduleMap
+    ) {
+        List<Session> sessions = groupedSessions.values().stream()
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+        return generateCoreWorkbook(sheetName, sessions, venueMap, moduleMap);
+    }
+
     public Workbook generateWorkbookSimple(String sheetName, List<Session> sessions, 
                                        Map<Long, String> venueMap, Map<Long, String> moduleMap) {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet(sheetName);
-        CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle wrapStyle = createBodyStyle(workbook);
-        Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
+        // Workbook workbook = new XSSFWorkbook();
+        // Sheet sheet = workbook.createSheet(sheetName);
+        // CellStyle headerStyle = createHeaderStyle(workbook);
+        // CellStyle wrapStyle = createBodyStyle(workbook);
+        // Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
 
-        Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
-        Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
+        // Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
+        // Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
 
-        for (Session s : sessions) {
-            String venue = venueMap.getOrDefault(s.getId(), "Unknown");
-            String moduleCode = moduleMap.getOrDefault(s.getId(), "Unknown");
+        // for (Session s : sessions) {
+        //     String venue = venueMap.getOrDefault(s.getId(), "Unknown");
+        //     String moduleCode = moduleMap.getOrDefault(s.getId(), "Unknown");
 
-            writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
-        }
+        //     writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
+        // }
 
-        autoSize(sheet, timeSlotColumnMap, dayRowMap);
-        return workbook;
+        // autoSize(sheet, timeSlotColumnMap, dayRowMap);
+        // return workbook;
+        return generateCoreWorkbook(sheetName, sessions, venueMap, moduleMap);
     }
 
     public Workbook generateWorkbookFromSessions(String sheetName, List<Session> sessions) {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet(sheetName);
+        // Workbook workbook = new XSSFWorkbook();
+        // Sheet sheet = workbook.createSheet(sheetName);
         
-        // Same header generation logic
-        CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle wrapStyle = createBodyStyle(workbook);
-        Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
+        // // Same header generation logic
+        // CellStyle headerStyle = createHeaderStyle(workbook);
+        // CellStyle wrapStyle = createBodyStyle(workbook);
+        // Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
 
-        Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
-        Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
+        // Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
+        // Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
 
-        for (Session s : sessions) {
-            Long sessionId = s.getId();
-            String venue = venueAssignmentService.getVenueBySessionId(sessionId)
-                                .map(Venue::getName)
-                                .orElse("Unknown");
+        // for (Session s : sessions) {
+        //     Long sessionId = s.getId();
+        //     String venue = venueAssignmentService.getVenueBySessionId(sessionId)
+        //                         .map(Venue::getName)
+        //                         .orElse("Unknown");
 
-            String moduleCode = planContentService.getModuleBySessionId(sessionId)
-                                .map(pc -> pc.getModule().getId())
-                                .orElse("Unknown");
-            writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
-        }
+        //     String moduleCode = planContentService.getModuleBySessionId(sessionId)
+        //                         .map(pc -> pc.getModule().getId())
+        //                         .orElse("Unknown");
+        //     writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
+        // }
 
-        autoSize(sheet, timeSlotColumnMap, dayRowMap);
-        return workbook;
+        // autoSize(sheet, timeSlotColumnMap, dayRowMap);
+        //  return workbook;
+
+        Map<Long, String> venueMap = sessions.stream().collect(Collectors.toMap(
+            Session::getId,
+            s -> venueAssignmentService.getVenueBySessionId(s.getId()).map(Venue::getName).orElse("Unknown"),
+            (a,b) -> a
+        ));
+        Map<Long, String> moduleMap = sessions.stream().collect(Collectors.toMap(
+            Session::getId,
+            s -> planContentService.getModuleBySessionId(s.getId()).map(pc->pc.getModule().getId()).orElse("Unknown"),
+            (a,b) -> a
+        ));
+        return generateCoreWorkbook(sheetName, sessions, venueMap, moduleMap);
+    }
+
+     public Workbook generateWorkbookFromSessions(String sheetName, List<Session> sessions, Map<Long, String> versionVenueMap) {
+        Map<Long, String> moduleMap = sessions.stream().collect(Collectors.toMap(
+            Session::getId,
+            s -> planContentService.getModuleBySessionId(s.getId()).map(pc->pc.getModule().getId()).orElse("Unknown"),
+            (a,b) -> a
+        ));
+        return generateCoreWorkbook(sheetName, sessions, versionVenueMap, moduleMap);
     }
 
     private Map<LocalTime, Integer> generateTimeSlots(Sheet sheet, CellStyle headerStyle) {

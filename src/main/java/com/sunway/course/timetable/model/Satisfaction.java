@@ -22,10 +22,10 @@ public class Satisfaction {
     private int conflict;
 
     @Column(name = "version_tag", nullable = false)
-    private String versionTag;
+    private String versionTag; // your “v1”, “v2”, …
 
     @Column(name = "schedule_hash", nullable = false, unique = true)
-    private String scheduleHash;
+    private String scheduleHash; // the computed SHA-256
 
 
     public Satisfaction() {
