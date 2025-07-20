@@ -1,4 +1,5 @@
 package com.sunway.course.timetable.model.venueAssignment;
+
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
 
@@ -26,12 +27,19 @@ public class VenueAssignment {
     @JoinColumn(name = "session_id", referencedColumnName = "id")
     private Session session;
 
+
     public VenueAssignment() {
         // Default constructor
     }
 
     public VenueAssignment(VenueAssignmentId venueAssignmentId) {
         this.venueAssignmentId = venueAssignmentId;
+    }
+
+    public VenueAssignment(Venue venue, Session session,  String hash) {
+      this.venueAssignmentId = new VenueAssignmentId(session.getId(), venue.getId(), hash);
+      this.session = session;
+      this.venue   = venue;
     }
 
     public VenueAssignmentId getVenueAssignmentId() {
@@ -57,3 +65,4 @@ public class VenueAssignment {
         this.session = session;
     }
 }
+

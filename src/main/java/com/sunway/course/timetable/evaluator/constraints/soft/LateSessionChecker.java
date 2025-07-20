@@ -33,6 +33,14 @@ public class LateSessionChecker implements ConstraintChecker {
         return 500.0;
     }
 
+    /**
+     * Calculates the penalty for sessions that start at or after 6:00 PM.
+     * This method iterates through all sessions and checks their start times.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used here)
+     * @return The total penalty for late starting sessions
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Set<String> seen = new HashSet<>();
@@ -42,7 +50,7 @@ public class LateSessionChecker implements ConstraintChecker {
             String key = s.getTypeGroup() + "-" + s.getDay() + "-" + s.getStartTime();
             if (seen.add(key)) {
                 LocalTime start = s.getStartTime();
-                if (!start.isBefore(LocalTime.of(18, 0))) {  // 4:00 PM or later
+                if (!start.isBefore(LocalTime.of(18, 0))) {  
                     penalty++;
                 }
             }

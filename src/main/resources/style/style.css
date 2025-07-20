@@ -170,18 +170,28 @@
     -fx-pref-width: 200px;
 }
 
+.error-background{
+    -fx-background-color: #3D52A0;
+    -fx-background-radius: 20;
+    -fx-padding: 10;
+}
+
 .programme-label, .semester-label, .year-label, 
 .intake-label, .venue-label, .available-label, 
 .id-label, .unavailable-day-label, .programmelabel,
 .intakelabel, .yearlabel, .sactisfaction-label,
 .score-label, .file-label, .instruction-label,
-.section-label{
+.section-label, .error-label{
     -fx-font-family: "serif";
     -fx-font-size: 20;
     -fx-font-color: black;
     -fx-font-weight: bold;
     -fx-pref-width: 200px;
     -fx-pref-height: inherit;
+}
+
+.error-label{
+    -fx-pref-width: inherit;
 }
 
 .validation-label{
@@ -368,6 +378,18 @@
 .generate-button:hover{
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
+}
+
+
+.back-button{
+    -fx-pref-width: 300;
+    -fx-pref-height: 40;
+    -fx-background-color: #7091E6;
+    -fx-text-fill: black;
+    -fx-font-size: 20;
+    -fx-font-family: "serif";
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
 }
 
 

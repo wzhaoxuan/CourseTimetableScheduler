@@ -32,6 +32,15 @@ public class SpreadDaysChecker implements ConstraintChecker {
 
     }
 
+    /**
+     * Calculates the penalty for students and lecturers having sessions spread over more than 3 days.
+     * This method iterates through all sessions and checks if a student or lecturer has sessions
+     * scheduled on more than 3 different days.
+     *
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used here)
+     * @return The total penalty for students and lecturers with sessions spread over too many days
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         int penalty = 0;

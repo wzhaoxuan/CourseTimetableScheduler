@@ -1,12 +1,7 @@
 package com.sunway.course.timetable.engine;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Student;
@@ -19,11 +14,25 @@ import com.sunway.course.timetable.singleton.VenueAvailabilityMatrix;
 import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 public class DomainPruner {
-    private static final Logger log = LoggerFactory.getLogger(DomainPruner.class);
-    private static final int MIN_GROUP_SIZE = 1; // Minimum group size for non-lecture sessions
+
+    private static final int MIN_GROUP_SIZE = 1; 
 
     public record AssignmentOption(int day, int startSlot, Venue venue) {}
 
+    /**
+     * Prunes the domain of assignment options based on availability matrices and constraints.
+     * 
+     * @param lecturerMatrix The matrix containing lecturer availability
+     * @param venueMatrix The matrix containing venue availability
+     * @param studentMatrix The matrix containing student availability
+     * @param allVenues List of all available venues
+     * @param meta Metadata for the session group being assigned
+     * @param eligibleStudents List of students eligible for this session group
+     * @param lecturerService Service to fetch lecturer details
+     * @param lecturerDayAvailabilityUtil Utility to check lecturer's day availability
+     * @param rejectionLogs List to log reasons for domain pruning failures
+     * @return A list of valid assignment options after pruning
+     */
     public static List<AssignmentOption> pruneDomain(
             LecturerAvailabilityMatrix lecturerMatrix,
             VenueAvailabilityMatrix venueMatrix,
@@ -37,14 +46,12 @@ public class DomainPruner {
     ) {
         List<AssignmentOption> domain = new ArrayList<>();
 
-        int durationSlots = meta.getType().equalsIgnoreCase("Lecture") ? 4 : 4; // 2 hours (4 * 30-min)
+        int durationSlots = meta.getType().equalsIgnoreCase("Lecture") ? 4 : 4; 
         int maxDay = 5, maxSlot = 20;
         int requiredCapacity;
         
         Optional<Lecturer> lecturerOpt = lecturerService.getLecturerByName(meta.getLecturerName());
-        log.info("Pruning domain for {} with lecturer {}", meta.getTypeGroup(), meta.getLecturerName());
         if (lecturerOpt.isEmpty()) {
-            log.warn("Lecturer {} not found, skipping pruning.", meta.getLecturerName());
             return domain;
         }
 
@@ -125,24 +132,6 @@ public class DomainPruner {
                 }
             }
         }
-
-        if (domain.isEmpty() && !rejectionLogs.isEmpty()) {
-            // Group reasons by frequency
-            Map<String, Long> reasonCounts = rejectionLogs.stream()
-                .collect(Collectors.groupingBy(DomainRejectionReason::getReason, Collectors.counting()));
-
-            // Find most frequent reason
-            String topReason = reasonCounts.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("Unknown reason");
-
-            DomainRejectionReason example = rejectionLogs.get(0);
-            String typeGroup = example.getMeta().getTypeGroup();
-
-            log.warn("[DOMAIN FAILURE] No valid assignment for {}. Most common reason: {}", typeGroup, topReason);
-        }
-
 
         return domain;
     }

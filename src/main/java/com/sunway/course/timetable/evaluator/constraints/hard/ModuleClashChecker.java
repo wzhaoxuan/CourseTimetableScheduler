@@ -30,11 +30,26 @@ public class ModuleClashChecker implements ConstraintChecker {
         return ConstraintType.HARD;
     }
 
+    /**
+     * Returns the weight of this constraint.
+     * This is a hard constraint, so it has a high weight.
+     * 
+     * @return The weight for module clashes
+     */
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    /**
+     * Calculates the penalty for module clashes.
+     * This method groups sessions by student and counts the number of overlapping sessions
+     * for each student that belong to the same module but different type-groups.
+     * 
+     * @param sessions List of sessions to check for clashes
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used in this checker)
+     * @return Total penalty for module clashes, which is the sum of overlaps for each student
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Map<Long, List<Session>> sessionsByStudent = new HashMap<>();

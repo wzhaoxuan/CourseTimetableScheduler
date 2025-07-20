@@ -1,21 +1,28 @@
 package com.sunway.course.timetable.unit.service;
 
-import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
-import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
-import com.sunway.course.timetable.repository.VenueAssignmentRepository;
-import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
+import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
+import com.sunway.course.timetable.model.venueAssignment.VenueAssignmentId;
+import com.sunway.course.timetable.repository.VenueAssignmentRepository;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class VenueAssignmentServiceTest {
@@ -31,7 +38,7 @@ public class VenueAssignmentServiceTest {
 
     @BeforeEach
     void setUp() {
-        assignmentId = new VenueAssignmentId(1L, 1L);
+        assignmentId = new VenueAssignmentId(1L, 1L, "hash123");
         assignment = new VenueAssignment();
         assignment.setVenueAssignmentId(assignmentId);
     }

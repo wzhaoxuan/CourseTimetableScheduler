@@ -20,6 +20,7 @@ import com.sunway.course.timetable.service.PlanServiceImpl;
 
 import javafx.application.HostServices;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
@@ -27,6 +28,7 @@ import javafx.scene.control.ToggleGroup;
 public class LecturerController extends AbstractTimetableViewController<LecturerVersionItem> {
 
     @FXML private RadioButton full_time, part_time, teaching_assistant;
+    @FXML private Label type, timetable_type;
 
     private final LecturerServiceImpl lecturerService;
     private final HistoricalTimetableExporter exporter;
@@ -50,6 +52,8 @@ public class LecturerController extends AbstractTimetableViewController<Lecturer
     protected void initialize() {
         super.initialize();
         initializeBase();
+        timetable_type.setText("Type");
+        type.setText("Type");
         subheading.setText("View Lecturer");
         full_time.setText("Full time");
         part_time.setText("Part time");

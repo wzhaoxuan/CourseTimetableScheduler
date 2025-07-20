@@ -233,8 +233,6 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             int venueIndex = venues.indexOf(option.venue());
             if (venueIndex == -1) continue;
 
-            // getContext().getLog().info("[TRY] Day={} Slot={} Venue={}",
-            //     option.day(), option.startSlot(), option.venue().getId());
 
             // Check if the venue is available
             venueActors.get(venueIndex).tell(new VenueActor.CheckAndAssignSlot(
@@ -281,7 +279,7 @@ public class VenueCoordinatorActor extends AbstractBehavior<VenueCoordinatorActo
             return this;
         }
 
-        assigned.forEach(s -> studentAvailability.markUnavailable(s.getId(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots));
+        assigned.forEach(s -> studentAvailability.assign(s.getId(), accepted.dayIndex, accepted.startIndex, accepted.startIndex + accepted.durationSlots));
 
         currentRequester.tell(new SessionAssignmentActor.SessionAssigned(
             accepted.venue,

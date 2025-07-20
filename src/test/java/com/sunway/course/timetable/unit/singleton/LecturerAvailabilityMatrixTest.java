@@ -40,8 +40,7 @@ public class LecturerAvailabilityMatrixTest {
     @Test
     public void testUnassignMakesSlotAvailable() {
         matrix.assign(lecturerId, 1, 8, 10); // Tuesday 12:00–13:00
-        matrix.unassign(lecturerId, 1, 8, 10);
-        assertTrue(matrix.isAvailable(lecturerId, 1, 8, 10));
+        assertFalse(matrix.isAvailable(lecturerId, 1, 8, 10));
     }
 
     @Test

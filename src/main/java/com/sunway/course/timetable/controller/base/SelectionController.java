@@ -18,7 +18,7 @@ public abstract class SelectionController extends ContentController {
     private static final Logger logger = LoggerFactory.getLogger(SelectionController.class);
     private final SelectionStateHolder stateHolder;
 
-    @FXML protected Label subheading;
+    @FXML protected Label subheading, type;
     @FXML protected RadioButton programme, module, lecturer;
 
     public SelectionController(NavigationService navigationService, 
@@ -37,6 +37,7 @@ public abstract class SelectionController extends ContentController {
     }
 
     private void setupRadioButtons() {
+        type.setText("Type");
         programme.setText("Programme");
         module.setText("Module");
         lecturer.setText("Lecturer");

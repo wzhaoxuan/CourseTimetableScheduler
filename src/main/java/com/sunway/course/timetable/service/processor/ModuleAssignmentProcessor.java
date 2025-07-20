@@ -24,8 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sunway.course.timetable.akka.actor.SessionAssignmentActor;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
-import com.sunway.course.timetable.evaluator.FitnessEvaluator;
-import com.sunway.course.timetable.evaluator.FitnessResult;
+import com.sunway.course.timetable.evaluator.EvaluatorResult;
+import com.sunway.course.timetable.evaluator.SatisfactionEvaluator;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Module;
@@ -98,7 +98,7 @@ public class ModuleAssignmentProcessor {
     private final VenueSorterService venueSorterService;
     private final TimetableExcelExporter timetableExcelExporter;
     public final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
-    public final FitnessEvaluator fitnessEvaluator;
+    public final SatisfactionEvaluator satisfactionEvaluator;
 
 
     // === Singleton Matrices ===
@@ -148,7 +148,7 @@ public class ModuleAssignmentProcessor {
                                       ProgrammeDistributionClustering clustering,
                                       TimetableExcelExporter timetableExcelExporter,
                                       LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                      FitnessEvaluator fitnessEvaluator
+                                      SatisfactionEvaluator satisfactionEvaluator
                                       ) {
         this.lecturerService = lecturerService;
         this.moduleService = moduleService;
@@ -169,7 +169,7 @@ public class ModuleAssignmentProcessor {
         this.clustering = clustering;
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
-        this.fitnessEvaluator = fitnessEvaluator;
+        this.satisfactionEvaluator = satisfactionEvaluator;
         this.creditTracker = new CreditHourTracker();
 
     }
@@ -191,16 +191,23 @@ public class ModuleAssignmentProcessor {
         String intake,
         int year) {
 
+        List<String> validationErrors = new ArrayList<>();
 
         String versionTag = satisfactionService.getNextVersionTag();
         CURRENT_VERSION_TAG = versionTag;
         this.studentSemesterMap = studentSemesterMap;
 
         resetState();// Reset all internal state before processing new assignments
-
         // Fail fast if no room can hold the group
-        List<Venue> allVenues = venueService.getAllVenues();
-        SchedulingUtils.validateSemesterCapacity(moduleDataList, studentSemesterMap, allVenues);
+        try {
+            SchedulingUtils.validateSemesterCapacity(
+                moduleDataList,
+                studentSemesterMap,
+                venueService.getAllVenues()
+            );
+        } catch (IllegalStateException ex) {
+            validationErrors.add(ex.getMessage());
+        }
 
         long startTime = System.currentTimeMillis();
 
@@ -218,9 +225,18 @@ public class ModuleAssignmentProcessor {
                 new ArrayList<>(data.getEligibleStudents()), module.getCreditHour());
             moduleIdToStudentsMap.put(module.getId(), eligibleStudents);
 
-            List<SessionGroupMetaData> metaList =
-                sessionGroupPreprocessorService.prepareSessionGroupMetadata(data, studentSemesterMap);
-            allMetaData.addAll(metaList);
+            try {
+                List<SessionGroupMetaData> metaList =
+                    sessionGroupPreprocessorService.prepareSessionGroupMetadata(data, studentSemesterMap);
+                allMetaData.addAll(metaList);
+            } catch (IllegalStateException ex) {
+                // from SchedulingUtils.recordTeachingHours
+                validationErrors.add(ex.getMessage());
+            }
+        }
+
+        if (!validationErrors.isEmpty()) {
+            throw new IllegalStateException(String.join("\n", validationErrors));
         }
 
         // 3. Compute majority programme distribution
@@ -242,9 +258,6 @@ public class ModuleAssignmentProcessor {
             }));
 
 
-        // for (SessionGroupMetaData meta : allMetaData) {
-        //     meta.setEligibleStudents(moduleIdToStudentsMap.get(meta.getModuleId()));
-        // }
 
         // ====== UPDATED LOOP: Interleave Lecture → Practical per module ======
         // Group session-groups by module preserving original module order
@@ -285,7 +298,7 @@ public class ModuleAssignmentProcessor {
         // printFinalizedSchedule(sessionToModuleIdMap, sessionVenueMap);
 
 
-        FitnessResult finalFitness = fitnessEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
+        EvaluatorResult finalFitness = satisfactionEvaluator.evaluate(persistedSessions, sessionVenueMap, versionTag);
         this.finalScore = finalFitness.getPercentage();
         log.info("Final fitness score after scheduling: {}%", finalScore);
         
@@ -374,10 +387,10 @@ public class ModuleAssignmentProcessor {
             .orElseThrow(() -> new IllegalArgumentException("Lecturer not found: " + lecturerName));
 
         // 4) Unpack scheduling details
-        String       day             = result.getDay();
-        LocalTime    startTime       = result.getStartTime();
-        LocalTime    endTime         = result.getEndTime();
-        Venue        venue           = result.getVenue();
+        String day = result.getDay();
+        LocalTime startTime = result.getStartTime();
+        LocalTime endTime = result.getEndTime();
+        Venue venue = result.getVenue();
         List<Student> assignedStudents = result.getAssignedStudents();
 
         // 5) Persist session & assign students with the correct signature
@@ -401,10 +414,17 @@ public class ModuleAssignmentProcessor {
      * Call the actor model to schedule a session based on type, group and total student count,
      * assigning day/start/end and best-fit venue.
      *
-     * @param type         The session type (Lecture, Tutorial, Practical, etc)
-     * @param typeGroup    The group key for the session (e.g. MTH1114-Lecture-G1)
-     * @param totalStudents Number of students in this group
-     * @return SessionAssignmentResult containing day, startTime, endTime, and assigned Venue
+     * @param semester The semester for which the session is being scheduled.
+     * @param moduleId The ID of the module for which the session is being scheduled.
+     * @param type The type of session (e.g., Lecture, Tutorial, Practical).
+     * @param typeGroup The group of the session type (e.g., Lecture-1
+     * @param totalStudents The total number of students in the session.
+     * @param lecturerName The name of the lecturer for the session.
+     * @param eligibleStudent List of students eligible for the session.
+     * @param groupIndex The index of the group within the session type.
+     * @param groupCount The total number of groups for the session type.
+     * @param lectureAssignmentsByModule Map to store lecture assignments by module.
+     * @return A SessionAssignmentResult containing the scheduled session details.
      */
     private SessionAssignmentResult scheduleSessionViaActors(int semester,
         String moduleId, String type, String typeGroup, int totalStudents, String lecturerName,
@@ -412,19 +432,6 @@ public class ModuleAssignmentProcessor {
 
         Map<String, Map<String, Double>> semMap = programmeDistribution.getOrDefault(semester, Collections.emptyMap());
         Map<String, Double> progMap = semMap.getOrDefault(moduleId, Collections.emptyMap());
-
-        // lookup lecturer
-        long lecturerId = lecturerService
-            .getLecturerByName(lecturerName)
-            .orElseThrow(() -> new IllegalArgumentException("Lecturer not found: " + lecturerName))
-            .getId();
-
-        // fail early if they’ve marked off too many days
-        SchedulingUtils.validateLecturerWeekdays(
-            lecturerDayAvailabilityUtil,
-            lecturerId,
-            lecturerName
-        );
 
         String majorityProgramme = progMap.entrySet().stream()
             .max(Map.Entry.comparingByValue())
@@ -436,11 +443,10 @@ public class ModuleAssignmentProcessor {
                 .computeIfAbsent(majorityProgramme, k -> new TreeMap<>());
 
         String lastVenue = venueTimeMap.isEmpty()
-            ? venueMatrix.getSortedVenues().stream().findFirst().map(Venue::getName).orElse(null)
+            ? venueMatrix.getVenues().stream().findFirst().map(Venue::getName).orElse(null)
             : venueTimeMap.lastEntry().getValue();
 
-
-        System.out.printf("Last venue for %s in semester %d: %s%n", typeGroup, semester, lastVenue);
+        log.info("Last venue for {} in semester {}: {}", typeGroup, semester, lastVenue);
 
         List<String> preferredVenues = lastVenue != null
             ? venueSorterService.findNearestVenues(lastVenue).stream()
@@ -450,15 +456,14 @@ public class ModuleAssignmentProcessor {
             : Collections.emptyList();
 
         int durationHours = getDurationHours(type);
+        Module module = moduleService.getModuleById(moduleId)
+                .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
+                
         String actorName = String.format("sessionAssigner-%s-%s-%d-%s",
                 moduleId.replaceAll("\\W+", ""),
                 typeGroup.replaceAll("\\W+", ""),
                 semester,
                 UUID.randomUUID());
-
-
-        Module module = moduleService.getModuleById(moduleId)
-                .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
 
         ActorRef<SessionAssignmentActor.SessionAssignmentCommand> sessionAssigner =
                 actorSystem.systemActorOf(SessionAssignmentActor.create(), actorName, Props.empty());
@@ -478,7 +483,7 @@ public class ModuleAssignmentProcessor {
                     lecturerMatrix,
                     venueMatrix,
                     studentMatrix,
-                    venueMatrix.getSortedVenues(),
+                    venueMatrix.getVenues(),
                     lecturerService,
                     lecturerDayAvailabilityUtil,
                     lectureAssignmentsByModule
@@ -525,17 +530,19 @@ public class ModuleAssignmentProcessor {
             Session savedSession = sessionService.saveSession(originalSession);
             Venue venue = sessionVenueMap.get(originalSession);
             if (venue != null) {
-                VenueAssignment assignment = new VenueAssignment();
+                
                 VenueAssignmentId id = new VenueAssignmentId();
                 id.setVenueId(venue.getId());
                 id.setSessionId(savedSession.getId());
+                id.setversionTag(CURRENT_VERSION_TAG);
 
+
+                VenueAssignment assignment = new VenueAssignment();
                 assignment.setVenueAssignmentId(id);
                 assignment.setVenue(venue);
                 assignment.setSession(savedSession);
-
                 venueAssignmentService.saveAssignment(assignment);
-
+            
                 newSessionVenueMap.put(savedSession, venue);
             }
 
@@ -734,11 +741,9 @@ public class ModuleAssignmentProcessor {
         lectureAssignmentsByModule.clear();
         lastAssignedVenuePerDay.clear();
         sessionBySemesterAndModule.clear();
-        // moduleIdToStudentsMap.clear();
         lecturerTeachingHours.clear();
         programmeDistribution.clear();
-        // drop any leftover session‐keys so we start fresh
-        FitnessEvaluator.CURRENT_SESSION_KEYS.clear();
+        SatisfactionEvaluator.CURRENT_SESSION_KEYS.clear();
 
         sessionGroupPreprocessorService.reset();
     }

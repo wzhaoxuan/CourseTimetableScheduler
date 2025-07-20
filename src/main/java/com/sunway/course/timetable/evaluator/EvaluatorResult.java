@@ -1,7 +1,7 @@
 package com.sunway.course.timetable.evaluator;
 import java.util.List;
 
-public class FitnessResult {
+public class EvaluatorResult {
 
     public record Violation(String name, double weight, double penalty, double score) {}
 
@@ -11,7 +11,7 @@ public class FitnessResult {
     private final List<Violation> hardViolations;
     private final List<Violation> softViolations;
 
-    public FitnessResult(double percentage, double totalPenalty, double maxPenalty,
+    public EvaluatorResult(double percentage, double totalPenalty, double maxPenalty,
                          List<Violation> hardViolations, List<Violation> softViolations) {
         this.percentage = percentage;
         this.totalPenalty = totalPenalty;

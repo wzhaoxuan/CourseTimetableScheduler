@@ -56,6 +56,7 @@ public class TimetableSheetWriter {
         Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
         int currentRow = 1;
 
+
         for (String day : DAYS) {
             // extract sessions for this day
             List<Session> daySessions = sessions.stream()
@@ -74,7 +75,11 @@ public class TimetableSheetWriter {
                 String lecturer = session.getLecturer() != null ? session.getLecturer().getName() : "Unknown";
                 String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturer, venue);
 
-                String sessionKey = content + session.getDay() + session.getStartTime();
+                // String sessionKey = content + session.getDay() + session.getStartTime();
+
+                String sessionKey = session.getType().equalsIgnoreCase("Lecture")
+                        ? session.getTypeGroup()                                      // one per group
+                        : session.getDay() + "|" + session.getStartTime() + "|" + session.getTypeGroup();
                 if (!processedSessionKeys.add(sessionKey)) continue;
 
                 LocalTime start = session.getStartTime();
@@ -170,53 +175,11 @@ public class TimetableSheetWriter {
 
     public Workbook generateWorkbookSimple(String sheetName, List<Session> sessions, 
                                        Map<Long, String> venueMap, Map<Long, String> moduleMap) {
-        // Workbook workbook = new XSSFWorkbook();
-        // Sheet sheet = workbook.createSheet(sheetName);
-        // CellStyle headerStyle = createHeaderStyle(workbook);
-        // CellStyle wrapStyle = createBodyStyle(workbook);
-        // Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
 
-        // Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
-        // Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
-
-        // for (Session s : sessions) {
-        //     String venue = venueMap.getOrDefault(s.getId(), "Unknown");
-        //     String moduleCode = moduleMap.getOrDefault(s.getId(), "Unknown");
-
-        //     writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
-        // }
-
-        // autoSize(sheet, timeSlotColumnMap, dayRowMap);
-        // return workbook;
         return generateCoreWorkbook(sheetName, sessions, venueMap, moduleMap);
     }
 
     public Workbook generateWorkbookFromSessions(String sheetName, List<Session> sessions) {
-        // Workbook workbook = new XSSFWorkbook();
-        // Sheet sheet = workbook.createSheet(sheetName);
-        
-        // // Same header generation logic
-        // CellStyle headerStyle = createHeaderStyle(workbook);
-        // CellStyle wrapStyle = createBodyStyle(workbook);
-        // Map<String, CellStyle> typeColorMap = createTypeColorStyles(workbook);
-
-        // Map<LocalTime, Integer> timeSlotColumnMap = generateTimeSlots(sheet, headerStyle);
-        // Map<String, Row> dayRowMap = generateDayRows(sheet, headerStyle);
-
-        // for (Session s : sessions) {
-        //     Long sessionId = s.getId();
-        //     String venue = venueAssignmentService.getVenueBySessionId(sessionId)
-        //                         .map(Venue::getName)
-        //                         .orElse("Unknown");
-
-        //     String moduleCode = planContentService.getModuleBySessionId(sessionId)
-        //                         .map(pc -> pc.getModule().getId())
-        //                         .orElse("Unknown");
-        //     writeSingleSession(s, venue, moduleCode, sheet, dayRowMap, timeSlotColumnMap, wrapStyle, typeColorMap);
-        // }
-
-        // autoSize(sheet, timeSlotColumnMap, dayRowMap);
-        //  return workbook;
 
         Map<Long, String> venueMap = sessions.stream().collect(Collectors.toMap(
             Session::getId,
@@ -255,75 +218,6 @@ public class TimetableSheetWriter {
             map.put(t, col++);
         }
         return map;
-    }
-
-    private Map<String, Row> generateDayRows(Sheet sheet, CellStyle headerStyle) {
-        Map<String, Row> map = new HashMap<>();
-        int rowIndex = 1;
-        for (String day : DAYS) {
-            Row row = sheet.createRow(rowIndex++);
-            Cell cell = row.createCell(0);
-            cell.setCellValue(day);
-            cell.setCellStyle(headerStyle);
-            map.put(day, row);
-        }
-        return map;
-    }
-
-    private void writeSingleSession(Session s, String venue, String moduleCode, Sheet sheet,
-        Map<String, Row> dayRowMap, Map<LocalTime, Integer> timeSlotColumnMap,
-        CellStyle wrapStyle, Map<String, CellStyle> typeColorMap) {
-
-        Row row = dayRowMap.get(s.getDay());
-        if (row == null) return;
-
-        LocalTime start = s.getStartTime();
-        LocalTime end = s.getEndTime();
-        int firstCol = timeSlotColumnMap.getOrDefault(start, -1);
-        int lastCol = timeSlotColumnMap.getOrDefault(end.minusMinutes(30), -1);
-        if (firstCol == -1 || lastCol == -1) return;
-
-        String group = s.getTypeGroup().split("-")[2];
-        String type = s.getType();
-        String lecturer = s.getLecturer() != null ? s.getLecturer().getName() : "Unknown";
-        String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturer, venue);
-
-        Cell cell = row.getCell(firstCol);
-        if (cell == null) {
-            cell = row.createCell(firstCol);
-            cell.setCellValue(content);
-        } else {
-            String existing = cell.getStringCellValue();
-            cell.setCellValue(existing + "\n\n\n" + content); 
-        }
-
-        cell.setCellStyle(typeColorMap.getOrDefault(type.toLowerCase(), wrapStyle));
-
-        if (lastCol > firstCol && !isMerged(sheet, row.getRowNum(), firstCol, lastCol)) {
-            sheet.addMergedRegion(new CellRangeAddress(row.getRowNum(), row.getRowNum(), firstCol, lastCol));
-        }
-    }
-
-
-    private void autoSize(Sheet sheet, Map<LocalTime, Integer> timeSlotColumnMap, Map<String, Row> dayRowMap) {
-        for (int i = 0; i <= timeSlotColumnMap.size(); i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-        final float baseHeight = 16f;  // Base font height (slightly larger than default 15)
-        final float lineSpacing = 1.3f; // Scaling factor to allow for wrapped lines
-
-        for (Row row : dayRowMap.values()) {
-            float maxHeight = baseHeight;
-            for (int j = 1; j <= timeSlotColumnMap.size(); j++) {
-                Cell cell = row.getCell(j);
-                if (cell != null && cell.getStringCellValue() != null) {
-                    int lines = cell.getStringCellValue().split("\\n").length;
-                    maxHeight = Math.max(maxHeight, lines * baseHeight * lineSpacing);
-                }
-            }
-            row.setHeightInPoints(maxHeight);
-        }
     }
 
 

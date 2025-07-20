@@ -30,9 +30,17 @@ public class StudentClashChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    /**
+     * Calculates the penalty for student clashes.
+     * This method groups sessions by student and counts the number of overlapping sessions for each student.
+     * 
+     * @param sessions List of sessions to check for clashes
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used in this checker)
+     * @return Total penalty for student clashes, which is the sum of overlaps for each student
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Map<Long, List<Session>> byStudent = new HashMap<>();
@@ -46,7 +54,6 @@ public class StudentClashChecker implements ConstraintChecker {
             .mapToInt(SessionConflictUtil::countOverlaps)
             .sum();
     }
-
 }
 
 

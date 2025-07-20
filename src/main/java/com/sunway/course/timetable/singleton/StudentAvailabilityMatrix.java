@@ -1,10 +1,10 @@
 package com.sunway.course.timetable.singleton;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.springframework.stereotype.Component;
 
@@ -17,10 +17,10 @@ import com.sunway.course.timetable.model.Student;
 public class StudentAvailabilityMatrix {
 
     private static final int DAYS = 5; // Monday to Friday
-    private static final int TIME_SLOTS_PER_DAY = 20; // e.g. 8am–8pm, 1 hour each
+    private static final int TIME_SLOTS_PER_DAY = 20; // e.g. 8am–6pm
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private final Map<Long, boolean[][]> availabilityMap = new ConcurrentHashMap<>();
-
+    private final Map<Long, boolean[][]> availabilityMap = new HashMap<>();
     /**
      * Initialize all students as fully available.
      */
@@ -40,49 +40,37 @@ public class StudentAvailabilityMatrix {
      * Check if a student is available at a specific time slot.
      */
     public boolean isAvailable(Long studentId, int day, int startHour, int duration) {
-        boolean[][] matrix = availabilityMap.get(studentId);
-        if (matrix == null) return false;
+        lock.readLock().lock();
+        try {
+            boolean[][] matrix = availabilityMap.get(studentId);
+            if (matrix == null) return false;
 
-        for (int h = startHour; h < startHour + duration && h < TIME_SLOTS_PER_DAY; h++) {
-            if (!matrix[day][h]) return false;
+            for (int h = startHour; h < startHour + duration && h < TIME_SLOTS_PER_DAY; h++) {
+                if (!matrix[day][h]) return false;
+            }
+            return true;
+        } finally {
+            lock.readLock().unlock();
         }
-        return true;
     }
 
     /**
      * Mark the given time range as unavailable for a student.
      */
-    public synchronized void markUnavailable(Long studentId, int day, int startHour, int duration) {
-        boolean[][] matrix = availabilityMap.get(studentId);
-        if (matrix != null) {
-            for (int h = startHour; h < startHour + duration && h < TIME_SLOTS_PER_DAY; h++) {
-                matrix[day][h] = false;
+    public synchronized void assign(Long studentId, int day, int startHour, int duration) {
+        lock.writeLock().lock();
+        try{
+            boolean[][] matrix = availabilityMap.get(studentId);
+            if (matrix != null) {
+                for (int h = startHour; h < startHour + duration && h < TIME_SLOTS_PER_DAY; h++) {
+                    matrix[day][h] = false;
+                }
             }
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
-    /**
-     * Mark the given time range as available for a student.
-     */
-    public synchronized void markAvailable(Long studentId, int day, int startHour, int duration) {
-        boolean[][] matrix = availabilityMap.get(studentId);
-        if (matrix != null) {
-            for (int h = startHour; h < startHour + duration && h < TIME_SLOTS_PER_DAY; h++) {
-                matrix[day][h] = true;
-            }
-        }
-    }
-
-    public List<Long> findAvailableStudents(Set<Long> candidates, int day, int startSlot, int durationSlots, int max) {
-        List<Long> available = new ArrayList<>();
-        for (Long id : candidates) {
-            if (isAvailable(id, day, startSlot, durationSlots)) {
-                available.add(id);
-                if (available.size() >= max) break;
-            }
-        }
-        return available;
-    }
 
     public synchronized void reset() {
         for (boolean[][] matrix : availabilityMap.values()) {
@@ -98,20 +86,25 @@ public class StudentAvailabilityMatrix {
      * Get list of assigned session start times (in 30-min slots) for the given student on a given day.
      * @return List of LocalTime representing occupied time blocks.
      */
-    public List<LocalTime> getAssignedTimes(long studentId, int day) {
-        List<LocalTime> times = new ArrayList<>();
-        boolean[][] matrix = availabilityMap.get(studentId);
-        if (matrix == null) return times;
+    public List<LocalTime> getAssignedDays(long studentId, int day) {
+        lock.readLock().lock();
+        try {
+            List<LocalTime> times = new ArrayList<>();
+            boolean[][] matrix = availabilityMap.get(studentId);
+            if (matrix == null) return times;
 
-        for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
-            if (!matrix[day][slot]) {
-                // Convert slot index to time: 8:00 AM + slot * 30 minutes
-                LocalTime time = LocalTime.of(8, 0).plusMinutes(slot * 30L);
-                times.add(time);
+            for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+                if (!matrix[day][slot]) {
+                    // Convert slot index to time: 8:00 AM + slot * 30 minutes
+                    LocalTime time = LocalTime.of(8, 0).plusMinutes(slot * 30L);
+                    times.add(time);
+                }
             }
-        }
 
-        return times;
+            return times;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -119,21 +112,26 @@ public class StudentAvailabilityMatrix {
      * This is used to avoid scheduling a session that would leave the student with no other commitments.
      */
     public boolean wouldBeOnlySession(long studentId, int day, int candidateStart, int duration) {
-        boolean[][] matrix = availabilityMap.get(studentId);
-        if (matrix == null) return false;
+        lock.readLock().lock();
+        try{
+            boolean[][] matrix = availabilityMap.get(studentId);
+            if (matrix == null) return false;
 
-        for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
-            // If student is busy in some slot
-            if (!matrix[day][slot]) {
-                boolean isInsideCandidate = slot >= candidateStart && slot < candidateStart + duration;
-                if (!isInsideCandidate) {
-                    // Found another session outside the one being checked
-                    return false;
+            for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
+                // If student is busy in some slot
+                if (!matrix[day][slot]) {
+                    boolean isInsideCandidate = slot >= candidateStart && slot < candidateStart + duration;
+                    if (!isInsideCandidate) {
+                        // Found another session outside the one being checked
+                        return false;
+                    }
                 }
             }
-        }
 
-        // Either no sessions at all, or only sessions match the candidate block
-        return true;
+            // Either no sessions at all, or only sessions match the candidate block
+            return true;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 }

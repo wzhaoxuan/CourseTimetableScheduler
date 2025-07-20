@@ -206,6 +206,20 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         return this;
     }
 
+    /**
+     * Calculates the soft penalty for an assignment option based on various factors:
+     * - Solo sessions for students
+     * - Time of day
+     * - Long gaps between sessions
+     * - Spread of students across days
+     * - New day for lecturer
+     * - Lecture after practical penalty
+     * - Too many consecutive classes for lecturer
+     *
+     * @param opt The assignment option being evaluated
+     * @param msg The AssignSession message containing context
+     * @return The calculated soft penalty score
+     */
     private int softPenalty(AssignmentOption opt, AssignSession msg) {
         long solo = msg.eligibleStudents.stream()
             .filter(s -> causesOnlyOneSessionDay(
@@ -224,7 +238,7 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         boolean lecNewDay = isNewDayForLecturer(
             msg.lecturerName, opt.day(), msg.lecturerMatrix);
         int spreadLec = lecNewDay ? 1 : 0;
-        int seqPen = isDependentSession(msg.sessionType)
+        int seqPen = isNotLectureSession(msg.sessionType)
             ? calculateLectureAfterPenalty(msg, opt) : 0;
         boolean tooMany = causesTooManyConsecutiveClasses(
             msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
@@ -234,9 +248,19 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
 
-
+    /**
+     * Checks if assigning a session at the given start slot causes a long gap
+     * (more than 120 minutes) between this session and any existing sessions
+     * for the student on the same day.
+     *
+     * @param studentId The ID of the student
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param startSlot The starting slot index (0-39, where each slot is 30 minutes)
+     * @param studentMatrix The matrix containing student availability
+     * @return true if it causes a long gap, false otherwise
+     */
     private boolean causesLongGap(long studentId, int day, int startSlot, StudentAvailabilityMatrix studentMatrix) {
-        List<LocalTime> assignedSlots = studentMatrix.getAssignedTimes(studentId, day);
+        List<LocalTime> assignedSlots = studentMatrix.getAssignedDays(studentId, day);
         LocalTime thisStart = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
         LocalTime thisEnd = thisStart.plusMinutes(120);
 
@@ -250,24 +274,58 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
     }
 
 
+    /**
+     * Returns a penalty based on the time of day:
+     * - 0 for morning/afternoon (before 6:00 PM)
+     * - 1 for late (after 6:00 PM)
+     *
+     * @param startSlot The starting slot index (0-39, where each slot is 30 minutes)
+     * @return The penalty score
+     */
     private int getTimeOfDayPenalty(int startSlot) {
         LocalTime start = LocalTime.of(8, 0).plusMinutes(startSlot * 30L);
 
         if (start.isBefore(LocalTime.of(18, 0))) return 0;   // Morning or Afternoon
-        else return 1;                                            // Late (after 4:00 PM)
+        else return 1;                                            // Late (after 6:00 PM)
     }
 
+    /**
+     * Checks if assigning a session on the given day causes only one session
+     * to be assigned for the student on that day.
+     *
+     * @param studentId The ID of the student
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param startSlot The starting slot index (0-39, where each slot is 30 minutes)
+     * @param matrix The student availability matrix
+     * @return true if it causes only one session, false otherwise
+     */
     private boolean causesOnlyOneSessionDay(Long studentId, int day, int startSlot, StudentAvailabilityMatrix matrix) {
-        List<LocalTime> occupied = matrix.getAssignedTimes(studentId, day);
+        List<LocalTime> occupied = matrix.getAssignedDays(studentId, day);
         return occupied.size() == 0; // Only one slot used on this day
     }
 
-    private boolean isDependentSession(String type) {
+    /**
+     * Checks if the session type is not a lecture.
+     * This is used to determine if the session is a practical, tutorial, or workshop.
+     *
+     * @param type The type of the session
+     * @return true if it is not a lecture session, false otherwise
+     */
+    private boolean isNotLectureSession(String type) {
         return type.equalsIgnoreCase("Practical") 
             || type.equalsIgnoreCase("Tutorial") 
             || type.equalsIgnoreCase("Workshop");
     }
 
+    /**
+     * Calculates the penalty for scheduling a practical session after a lecture.
+     * If the practical is scheduled before the lecture, it incurs a penalty.
+     * If it is scheduled after the lecture, there is no penalty.
+     *
+     * @param msg The AssignSession message containing context
+     * @param opt The assignment option being evaluated
+     * @return 1 if there is a penalty, 0 if it is OK
+     */
     private int calculateLectureAfterPenalty(AssignSession msg, AssignmentOption opt) {
         SessionAssigned lecture = msg.lectureAssignmentsByModule.get(msg.module.getId());
         if (lecture == null) return 0; // no penalty if no lecture exists yet
@@ -275,15 +333,33 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         if (opt.day() < lecture.dayIndex) return 1;  // schedule before lecture → penalty
         if (opt.day() == lecture.dayIndex && opt.startSlot() < (lecture.startIndex + lecture.durationSlots)) return 1;
 
-        return 0; // OK, practical is after lecture
+        return 0; 
     }
 
+    /**
+     * Checks if the lecturer is assigned on a new day.
+     * This means the lecturer has no sessions assigned on that day.
+     *
+     * @param lecturerName The name of the lecturer
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param lecturerMatrix The matrix containing lecturer availability
+     * @return true if it is a new day for the lecturer, false otherwise
+     */
     private boolean isNewDayForLecturer(String lecturerName, int day, LecturerAvailabilityMatrix lecturerMatrix) {
         return lecturerMatrix.getAssignedDays(lecturerName).contains(day) == false;
     }
 
+    /**
+     * Checks if the student has no sessions assigned on the given day.
+     * This means the student is available for a new session on that day.
+     *
+     * @param studentId The ID of the student
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param studentMatrix The matrix containing student availability
+     * @return true if it is a new day for the student, false otherwise
+     */
     private boolean isNewDayForStudent(Long studentId, int day, StudentAvailabilityMatrix studentMatrix) {
-        List<LocalTime> occupied = studentMatrix.getAssignedTimes(studentId, day);
+        List<LocalTime> occupied = studentMatrix.getAssignedDays(studentId, day);
         return occupied.isEmpty();  // If student has no sessions that day
     }
 
@@ -302,5 +378,4 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         int maxSlots = SLOTS_PER_CLASS * 4; // avoid 4 classes back-to-back
         return maxRun >= maxSlots;
     }
-
 }

@@ -1,7 +1,11 @@
 package com.sunway.course.timetable.controller.app;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,7 +14,7 @@ import org.springframework.stereotype.Component;
 import com.sunway.course.timetable.akka.actor.VenueCoordinatorActor;
 import com.sunway.course.timetable.controller.authentication.LoginSceneController;
 import com.sunway.course.timetable.controller.base.ContentController;
-import com.sunway.course.timetable.evaluator.FitnessEvaluator;
+import com.sunway.course.timetable.evaluator.SatisfactionEvaluator;
 import com.sunway.course.timetable.exporter.TimetableExcelExporter;
 import com.sunway.course.timetable.result.FinalAssignmentResult;
 import com.sunway.course.timetable.result.PreprocessingResult;
@@ -38,6 +42,7 @@ import com.sunway.course.timetable.util.LecturerDayAvailabilityUtil;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -49,6 +54,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+
 
 @Component
 public class GenerateTimetableController extends ContentController {
@@ -84,7 +90,7 @@ public class GenerateTimetableController extends ContentController {
     private final ProgrammeDistributionClustering clustering;
     private final TimetableExcelExporter timetableExcelExporter;
     private final LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil;
-    private final FitnessEvaluator fitnessEvaluator;
+    private final SatisfactionEvaluator satisfactionEvaluator;
 
     // == matches file names in the ListView ==
     private File subjectPlanFile;
@@ -118,7 +124,7 @@ public class GenerateTimetableController extends ContentController {
                                     ProgrammeDistributionClustering clustering,
                                     TimetableExcelExporter timetableExcelExporter,
                                     LecturerDayAvailabilityUtil lecturerDayAvailabilityUtil,
-                                    FitnessEvaluator fitnessEvaluator,
+                                    SatisfactionEvaluator satisfactionEvaluator,
                                     JdbcTemplate jdbcTemplate) {
         super(navService, loginController);
         this.timetableController = timetableController;
@@ -143,7 +149,7 @@ public class GenerateTimetableController extends ContentController {
         this.clustering = clustering;
         this.timetableExcelExporter = timetableExcelExporter;
         this.lecturerDayAvailabilityUtil = lecturerDayAvailabilityUtil;
-        this.fitnessEvaluator = fitnessEvaluator;
+        this.satisfactionEvaluator = satisfactionEvaluator;
     }
 
 
@@ -163,99 +169,110 @@ public class GenerateTimetableController extends ContentController {
 
     @FXML
     private void generate() {
-        try{
-            String programme = programmeChoice.getValue();
-            String year = yearChoice.getValue();
-            String intake = intakeChoice.getValue();
+        // 1) pull values and validate as before
+        String programme = programmeChoice.getValue();
+        String year = yearChoice.getValue();
+        String intake = intakeChoice.getValue();
 
-            boolean hasError = false;
+        boolean hasError = false;
 
-            if (programme == null || year == null || intake == null) {
-                validation.setText("*Please select Programme, Year,Intake.");
-                validation.setVisible(true);
-                hasError = true;
-            } else {
-                validation.setVisible(false); // hide error if resolved
-            }
-
-            // Step 1: Read Excel (use fixed path or let user upload in future)
-            if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
-                fileValidation.setText("*Please drop all 4 required .xlsx files.");
-                fileValidation.setVisible(true);
-                hasError = true;
-            } else {
-                fileValidation.setVisible(false); // hide error if resolved
-            }
-
-            if(hasError) return;
-
-            // Use these files in your processor
-            System.out.println("Subject Plan: " + subjectPlanFile.getAbsolutePath());
-            System.out.println("Module Sem: " + moduleSemFile.getAbsolutePath());
-            System.out.println("Student Sem: " + studentSemFile.getAbsolutePath());
-
-            // Step 1: Preprocessing using user-uploaded files
-            PreprocessingResult preprocessingResult = preprocessingService
-                .preprocessModuleAndStudents(
-                    subjectPlanFile.getAbsolutePath(),
-                    moduleSemFile.getAbsolutePath(),
-                    studentSemFile.getAbsolutePath()
-                );
-            
-            // Step 2: Read lecturer availability
-            lecturerAvailablityExcelReaderService.readLecturerAvailabilityExcelFile(
-                lecturerAvailabilityFile.getAbsolutePath()
-            );
-
-            
-            // Step 3: Initialize and run the processor
-            ModuleAssignmentProcessor processor = new ModuleAssignmentProcessor(
-                lecturerService,
-                moduleService,
-                venueService,
-                sessionService,
-                planContentService,
-                venueDistanceService,
-                venueAssignmentService,
-                venueSorterService,
-                planService,
-                satisfactionService,
-                sessionGroupPreprocessorService,
-                venueMatrix,
-                lecturerMatrix,
-                studentMatrix,
-                actorSystem,
-                venueCoordinatorActor,
-                clustering,
-                timetableExcelExporter,
-                lecturerDayAvailabilityUtil,
-                fitnessEvaluator
-            );
-
-            int yearInt = Integer.parseInt(year);
-            FinalAssignmentResult result = processor.processAssignments(
-                preprocessingResult.getModuleAssignmentDataList(),
-                preprocessingResult.getStudentProgrammeMap(),
-                preprocessingResult.getStudentSemesterMap(),
-                programme,
-                intake,
-                yearInt
-            );
-
-        
-            navigationService.loadTimetablePage();
-
-            timetableController.loadExportedTimetables(
-                    result.getExportedTimetableFiles(),
-                    result.getLecturerTimetableFiles(),
-                    result.getModuleTimetableFiles(),
-                    result.getFitnessScore()
-                );
-                
-
-        } catch (Exception e) {
-            e.printStackTrace(); // Print the error if something goes wrong
+        if (programme == null || year == null || intake == null) {
+            validation.setText("*Please select Programme, Year,Intake.");
+            validation.setVisible(true);
+            hasError = true;
+        } else {
+            validation.setVisible(false); // hide error if resolved
         }
+
+        // Step 1: Read Excel (use fixed path or let user upload in future)
+        if (subjectPlanFile == null || moduleSemFile == null || studentSemFile == null || lecturerAvailabilityFile == null) {
+            fileValidation.setText("*Please drop all 4 required .xlsx files.");
+            fileValidation.setVisible(true);
+            hasError = true;
+        } else {
+            fileValidation.setVisible(false); // hide error if resolved
+        }
+
+        if(hasError) return;
+
+        // Use these files in your processor
+        System.out.println("Subject Plan: " + subjectPlanFile.getAbsolutePath());
+        System.out.println("Module Sem: " + moduleSemFile.getAbsolutePath());
+        System.out.println("Student Sem: " + studentSemFile.getAbsolutePath());
+
+        generateButton.setText("Generating...");
+        generateButton.setDisable(true);
+        resetFilesButton.setDisable(true);
+
+        final AtomicReference<FinalAssignmentResult> resultRef = new AtomicReference<>();
+        final Set<String> errors = new LinkedHashSet<>();
+
+        new Thread(() -> {
+            try {
+                PreprocessingResult pre = preprocessingService
+                    .preprocessModuleAndStudents(
+                        subjectPlanFile.getAbsolutePath(),
+                        moduleSemFile.getAbsolutePath(),
+                        studentSemFile.getAbsolutePath()
+                    );
+
+                try {
+                    lecturerAvailablityExcelReaderService
+                        .readLecturerAvailabilityExcelFile(
+                            lecturerAvailabilityFile.getAbsolutePath()
+                        );
+                } catch (IllegalStateException ex) {
+                    errors.addAll(List.of(ex.getMessage().split("\n")));
+                } catch (IOException ioe) {
+                    errors.add("Failed to read lecturer availability: " + ioe.getMessage());
+                }
+
+                if (errors.isEmpty()) {
+                    ModuleAssignmentProcessor proc = new ModuleAssignmentProcessor(
+                        lecturerService, moduleService, venueService,
+                        sessionService, planContentService, venueDistanceService,
+                        venueAssignmentService, venueSorterService, planService,
+                        satisfactionService, sessionGroupPreprocessorService,
+                        venueMatrix, lecturerMatrix, studentMatrix,
+                        actorSystem, venueCoordinatorActor, clustering,
+                        timetableExcelExporter, lecturerDayAvailabilityUtil,
+                        satisfactionEvaluator
+                    );
+
+                    resultRef.set(proc.processAssignments(
+                        pre.getModuleAssignmentDataList(),
+                        pre.getStudentProgrammeMap(),
+                        pre.getStudentSemesterMap(),
+                        programme, intake, Integer.parseInt(year)
+                    ));
+                }
+            } catch (Exception ex) {
+                errors.add("Unexpected error: " + ex.getMessage());
+            }
+
+            // 4) when done (success or error), hop back to the FX thread
+            Platform.runLater(() -> {
+                try{
+                    if (!errors.isEmpty()) {
+                    showErrorPage(number(errors));
+                } else {
+                    FinalAssignmentResult result = resultRef.get();
+                    navigationService.loadTimetablePage();
+                    timetableController.loadExportedTimetables(
+                        result.getExportedTimetableFiles(),
+                        result.getLecturerTimetableFiles(),
+                        result.getModuleTimetableFiles()
+                    );
+                }
+                } catch (Exception e) {
+                    e.printStackTrace(); // Print the error if something goes wrong
+                } finally {
+                    generateButton.setText("Generate");
+                    generateButton.setDisable(false);
+                    resetFilesButton.setDisable(false);
+                }
+            });
+        }, "Timetable-Generator-Thread").start();
     }
 
     private void setupDragAndDrop() {
@@ -350,7 +367,7 @@ public class GenerateTimetableController extends ContentController {
     }
 
     private void setupComboBoxes() {
-        programmeChoice.getItems().addAll("BIT", "BCS");
+        programmeChoice.getItems().addAll("BIT", "BSE", "BCS");
         programmeChoice.setVisibleRowCount(5);
         yearChoice.getItems().addAll(InputUtil.getYearOptions());
         yearChoice.setVisibleRowCount(5);
@@ -368,4 +385,24 @@ public class GenerateTimetableController extends ContentController {
         System.out.println(message); // Same here
     }
 
+    private void showErrorPage(String message) {
+        try {
+            navigationService.loadErrorPage(message);
+        }
+        catch (Exception ex) {
+            // fallback: log, or pop up a simple alert
+            ex.printStackTrace();
+        }
+    }
+
+    private String number(Set<String> msgs) {
+        var sb = new StringBuilder();
+        int i = 1;
+        for (String m : msgs) {
+            sb.append(i++).append(". ").append(m).append("\n");
+        }
+        // remove last newline
+        if (sb.length() > 0) sb.setLength(sb.length()-1);
+        return sb.toString();
+    }
 }

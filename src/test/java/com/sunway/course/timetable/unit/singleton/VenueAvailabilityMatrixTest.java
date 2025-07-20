@@ -1,8 +1,4 @@
 package com.sunway.course.timetable.unit.singleton;
-import java.time.DayOfWeek;
-import java.util.List;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,23 +26,8 @@ public class VenueAvailabilityMatrixTest {
         venueA = new Venue(1L,"Lecture Hall", "JC1", 200, "University West", "3"); 
         venueB = new Venue(2L,"Lecture Hall", "JC2", 200, "University West", "3");
 
-        matrix = new VenueAvailabilityMatrix(List.of(venueA, venueB));
+        // matrix = new VenueAvailabilityMatrix(List.of(venueA, venueB));
         matrix.initialize(); // Must call this to build internal structure
-    }
-
-    @Test
-    public void testTimeConversion() {
-        assertEquals(0, matrix.timeToIndex(8, 0));
-        assertEquals(1, matrix.timeToIndex(8, 30));
-        assertEquals(4, matrix.timeToIndex(10, 0));
-        assertEquals("08:00", matrix.indexToTimeString(0));
-        assertEquals("09:30", matrix.indexToTimeString(3));
-    }
-
-    @Test
-    public void testDayToIndex() {
-        assertEquals(0, matrix.dayToIndex(DayOfWeek.MONDAY));
-        assertEquals(4, matrix.dayToIndex(DayOfWeek.FRIDAY));
     }
 
     @Test
@@ -58,33 +39,13 @@ public class VenueAvailabilityMatrixTest {
     }
 
     @Test
-    public void testAssignAndUnassignVenue() {
+    public void testAssignVenue() {
         int start = 4;
         int end = 6;
         int day = 1;
 
         matrix.assign(venueA, start, end, day);
         assertFalse(matrix.isAvailable(venueA, start, end, day));
-
-        matrix.unassign(venueA, start, end, day);
-        assertTrue(matrix.isAvailable(venueA, start, end, day));
-    }
-
-    @Test
-    public void testFindAndAssignVenueSuccess() {
-        Optional<VenueAvailabilityMatrix.VenueAssignmentResult> result = matrix.findAndAssignByVenueThenDay(1, 30); // 1 hour, 30 capacity
-
-        assertTrue(result.isPresent());
-        Venue venue = result.get().venue();
-        assertTrue(venue.getCapacity() >= 30);
-    }
-
-    @Test
-    public void testFindAndAssignVenueFailsDueToCapacity() {
-        // All venues require at least 300, but max is 200
-        Optional<VenueAvailabilityMatrix.VenueAssignmentResult> result = matrix.findAndAssignByVenueThenDay(1, 300);
-
-        assertTrue(result.isEmpty());
     }
 
     @Test

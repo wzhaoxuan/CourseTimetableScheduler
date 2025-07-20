@@ -1,11 +1,15 @@
 package com.sunway.course.timetable.util;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.service.WeekDayConstraintServiceImpl;
 
 @Component
 public class LecturerDayAvailabilityUtil {
+
+    public static final int MAX_UNAVAILABLE_DAYS = 3;
 
     private final WeekDayConstraintServiceImpl weekDayConstraintService;
 
@@ -28,5 +32,28 @@ public class LecturerDayAvailabilityUtil {
                 default -> true;
             })
             .orElse(false); // If not found, assume available
+    }
+
+    /**
+     * Throws if a lecturer is unavailable on 4 or more weekdays.
+     *
+     * @param lecturerId    the DB id of the lecturer
+     * @param lecturerName  the lecturer’s name (for error text)
+     */
+    public void validateLecturerWeekdays(
+        long lecturerId,
+        String lecturerName
+    ) {
+        List<String> days = List.of("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+        long unavailableCount = days.stream()
+            .filter(d -> isUnavailable(lecturerId, d))
+            .count();
+
+        if (unavailableCount > MAX_UNAVAILABLE_DAYS) {
+            throw new IllegalStateException(String.format(
+                "Lecturer %s is unavailable on %d weekdays (max %d).",
+                lecturerName, unavailableCount, MAX_UNAVAILABLE_DAYS
+            ));
+        }
     }
 }

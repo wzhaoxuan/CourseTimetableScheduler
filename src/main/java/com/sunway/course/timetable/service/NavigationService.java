@@ -67,4 +67,9 @@ public class NavigationService {
         checkMainApp();
         mainApp.loadTimetablePage();
     }
+
+    public void loadErrorPage(String errorMessage) throws Exception {
+        checkMainApp();
+        mainApp.loadErrorPage(errorMessage);
+    }
 }

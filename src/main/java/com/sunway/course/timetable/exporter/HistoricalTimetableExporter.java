@@ -14,9 +14,12 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Session;
+import com.sunway.course.timetable.model.Venue;
 import com.sunway.course.timetable.model.plan.Plan;
+import com.sunway.course.timetable.model.venueAssignment.VenueAssignment;
 import com.sunway.course.timetable.service.PlanServiceImpl;
 import com.sunway.course.timetable.service.ProgrammeHistoryStorageService;
+import com.sunway.course.timetable.service.venue.VenueAssignmentServiceImpl;
 import com.sunway.course.timetable.util.IntakeUtils;
 
 
@@ -24,16 +27,19 @@ import com.sunway.course.timetable.util.IntakeUtils;
 public class HistoricalTimetableExporter {
 
     private final PlanServiceImpl planService;
+    private final VenueAssignmentServiceImpl venueAssignmentService;
     private final TimetableSheetWriter timetableSheetWriter;
     private final Map<Long, Integer> studentSemesterMap;
     private final ProgrammeHistoryStorageService programmeHistoryStorageService;
 
     public HistoricalTimetableExporter(
             PlanServiceImpl planService,
+            VenueAssignmentServiceImpl venueAssignmentService,
             TimetableSheetWriter timetableSheetWriter,
             Map<Long, Integer> studentSemesterMap,
             ProgrammeHistoryStorageService programmeHistoryStorageService) {
         this.planService = planService;
+        this.venueAssignmentService = venueAssignmentService;
         this.timetableSheetWriter = timetableSheetWriter;
         this.studentSemesterMap = studentSemesterMap;
         this.programmeHistoryStorageService = programmeHistoryStorageService;
@@ -59,11 +65,29 @@ public class HistoricalTimetableExporter {
     }
 
     private List<File> generateTimetableFiles(List<Plan> plans, String identifier, String intake, int year, String versionTag) {
+        // 1) Group by semester
         Map<Integer, List<Plan>> plansBySemester = plans.stream()
             .collect(Collectors.groupingBy(plan -> {
                 Long studentId = plan.getPlanContent().getSession().getStudent().getId();
                 return studentSemesterMap.getOrDefault(studentId, 0);
             }));
+
+         // BEFORE the per-semester loop, build one map of Session-ID → VenueName for this version:
+        // 2) Pull out distinct session IDs
+        List<Long> sessionIds = plans.stream()
+            .map(plan -> plan.getPlanContent().getSession().getId())
+            .distinct()
+            .toList();
+
+         // 3) Build a version-scoped venue map
+        Map<Long,String> versionVenueMap = sessionIds.stream()
+            .collect(Collectors.toMap(
+                Function.identity(), // key = sessionId
+                id -> venueAssignmentService.getAssignmentBySessionIdAndVersionTag(id, versionTag)
+                        .map(VenueAssignment::getVenue)
+                        .map(Venue::getName)
+                        .orElse("Unknown")
+            ));
 
         List<File> files = new ArrayList<>();
 
@@ -81,7 +105,7 @@ public class HistoricalTimetableExporter {
 
             List<Session> deduplicated = deduplicateSessions(uniqueSessions);
 
-            Workbook workbook = timetableSheetWriter.generateWorkbookFromSessions("Semester " + semester, deduplicated);
+            Workbook workbook = timetableSheetWriter.generateWorkbookFromSessions("Semester " + semester, deduplicated, versionVenueMap);
             File file = saveWorkbookToFile(workbook, fileName);
             files.add(file);
         }

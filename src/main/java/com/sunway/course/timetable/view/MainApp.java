@@ -1,15 +1,16 @@
 package com.sunway.course.timetable.view;
-import akka.actor.typed.ActorSystem;
-
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.sunway.course.timetable.CourseTimetableSchedularApplication;
+import com.sunway.course.timetable.controller.app.ErrorController;
 import com.sunway.course.timetable.service.NavigationService;
 
+import akka.actor.typed.ActorSystem;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
@@ -129,6 +130,21 @@ public class MainApp extends Application {
         fxmlLoader.setControllerFactory(springContext::getBean);
 
         Scene scene = new Scene(fxmlLoader.load());
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void loadErrorPage(String errorMessage) throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/desktop/course/timetable/ErrorScene.fxml"));
+        // Use Spring dependency injection
+        fxmlLoader.setControllerFactory(springContext::getBean);
+
+        Parent root = fxmlLoader.load();
+        ErrorController errorController = fxmlLoader.getController();
+
+        errorController.setErrorMessage(errorMessage); // Pass the error message to the controller
+        
+        Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.show();
     }

@@ -17,7 +17,9 @@ public class IntakeUtils {
         int stepsBack = semester - 1;
 
         // calculate new intake index (circular modulo)
-        int newIndex = (baseIndex - stepsBack + INTAKES.size()) % INTAKES.size();
+        int newIndex = Math.floorMod(baseIndex - stepsBack + INTAKES.size(), INTAKES.size());
+
+        // int newIndex = (baseIndex - stepsBack + INTAKES.size()) % INTAKES.size();
 
         // calculate how many full cycles moved backward
         int fullCycles = (baseIndex - stepsBack < 0)

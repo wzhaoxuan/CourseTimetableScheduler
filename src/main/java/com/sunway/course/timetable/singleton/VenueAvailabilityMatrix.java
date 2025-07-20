@@ -1,11 +1,8 @@
 package com.sunway.course.timetable.singleton;
-
-import java.time.DayOfWeek;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.springframework.stereotype.Component;
@@ -26,16 +23,15 @@ public class VenueAvailabilityMatrix {
 
     private static final int DAYS = 5; // Monday to Friday
     private static final int TIME_SLOTS_PER_DAY = 20; // 8:00 to 18:00 in 30-minute increments
-    private static final int START_HOUR = 8;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private boolean[][][] availability; // [venueIndex][timeSlot][dayIndex]
-    private List<Venue> sortedVenues;
+    private List<Venue> venues;
     private Map<Long, Integer> venueIndexMap; // venueId -> index
 
-    public VenueAvailabilityMatrix(List<Venue> sortedVenues) {
-        this.sortedVenues = sortedVenues;
+    public VenueAvailabilityMatrix(List<Venue> venues) {
+        this.venues = venues;
     }
 
     /**
@@ -43,17 +39,23 @@ public class VenueAvailabilityMatrix {
      */
     @PostConstruct
     public void initialize() {
-        int venueCount = sortedVenues.size();
+        int venueCount = venues.size();
         this.availability = new boolean[venueCount][TIME_SLOTS_PER_DAY][DAYS];
         this.venueIndexMap = new HashMap<>();
 
         for (int i = 0; i < venueCount; i++) {
-            venueIndexMap.put(sortedVenues.get(i).getId(), i);
+            venueIndexMap.put(venues.get(i).getId(), i);
         }
     }
 
     /**
-     * Checks if the venue is available on given dayIndex between startIndex (inclusive) and endIndex (exclusive).
+     * Checks if the venue is available for the specified time range on a given day.
+     * 
+     * @param venue The venue to check
+     * @param startIndex The start time index (inclusive)
+     * @param endIndex The end time index (exclusive)
+     * @param dayIndex The day index (0-4 for Monday to Friday)
+     * @return true if the venue is available for the specified time range, false if it is occupied
      */
     public boolean isAvailable(Venue venue, int startIndex, int endIndex, int dayIndex) {
         lock.readLock().lock();
@@ -75,6 +77,11 @@ public class VenueAvailabilityMatrix {
 
     /**
      * Assigns the venue to occupied between startIndex (inclusive) and endIndex (exclusive) on dayIndex.
+     * 
+     * @param venue The venue to assign
+     * @param startIndex The start time index (inclusive)
+     * @param endIndex The end time index (exclusive)
+     * @param dayIndex The day index (0-4 for Monday to Friday)
      */
     public void assign(Venue venue, int startIndex, int endIndex, int dayIndex) {
         lock.writeLock().lock();
@@ -91,140 +98,41 @@ public class VenueAvailabilityMatrix {
         
     }
 
-    public void unassign(Venue venue, int startIndex, int endIndex, int dayIndex) {
-        lock.writeLock().lock();
-        try {
-            Integer venueIndex = venueIndexMap.get(venue.getId());
-            if (venueIndex == null) return;
-
-            for (int i = startIndex; i < endIndex; i++) {
-                availability[venueIndex][i][dayIndex] = false; // mark as free
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Converts DayOfWeek (MON-FRI) to day index 0-4.
-     */
-    public int dayToIndex(DayOfWeek day) {
-        return day.getValue() - 1; // MONDAY=1 → 0 index
-    }
-
-    /**
-     * Converts time to index (0-based) for 30-minute slots from 8:00am.
-     * Example: 8:00 = 0, 8:30 = 1, 9:00 = 2, ..., 18:00 = 20 (exclusive upper bound)
-     */
-    public int timeToIndex(int hour, int minute) {
-        return ((hour - START_HOUR) * 60 + minute) / 30;
-    }
-
-    /**
-     * Converts index back to time in minutes from midnight.
-     */
-    public int indexToMinutes(int index) {
-        return START_HOUR * 60 + index * 30;
-    }
-
-    public String indexToTimeString(int index) {
-        int totalMinutes = indexToMinutes(index);
-        int hour = totalMinutes / 60;
-        int minute = totalMinutes % 60;
-        return String.format("%02d:%02d", hour, minute);
-    }
-
-    /**
-     * Result object for assigned venue and time slot.
-     */
-    public record VenueAssignmentResult(Venue venue, int startIndex, int durationSlots) {}
-
-    /**
-     * Tries to find the first available venue and time slot for a given session duration and minimum capacity,
-     * scanning day by day, and for each day, iterating through sorted venues.
-     * 
-     * @param durationHours how long the session should last (in hours)
-     * @param minCapacity minimum number of seats required
-     * @return Optional of VenueAssignmentResult if successful
-     */
-    public Optional<VenueAssignmentResult> findAndAssignByVenueThenDay(int durationHours, int minCapacity) {
-        int durationSlots = durationHours * 2;
-
-        lock.writeLock().lock(); // important: must lock the whole check+assign together
-        try {
-            for (int dayIndex = 0; dayIndex < DAYS; dayIndex++) {
-                for (Venue venue : sortedVenues) {
-                    if (venue.getCapacity() < minCapacity) continue;
-
-                    for (int startIndex = 0; startIndex <= TIME_SLOTS_PER_DAY - durationSlots; startIndex++) {
-                        int endIndex = startIndex + durationSlots;
-
-                        if (isAvailable(venue, startIndex, endIndex, dayIndex)) {
-                            assign(venue, startIndex, endIndex, dayIndex);
-                            return Optional.of(new VenueAssignmentResult(venue, startIndex, durationSlots));
-                        }
-                    }
-                }
-            }
-
-            return Optional.empty();
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     public void reset() {
-        lock.writeLock().lock();
-        try {
-            for (int v = 0; v < availability.length; v++) {
-                for (int t = 0; t < TIME_SLOTS_PER_DAY; t++) {
-                    for (int d = 0; d < DAYS; d++) {
-                        availability[v][t][d] = false;
-                    }
-                }
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-
-
-    /**
-     * Returns the sorted list of venues used in the matrix.
-     */
-    public List<Venue> getSortedVenues() {
-        return Collections.unmodifiableList(sortedVenues);
-    }
-
-    /**
-     * For testing or debugging: prints current availability matrix.
-     */
-    public void printAvailability() {
-        lock.readLock().lock();
-        try{
-            for (int v = 0; v < sortedVenues.size(); v++) {
-                System.out.println("Venue: " + sortedVenues.get(v).getName() + " (Capacity: " + sortedVenues.get(v).getCapacity() + ")");
+        for (int v = 0; v < availability.length; v++) {
+            for (int t = 0; t < TIME_SLOTS_PER_DAY; t++) {
                 for (int d = 0; d < DAYS; d++) {
-                    System.out.print("Day " + (d+1) + ": ");
-                    for (int t = 0; t < TIME_SLOTS_PER_DAY; t++) {
-                        System.out.print(availability[v][t][d] ? "X" : "_");
-                    }
-                    System.out.println();
+                    availability[v][t][d] = false;
                 }
-                System.out.println();
             }
-        } finally {
-            lock.readLock().unlock();
         }
-        
     }
 
+
+    /**
+     * Returns an unmodifiable list of all venues.
+     * 
+     * @return List of Venue objects
+     */
+    public List<Venue> getVenues() {
+        return Collections.unmodifiableList(venues);
+    }
+
+    /**
+     * Returns the index of the venue in the matrix.
+     * 
+     * @param venue The venue to find
+     * @return The index of the venue, or null if not found
+     */
     public Integer getIndexForVenue(Venue venue) {
         return venueIndexMap.get(venue.getId());
     }
 
-
+    /**
+     * Returns the availability matrix.
+     * 
+     * @return 3D boolean array representing availability
+     */
     public boolean[][][] getAvailability() {
         return availability;
     }

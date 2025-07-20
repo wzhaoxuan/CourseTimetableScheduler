@@ -34,6 +34,14 @@ public class LongBreakChecker implements ConstraintChecker {
         return 100.0;  // You can tune this based on how important you want
     }
 
+    /**
+     * Calculates the penalty for long breaks (gaps > 2 hours) in the schedule.
+     * This method checks both students and lecturers for long breaks in their schedules.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used here)
+     * @return The total penalty for long breaks
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         int violations = 0;
@@ -63,7 +71,13 @@ public class LongBreakChecker implements ConstraintChecker {
         return violations;
     }
 
-    // Generic method to reuse for both students and lecturers
+    /**
+     * Counts the number of long breaks (gaps > 2 hours) in the schedule map.
+     * 
+     * @param scheduleMap Map of schedules grouped by key (student ID or lecturer name)
+     * @param <K> Type of the key (e.g., Long for student ID, String for lecturer name)
+     * @return The count of long breaks in the schedule
+     */
     private <K> int countLongBreaks(Map<K, Map<String, List<Session>>> scheduleMap) {
         int count = 0;
         for (Map<String, List<Session>> dayMap : scheduleMap.values()) {

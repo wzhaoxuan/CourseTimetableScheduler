@@ -30,7 +30,8 @@ public class SessionGroupPreprocessorService {
      * @param studentSemesterMap Mapping of student ID to semester
      * @return List of SessionGroupMetaData, one per group for scheduling
      */
-    public List<SessionGroupMetaData> prepareSessionGroupMetadata(ModuleAssignmentData data, Map<Long, Integer> studentSemesterMap) {
+    public List<SessionGroupMetaData> prepareSessionGroupMetadata(ModuleAssignmentData data, 
+                                                    Map<Long, Integer> studentSemesterMap) {
         
         Module module = data.getModule();
         SubjectPlanInfo plan = data.getSubjectPlanInfo();
@@ -53,10 +54,9 @@ public class SessionGroupPreprocessorService {
 
         List<SessionGroupMetaData> metaDataList = new ArrayList<>();
 
-        // === 1. CREATE SINGLE LECTURE (for combined semesters) ===
         if (plan.hasLecture()) {
             String lecturer = plan.getMainLecturer();
-            lecturerHourMap.merge(lecturer, 2, Integer::sum);  // 2 hours for lecture
+            lecturerHourMap.merge(lecturer, 2, Integer::sum);
             SchedulingUtils.resetTeachingHours(lecturerHourMap);
             SchedulingUtils.recordTeachingHours(lecturerHourMap, lecturer, 2);
 
@@ -65,7 +65,7 @@ public class SessionGroupPreprocessorService {
 
 
             SessionGroupMetaData lectureMeta = new SessionGroupMetaData(
-                0, // semester irrelevant for lecture
+                0, 
                 module.getId(),
                 "Lecture",
                 lectureGroup,
@@ -86,7 +86,6 @@ public class SessionGroupPreprocessorService {
         );
 
         List<Student> allStudentsSorted = new ArrayList<>(allStudents);
-        // allStudentsSorted.sort(Comparator.comparingLong(Student::getId));  // optional: for deterministic ordering
 
         int totalStudents = allStudentsSorted.size();
         int groupCount = (int) Math.ceil((double) totalStudents / MAX_GROUP_SIZE);
@@ -99,15 +98,15 @@ public class SessionGroupPreprocessorService {
                 String groupName = plan.getSubjectCode() + "-" + typeInfo.type() + "-G" + (i + 1);
                 String tutor = tutors.isEmpty() ? null : tutors.get(i % tutors.size());
                 if (tutor != null) {
-                    lecturerHourMap.merge(tutor, 2, Integer::sum); // 2 hours per session
+                    lecturerHourMap.merge(tutor, 2, Integer::sum); 
                     SchedulingUtils.resetTeachingHours(lecturerHourMap);
                     SchedulingUtils.recordTeachingHours(lecturerHourMap, tutor, 2);
                 }
 
-                List<Student> groupStudents = allStudentsSorted; // NOT slice, assign full list to all groups
+                List<Student> groupStudents = allStudentsSorted; 
 
                 metaDataList.add(new SessionGroupMetaData(
-                    0,  // semester not relevant due to merged input
+                    0, 
                     module.getId(),
                     typeInfo.type(),
                     groupName,

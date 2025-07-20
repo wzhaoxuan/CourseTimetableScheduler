@@ -13,8 +13,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Workbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.model.Session;
@@ -26,8 +24,6 @@ import static com.sunway.course.timetable.util.IntakeUtils.getIntakeLabel;
 
 @Component
 public class TimetableExcelExporter {
-
-    private static Logger logger = LoggerFactory.getLogger(TimetableExcelExporter.class);
 
     private PlanContentServiceImpl planContentService;
     private VenueAssignmentServiceImpl venueAssignmentService;
@@ -49,19 +45,6 @@ public class TimetableExcelExporter {
             Map<Integer, Map<String, List<Session>>> sessionBySemesterAndModule,
             Map<Session,Venue> sessionVenueMap,
             double fitnessScore, String programme, String intake, int year) {
-
-        // for(Map.Entry<Integer, Map<String, List<Session>>> entry : sessionBySemesterAndModule.entrySet()) {
-        //     logger.info("Semester {}", entry.getKey());
-        //     for(Map.Entry<String, List<Session>> moduleEntry : entry.getValue().entrySet()) {
-        //         String moduleId = moduleEntry.getKey();
-        //         List<Session> sessions = moduleEntry.getValue();
-        //         logger.info("Module {} has {} sessions", moduleId, sessions.size());
-        //         for(Session session : sessions) {
-        //             logger.info("Session: {} {} {} {}",
-        //                     session.getDay(), session.getStartTime(), session.getEndTime(), session.getTypeGroup());
-        //         }
-        //     }
-        // }
 
         // First, collect all semesters involved (sorted)
         List<Integer> allSemesters = sessionBySemesterAndModule.keySet().stream()

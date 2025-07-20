@@ -33,9 +33,17 @@ public class LecturerClashChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    /**
+     * Calculates the penalty for lecturer clashes.
+     * This method groups sessions by lecturer and counts the number of overlapping sessions for each lecturer.
+     * 
+     * @param sessions List of sessions to check for clashes
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used in this checker)
+     * @return Total penalty for lecturer clashes, which is the sum of overlaps for each lecturer
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         int clashes = 0;

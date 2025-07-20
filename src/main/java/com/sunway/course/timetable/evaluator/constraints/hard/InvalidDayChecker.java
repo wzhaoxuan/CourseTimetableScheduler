@@ -11,7 +11,7 @@ import com.sunway.course.timetable.model.Venue;
 
 public class InvalidDayChecker implements ConstraintChecker {
 
-    private static final Set<String> VALID_DAYS = Set.of("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+    
 
     @Override
     public String getName() {
@@ -25,9 +25,19 @@ public class InvalidDayChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    private static final Set<String> VALID_DAYS = Set.of("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+
+    /**
+     * Checks if any session is scheduled on an invalid day.
+     * An invalid day is defined as any day not in the set of valid days.
+     * 
+     * @param sessions List of sessions to check
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used in this checker)
+     * @return The number of sessions scheduled on invalid days
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         return sessions.stream()

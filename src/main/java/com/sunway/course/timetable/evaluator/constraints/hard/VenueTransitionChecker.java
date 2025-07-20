@@ -1,4 +1,4 @@
-package com.sunway.course.timetable.evaluator.constraints.soft;
+package com.sunway.course.timetable.evaluator.constraints.hard;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,14 +36,22 @@ public class VenueTransitionChecker implements ConstraintChecker {
 
     @Override
     public ConstraintType getType() {
-        return ConstraintType.SOFT;
+        return ConstraintType.HARD;
     }
 
     @Override
     public double getWeight() {
-        return 150.0;
+        return 1000.0;
     }
 
+    /**
+     * Calculates the penalty for venue transitions greater than 300 meters
+     * between consecutive sessions for the same student on the same day.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues
+     * @return The total penalty for venue transitions exceeding 300 meters
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Map<Long, Map<String, List<Session>>> byStudentAndDay = new HashMap<>();

@@ -25,9 +25,17 @@ public class DuplicateTypeGroupChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    /**
+     * Checks if there are multiple sessions of the same type group scheduled
+     * for the same day and start time. This is a hard constraint, meaning it must be satisfied.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used here)
+     * @return The total penalty for duplicate type groups
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Map<String, Set<String>> typeGroupScheduleMap = new HashMap<>();

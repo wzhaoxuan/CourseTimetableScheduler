@@ -31,27 +31,6 @@ public class VenueSorterService {
     public List<Venue> sortByAscendingCapacity() {
         List<Venue> venues = venueService.getAllVenues();
 
-        // Separate venues by capacity criteria
-        // List<Venue> smallVenues = new ArrayList<>();
-        // List<Venue> largeVenues = new ArrayList<>();
-
-        // for (Venue venue : venues) {
-        //     if (venue.getCapacity() == 35) {
-        //         smallVenues.add(venue);
-        //     } else if (venue.getCapacity() >= 120) {
-        //         largeVenues.add(venue);
-        //     }
-        // }
-
-        // // Sort each list ascending by capacity (though all smallVenues are 35)
-        // smallVenues.sort(Comparator.comparingInt(Venue::getCapacity));
-        // largeVenues.sort(Comparator.comparingInt(Venue::getCapacity));
-
-        // // Take first 5 venues from each list (or fewer if not enough)
-        // List<Venue> result = new ArrayList<>();
-        // result.addAll(smallVenues.subList(0, Math.min(9, smallVenues.size())));
-        // result.addAll(largeVenues.subList(0, Math.min(3, largeVenues.size())));
-
         return Collections.unmodifiableList(venues);
     }
 

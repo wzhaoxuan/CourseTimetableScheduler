@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.sunway.course.timetable.evaluator.constraints.hard.DuplicateTypeGroupChecker;
@@ -20,13 +18,13 @@ import com.sunway.course.timetable.evaluator.constraints.hard.LecturerClashCheck
 import com.sunway.course.timetable.evaluator.constraints.hard.ModuleClashChecker;
 import com.sunway.course.timetable.evaluator.constraints.hard.StudentClashChecker;
 import com.sunway.course.timetable.evaluator.constraints.hard.VenueCapacityChecker;
+import com.sunway.course.timetable.evaluator.constraints.hard.VenueTransitionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.ConsecutiveSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LateSessionChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.LongBreakChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.OneSessionDayChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.PracticalBeforeLectureChecker;
 import com.sunway.course.timetable.evaluator.constraints.soft.SpreadDaysChecker;
-import com.sunway.course.timetable.evaluator.constraints.soft.VenueTransitionChecker;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
 import com.sunway.course.timetable.model.Venue;
@@ -34,9 +32,7 @@ import com.sunway.course.timetable.service.SatisfactionServiceImpl;
 import com.sunway.course.timetable.service.venue.VenueDistanceServiceImpl;
 
 @Component
-public class FitnessEvaluator {
-
-    private static final Logger log = LoggerFactory.getLogger(FitnessEvaluator.class);
+public class SatisfactionEvaluator {
 
     private final SatisfactionServiceImpl satisfactionService;
     private final List<ConstraintChecker> constraintCheckers;
@@ -44,7 +40,13 @@ public class FitnessEvaluator {
     public static Set<String> CURRENT_SESSION_KEYS = new HashSet<>();
 
 
-    public FitnessEvaluator(SatisfactionServiceImpl satisfactionService,
+    /**
+     * Constructor to initialize SatisfactionEvaluator with the required services.
+     *
+     * @param satisfactionService Service for managing satisfaction records
+     * @param venueDistanceService Service for managing venue distances
+     */
+    public SatisfactionEvaluator(SatisfactionServiceImpl satisfactionService,
                             VenueDistanceServiceImpl venueDistanceService) {
         this.satisfactionService = satisfactionService;
         this.constraintCheckers = List.of(
@@ -53,9 +55,9 @@ public class FitnessEvaluator {
             new ModuleClashChecker(),
             new InvalidDayChecker(),
             new VenueCapacityChecker(),
+            new VenueTransitionChecker(venueDistanceService),
             new DuplicateTypeGroupChecker(),
             new LateSessionChecker(),
-            new VenueTransitionChecker(venueDistanceService),
             new OneSessionDayChecker(),
             new LongBreakChecker(),
             new PracticalBeforeLectureChecker(),
@@ -64,7 +66,15 @@ public class FitnessEvaluator {
         );
     }
 
-    public FitnessResult evaluate(List<Session> sessions, Map<Session, Venue> sessionVenueMap, String versionTag) {
+    /**
+     * Evaluates the fitness of a schedule based on the defined constraints.
+     *
+     * @param sessions          List of sessions in the schedule
+     * @param sessionVenueMap   Map of sessions to their assigned venues
+     * @param versionTag        Human-readable version tag for the schedule
+     * @return EvaluatorResult containing the evaluation results
+     */
+    public EvaluatorResult evaluate(List<Session> sessions, Map<Session, Venue> sessionVenueMap, String versionTag) {
         double totalPenalty = 0.0;
         double maxPenalty = 0.0;
 
@@ -94,17 +104,17 @@ public class FitnessEvaluator {
         satisfactionService.saveSatisfaction(sat);
         
 
-        List<FitnessResult.Violation> hard = results.stream()
+        List<EvaluatorResult.Violation> hard = results.stream()
             .filter(r -> r.type() == ConstraintType.HARD)
-            .map(r -> new FitnessResult.Violation(r.name(), r.weight(), r.penalty(), r.score()))
+            .map(r -> new EvaluatorResult.Violation(r.name(), r.weight(), r.penalty(), r.score()))
             .collect(Collectors.toList());
 
-        List<FitnessResult.Violation> soft = results.stream()
+        List<EvaluatorResult.Violation> soft = results.stream()
             .filter(r -> r.type() == ConstraintType.SOFT)
-            .map(r -> new FitnessResult.Violation(r.name(), r.weight(), r.penalty(), r.score()))
+            .map(r -> new EvaluatorResult.Violation(r.name(), r.weight(), r.penalty(), r.score()))
             .collect(Collectors.toList());
 
-        return new FitnessResult(percentage, totalPenalty, maxPenalty, hard, soft);
+        return new EvaluatorResult(percentage, totalPenalty, maxPenalty, hard, soft);
     }
 
     private void logFitnessDebug(List<ConstraintResult> results, int sessionCount, double totalPenalty, double maxPenalty, double fitness) {

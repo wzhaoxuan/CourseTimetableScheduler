@@ -87,7 +87,7 @@ public class TimetableController extends ContentController {
         }
     }
 
-    public void loadExportedTimetables(List<File> timetableFiles, List<File> lecturerFiles, List<File> moduleFiles, double fitnessScore) {
+    public void loadExportedTimetables(List<File> timetableFiles, List<File> lecturerFiles, List<File> moduleFiles) {
         exportedTimetables.clear();
         exportedTimetables.addAll(timetableFiles);
         exportedTimetables.addAll(lecturerFiles);

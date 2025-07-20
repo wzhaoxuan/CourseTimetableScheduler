@@ -18,8 +18,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sunway.course.timetable.evaluator.FitnessEvaluator;
-import com.sunway.course.timetable.evaluator.FitnessResult;
+import com.sunway.course.timetable.evaluator.EvaluatorResult;
+import com.sunway.course.timetable.evaluator.SatisfactionEvaluator;
 import com.sunway.course.timetable.model.Lecturer;
 import com.sunway.course.timetable.model.Satisfaction;
 import com.sunway.course.timetable.model.Session;
@@ -37,11 +37,11 @@ public class FitnessEvaluatorTest {
     @Mock
     private VenueDistanceServiceImpl venueDistanceService;
 
-    private FitnessEvaluator evaluator;
+    private SatisfactionEvaluator evaluator;
 
     @BeforeEach
     void setUp() {
-        evaluator = new FitnessEvaluator(satisfactionService, venueDistanceService);
+        evaluator = new SatisfactionEvaluator(satisfactionService, venueDistanceService);
     }
 
     @Test
@@ -51,7 +51,7 @@ public class FitnessEvaluatorTest {
         Map<Session, Venue> sessionVenueMap = Map.of();
         String versionTag = "v1";
 
-        FitnessResult result = evaluator.evaluate(sessions, sessionVenueMap, versionTag);
+        EvaluatorResult result = evaluator.evaluate(sessions, sessionVenueMap, versionTag);
 
         // 2) Check computed fitness values
         assertEquals(100.0, result.getPercentage());
@@ -64,7 +64,7 @@ public class FitnessEvaluatorTest {
         assertEquals(13, totalViolations);
 
         // 4) CURRENT_SESSION_KEYS should be empty
-        assertTrue(FitnessEvaluator.CURRENT_SESSION_KEYS.isEmpty());
+        assertTrue(SatisfactionEvaluator.CURRENT_SESSION_KEYS.isEmpty());
 
         // 5) Verify Satisfaction was saved correctly
         ArgumentCaptor<Satisfaction> cap = ArgumentCaptor.forClass(Satisfaction.class);
@@ -120,7 +120,7 @@ public class FitnessEvaluatorTest {
         when(venueDistanceService.getDistanceScore(vA.getName(), vB.getName())).thenReturn(5.0);
 
         // --- 5) Evaluate ---
-        FitnessResult result = evaluator.evaluate(sessions, map, "v2");
+        EvaluatorResult result = evaluator.evaluate(sessions, map, "v2");
 
         // --- 6) Assertions ---
 
@@ -129,11 +129,11 @@ public class FitnessEvaluatorTest {
         "Distance penalty should lower fitness below 100%");
 
         // (b) CURRENT_SESSION_KEYS must contain the two session‐strings
-        assertEquals(2, FitnessEvaluator.CURRENT_SESSION_KEYS.size());
-        assertTrue(FitnessEvaluator.CURRENT_SESSION_KEYS.contains(
+        assertEquals(2, SatisfactionEvaluator.CURRENT_SESSION_KEYS.size());
+        assertTrue(SatisfactionEvaluator.CURRENT_SESSION_KEYS.contains(
         "MONDAY-08:00-M1-Lecture-G1-A1"
         ));
-        assertTrue(FitnessEvaluator.CURRENT_SESSION_KEYS.contains(
+        assertTrue(SatisfactionEvaluator.CURRENT_SESSION_KEYS.contains(
         "MONDAY-09:00-M1-Practical-G1-B1"
         ));
 

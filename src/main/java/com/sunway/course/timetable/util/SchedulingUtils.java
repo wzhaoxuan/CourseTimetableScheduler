@@ -49,12 +49,11 @@ public final class SchedulingUtils {
 
         // for each semester, fail if too many
         for (var e : studentsPerSem.entrySet()) {
-            int sem = e.getKey();
             int total = e.getValue().size();
             if (total > maxCapacity) {
                 throw new IllegalStateException(String.format(
-                    "Semester %d has %d students but largest venue holds only %d",
-                    sem, total, maxCapacity
+                    "There are %d students but largest venue holds only %d",
+                    total, maxCapacity
                 ));
             }
         }
@@ -74,9 +73,10 @@ public final class SchedulingUtils {
         int soFar = lecturerHours.getOrDefault(lecturerName, 0);
         int updated = soFar + hoursToAdd;
         if (updated > MAX_TEACHING_HOURS) {
-            throw new IllegalStateException(String.format(
-                "Lecturer %s would exceed max teaching hours: %d + %d > %d",
-                lecturerName, soFar, hoursToAdd, MAX_TEACHING_HOURS));
+            throw new IllegalStateException(
+                "Lecturer " + lecturerName +
+                " is exceeded max teaching hours of " + MAX_TEACHING_HOURS
+            );
         }
         lecturerHours.put(lecturerName, updated);
     }

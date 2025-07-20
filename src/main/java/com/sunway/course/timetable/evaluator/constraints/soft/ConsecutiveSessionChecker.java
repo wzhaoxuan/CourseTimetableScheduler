@@ -33,21 +33,34 @@ public class ConsecutiveSessionChecker implements ConstraintChecker {
         return 700.0; // Tune weight as needed
     }
 
+    /**
+     * Calculates the penalty for students and lecturers having 4 or more consecutive sessions on the same day.
+     * This method checks both lecturers and students for consecutive sessions.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues (not used here)
+     * @return The total penalty for consecutive sessions
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         int lecturerViolations = countConsecutiveViolations(
             "LECTURER", groupByPersonAndDay(sessions, true)
+        ); 
+
+        int studentViolations = countConsecutiveViolations(
+            "STUDENT", groupByPersonAndDay(sessions, false)
         );
-        // int studentViolations = countConsecutiveViolations(
-        //     "STUDENT", groupByPersonAndDay(sessions, false)
-        // );
 
-        log.info("[ConsecutiveSessionChecker] Lecturer violations: {}", lecturerViolations);
-        // log.info("[ConsecutiveSessionChecker] Student violations: {}", studentViolations);
-
-        return lecturerViolations;
+        return lecturerViolations + studentViolations;
     }
 
+    /**
+     * Groups sessions by person (lecturer or student) and day.
+     * 
+     * @param sessions List of all sessions
+     * @param isLecturer True if grouping by lecturer, false for student
+     * @return A map where keys are person names/IDs and values are maps of days to lists of sessions
+     */
     private Map<String, Map<String, List<Session>>> groupByPersonAndDay(List<Session> sessions, boolean isLecturer) {
         Map<String, Map<String, List<Session>>> grouped = new HashMap<>();
         for (Session s : sessions) {
@@ -64,11 +77,17 @@ public class ConsecutiveSessionChecker implements ConstraintChecker {
         return grouped;
     }
 
+    /**
+     * Counts the number of violations where a person has 4 or more consecutive sessions on the same day.
+     * 
+     * @param role The role being checked
+     * @param scheduleMap Map of persons to their daily sessions
+     * @return The number of violations found
+     */
     private int countConsecutiveViolations(String role, Map<String, Map<String, List<Session>>> scheduleMap) {
         int violations = 0;
 
         for (Map.Entry<String, Map<String, List<Session>>> personEntry : scheduleMap.entrySet()) {
-            String person = personEntry.getKey();
             Map<String, List<Session>> dayMap = personEntry.getValue();
 
             for (Map.Entry<String, List<Session>> dayEntry : dayMap.entrySet()) {
@@ -84,9 +103,7 @@ public class ConsecutiveSessionChecker implements ConstraintChecker {
                         consecutive++;
                         if (consecutive >= 4) {
                             violations++;
-                            log.warn("[ConsecutiveSessionViolation - {}] {} has 4+ back-to-back sessions on {} starting with: {}",
-                                    role, person, dayEntry.getKey(), dailySessions.get(i - 3).getStartTime());
-                            break; // one violation per person per day
+                            break; 
                         }
                     } else {
                         consecutive = 1;
@@ -94,7 +111,6 @@ public class ConsecutiveSessionChecker implements ConstraintChecker {
                 }
             }
         }
-
         return violations;
     }
 }

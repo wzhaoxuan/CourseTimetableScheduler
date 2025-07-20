@@ -28,9 +28,18 @@ public class VenueCapacityChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 1000.0;
     }
 
+    /**
+     * Calculates the penalty for sessions that exceed the capacity of their assigned venues.
+     * This method iterates through all sessions and checks if the number of sessions
+     * of the same type, day, and start time exceeds the venue's capacity.
+     * 
+     * @param sessions List of all sessions in the schedule
+     * @param sessionVenueMap Map of sessions to their assigned venues
+     * @return The total penalty for sessions that exceed venue capacities
+     */
     @Override
     public double getPenalty(List<Session> sessions, Map<Session, Venue> sessionVenueMap) {
         Map<String, Integer> sessionGroupSize = new HashMap<>();

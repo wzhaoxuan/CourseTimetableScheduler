@@ -32,7 +32,6 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
 
     @Override
     public VenueAssignment saveAssignment(VenueAssignment assignment) {
-        venueAssignmentRepository.deleteById(assignment.getVenueAssignmentId());
         return venueAssignmentRepository.save(assignment);
     }
 
@@ -42,7 +41,10 @@ public class VenueAssignmentServiceImpl implements VenueAssignmentService {
     }
 
     public Optional<Venue> getVenueBySessionId(Long sessionId) {
-        List<VenueAssignment> assignments = venueAssignmentRepository.findBySessionId(sessionId);
+        List<VenueAssignment> assignments = venueAssignmentRepository.findBySession_Id(sessionId);
         return assignments.isEmpty() ? Optional.empty() : Optional.of(assignments.get(0).getVenue());
+    }
+    public Optional<VenueAssignment> getAssignmentBySessionIdAndVersionTag(Long sessionId, String versionTag) {
+        return venueAssignmentRepository.findBySession_IdAndVenueAssignmentId_VersionTag(sessionId, versionTag);
     }
 }

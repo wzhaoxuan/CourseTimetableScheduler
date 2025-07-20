@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,46 +19,53 @@ import org.springframework.stereotype.Component;
 @Component
 public class LecturerAvailabilityMatrix {
 
-    private static final Logger log = LoggerFactory.getLogger(LecturerAvailabilityMatrix.class);
     private final int DAYS = 5;
     private final int TIME_SLOTS_PER_DAY = 20;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final Map<String, boolean[][]> availability = new HashMap<>();
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
-    // Register a lecturer (create schedule matrix)
+    /**
+     * Registers a new lecturer with an empty availability matrix.
+     * 
+     * @param lecturerId
+     */
     public void registerLecturer(String lecturerId) {
         availability.computeIfAbsent(lecturerId, id -> {
             boolean[][] schedule = new boolean[DAYS][TIME_SLOTS_PER_DAY];
-            for (boolean[] day : schedule) Arrays.fill(day, false); // initialize to false (available)
-            // System.out.printf("[LecturerMatrix] Registered lecturer %s%n", lecturerId);
+            for (boolean[] day : schedule) Arrays.fill(day, false);
             return schedule;
         });
     }
 
-    // Check if lecturer is available at day, start..end slots
+    /**
+     * Checks if a lecturer is available for a given time slot.
+     * This method checks if the lecturer is registered,
+     * and if not, it automatically registers them.
+     * 
+     * @param lecturerId
+     * @param day
+     * @param start
+     * @param end
+     * @return
+     */
     public boolean isAvailable(String lecturerId, int day, int start, int end) {
         lock.readLock().lock();
         try {
             if (!isValidRange(day, start, end)) {
-                System.err.printf("[LecturerMatrix] Invalid range: day=%d, start=%d, end=%d%n", day, start, end);
                 return false;
             }
             boolean[][] schedule = availability.get(lecturerId);
             if (schedule == null) {
-                // System.out.printf("[LecturerMatrix] Auto-registering unregistered lecturer: %s%n", lecturerId);
-                lock.readLock().unlock(); // unlock read lock before write
+                lock.readLock().unlock();
                 lock.writeLock().lock();
                 try {
                     registerLecturer(lecturerId);
                 } finally {
-                    lock.readLock().lock(); // re-acquire read lock
+                    lock.readLock().lock();
                     lock.writeLock().unlock();
                 }
                 schedule = availability.get(lecturerId);
-                System.out.printf("[LECTURER AVAIL DEBUG] %s day %d slots %d-%d\n",
-                        lecturerId, day, start, end);
             }
 
             for (int i = start; i < end; i++) {
@@ -70,21 +75,29 @@ public class LecturerAvailabilityMatrix {
             }
             return true;
         } finally {
-            // log.info("Object Hash:{}", this.hashCode());
             lock.readLock().unlock();
         }
     }
 
-    // Assign lecturer at the slots (mark as busy)
+    /**
+     * Assigns a time slot to a lecturer, marking them as busy.
+     * This method will throw an exception if the time slot is invalid
+     * or if the lecturer is not registered.
+     * 
+     * @param lecturerId
+     * @param day
+     * @param start
+     * @param end
+     */
     public void assign(String lecturerId, int day, int start, int end) {
         lock.writeLock().lock();
         try {
             if (!isValidRange(day, start, end)) {
-                throw new IllegalArgumentException("Invalid slot range: day=" + day + ", start=" + start + ", end=" + end);
+                throw new IllegalArgumentException("Invalid slot range: day=" + day + 
+                ", start=" + start + ", end=" + end);
             }
 
             boolean[][] schedule = availability.computeIfAbsent(lecturerId, id -> {
-                System.out.printf("[LecturerMatrix] Auto-registering during assign: %s%n", id);
                 boolean[][] newSchedule = new boolean[DAYS][TIME_SLOTS_PER_DAY];
                 for (boolean[] row : newSchedule) Arrays.fill(row, false);
                 return newSchedule;
@@ -93,43 +106,8 @@ public class LecturerAvailabilityMatrix {
             for (int i = start; i < end; i++) {
                 schedule[day][i] = true; // mark as busy
             }
-            // System.out.printf("[LecturerMatrix] Assigned %s on day=%d from %d to %d%n", lecturerId, day, start, end);
         } finally {
             lock.writeLock().unlock();
-        }
-    }
-
-    public void unassign(String lecturerId, int day, int start, int end) {
-        lock.writeLock().lock();
-        try {
-            boolean[][] schedule = availability.get(lecturerId);
-            if (schedule == null) return;
-
-            for (int i = start; i < end; i++) {
-                schedule[day][i] = false; // mark as free
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void printAvailability(String lecturerId) {
-        lock.readLock().lock();
-        try {
-            boolean[][] schedule = availability.get(lecturerId);
-            if (schedule == null) {
-                System.out.println("Lecturer not found: " + lecturerId);
-                return;
-            }
-            for (int day = 0; day < schedule.length; day++) {
-                System.out.print("Day " + day + ": ");
-                for (int slot = 0; slot < schedule[day].length; slot++) {
-                    System.out.print(schedule[day][slot] ? "X" : "_");
-                }
-                System.out.println();
-            }
-        } finally {
-            lock.readLock().unlock();
         }
     }
 
@@ -143,11 +121,29 @@ public class LecturerAvailabilityMatrix {
         }
     }
 
-    // Range validation
+    /**
+     * Validates the range of day and time slots.
+     * This method checks if the day is within the range of 0 to 4,
+     * and if the start and end time slots are within the range of 0 to 19.
+     * 
+     * @param day
+     * @param start
+     * @param end
+     * @return
+     */
     private boolean isValidRange(int day, int start, int end) {
-        return day >= 0 && day < DAYS && start >= 0 && end <= TIME_SLOTS_PER_DAY && start < end;
+        return day >= 0 && day < DAYS && start >= 0 && 
+                end <= TIME_SLOTS_PER_DAY && start < end;
     }
 
+    /**
+     * Retrieves the set of days on which a lecturer is assigned.
+     * This method returns a set of integers representing the days
+     * (0-4) on which the lecturer has at least one time slot assigned.
+     * 
+     * @param lecturerId
+     * @return Set of days (0-4) on which the lecturer is assigned
+     */
     public Set<Integer> getAssignedDays(String lecturerId) {
         lock.readLock().lock();
         try {
@@ -159,7 +155,7 @@ public class LecturerAvailabilityMatrix {
                 for (int slot = 0; slot < TIME_SLOTS_PER_DAY; slot++) {
                     if (schedule[day][slot]) {
                         assignedDays.add(day);
-                        break;  // no need to check further slots for this day
+                        break; 
                     }
                 }
             }
@@ -169,14 +165,24 @@ public class LecturerAvailabilityMatrix {
         }
     }
 
+    /**
+     * Retrieves the daily availability array for a lecturer.
+     * This method returns a boolean array representing the availability
+     * of the lecturer for a specific day, where false indicates available
+     * and true indicates busy.
+     * 
+     * @param lecturerId
+     * @param day
+     * @return boolean array of availability for the specified day
+     */
     public boolean[] getDailyAvailabilityArray(String lecturerId, int day) {
         lock.readLock().lock();
         try {
             boolean[][] schedule = availability.get(lecturerId);
             if (schedule == null || day < 0 || day >= DAYS) {
-                return new boolean[TIME_SLOTS_PER_DAY]; // default empty
+                return new boolean[TIME_SLOTS_PER_DAY]; 
             }
-            return Arrays.copyOf(schedule[day], TIME_SLOTS_PER_DAY); // return a copy to prevent modification
+            return Arrays.copyOf(schedule[day], TIME_SLOTS_PER_DAY); 
         } finally {
 
             lock.readLock().unlock();
