@@ -243,8 +243,15 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         boolean tooMany = causesTooManyConsecutiveClasses(
             msg.lecturerName, opt.day(), opt.startSlot(), msg.lecturerMatrix);
         int overCon = tooMany ? 1 : 0;
-        return timePen * 500 + (int) gapPen * 100 + (int) soloProp * 120
-            + (int) spreadStu * 20 + spreadLec * 20 + seqPen * 10 + overCon * 700;
+
+        long stuTooManyCount = msg.eligibleStudents.stream()
+            .filter(s -> causesTooManyConsecutiveClassesForStudent(
+                s.getId(), opt.day(), opt.startSlot(), msg.studentMatrix))
+            .count();
+        int stuOverConPen = (int) stuTooManyCount * 500;
+
+        return timePen * 300 + (int) gapPen * 100 + (int) soloProp * 120
+            + (int) spreadStu * 90 + spreadLec * 90 + seqPen * 80 + overCon * 500 + stuOverConPen;
     }
 
 
@@ -363,6 +370,17 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         return occupied.isEmpty();  // If student has no sessions that day
     }
 
+    /**
+     * Checks if assigning a session would cause the lecturer to have too many consecutive classes.
+     * This is used to avoid scheduling a session that would leave the lecturer with
+     * 4 or more consecutive classes on that day.
+     *
+     * @param lecturerName The name of the lecturer
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param startSlot The starting slot index (0-39, where each slot is 30 minutes)
+     * @param matrix The lecturer availability matrix
+     * @return true if it causes too many consecutive classes, false otherwise
+     */
     private boolean causesTooManyConsecutiveClasses(
             String lecturerName, int day, int startSlot,
             LecturerAvailabilityMatrix matrix) {
@@ -377,5 +395,31 @@ public class SessionAssignmentActor extends AbstractBehavior<SessionAssignmentAc
         }
         int maxSlots = SLOTS_PER_CLASS * 4; // avoid 4 classes back-to-back
         return maxRun >= maxSlots;
+    }
+
+    /**
+     * Checks if the student has too many consecutive classes on the same day.
+     * This is used to avoid scheduling a session that would leave the student with
+     * 4 or more consecutive classes on that day.
+     *
+     * @param studentId The ID of the student
+     * @param day The day index (0-4, where 0 is Monday)
+     * @param startSlot The starting slot index (0-39, where each slot is 30 minutes)
+     * @param matrix The student availability matrix
+     * @return true if it causes too many consecutive classes, false otherwise
+     */
+    private boolean causesTooManyConsecutiveClassesForStudent(
+            long studentId, int day, int startSlot, 
+            StudentAvailabilityMatrix matrix) {
+        boolean[] occ = matrix.getDailyAvailabilityArray(studentId, day);
+        boolean[] newOcc = Arrays.copyOf(occ, occ.length);
+        int end = Math.min(startSlot + SLOTS_PER_CLASS, newOcc.length);
+        for (int i = startSlot; i < end; i++) newOcc[i] = true;
+        int maxRun = 0, run = 0;
+        for (boolean o : newOcc) {
+            if (o) { run++; maxRun = Math.max(maxRun, run); }
+            else run = 0;
+        }
+        return maxRun >= SLOTS_PER_CLASS * 4;
     }
 }

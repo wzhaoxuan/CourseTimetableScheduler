@@ -288,7 +288,7 @@ public class ModuleAssignmentProcessor {
         long actorEnd = System.currentTimeMillis();
         log.info("Actor-based scheduling completed in {} ms", (actorEnd - actorStart));
 
-        // 3) Compute fitness
+        // 3) Evaluate
         List<Session> persistedSessions = sessionBySemesterAndModule.values().stream()
         .flatMap(m -> m.values().stream())
         .flatMap(List::stream)

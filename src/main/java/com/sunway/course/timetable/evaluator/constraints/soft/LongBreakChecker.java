@@ -31,7 +31,7 @@ public class LongBreakChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 100.0;  // You can tune this based on how important you want
+        return 100.0; 
     }
 
     /**

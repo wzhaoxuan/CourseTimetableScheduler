@@ -30,7 +30,7 @@ public class LateSessionChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 500.0;
+        return 300.0;
     }
 
     /**

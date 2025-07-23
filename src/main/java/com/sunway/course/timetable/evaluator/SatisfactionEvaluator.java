@@ -88,7 +88,7 @@ public class SatisfactionEvaluator {
         }
 
         double percentage = maxPenalty == 0 ? 100.0 : 100.0 * (1.0 - totalPenalty / maxPenalty);
-        percentage = Math.max(0.0, Math.min(100.0, Math.round(percentage * 100.0) / 100.0));
+        percentage = Math.max(0.0, Math.min(100.0, Math.round(percentage * 100.0) / 100.0)); // round to 2 decimal places
 
         logFitnessDebug(results, sessions.size(), totalPenalty, maxPenalty, percentage);
 

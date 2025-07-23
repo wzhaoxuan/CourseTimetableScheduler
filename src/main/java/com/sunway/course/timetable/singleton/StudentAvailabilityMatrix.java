@@ -1,6 +1,7 @@
 package com.sunway.course.timetable.singleton;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +132,20 @@ public class StudentAvailabilityMatrix {
             // Either no sessions at all, or only sessions match the candidate block
             return true;
         } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public boolean[] getDailyAvailabilityArray(long studentId, int day) {
+        lock.readLock().lock();
+        try {
+            boolean[][] schedule = availabilityMap.get(studentId);
+            if (schedule == null || day < 0 || day >= DAYS) {
+                return new boolean[TIME_SLOTS_PER_DAY]; 
+            }
+            return Arrays.copyOf(schedule[day], TIME_SLOTS_PER_DAY); 
+        } finally {
+
             lock.readLock().unlock();
         }
     }

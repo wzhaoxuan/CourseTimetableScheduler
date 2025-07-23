@@ -36,7 +36,7 @@ public class PracticalBeforeLectureChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 10.0;
+        return 80.0;
     }
 
     /**

@@ -75,8 +75,6 @@ public class TimetableSheetWriter {
                 String lecturer = session.getLecturer() != null ? session.getLecturer().getName() : "Unknown";
                 String content = String.format("%s-%s-%s\n(%s)\n%s", moduleCode, group, type, lecturer, venue);
 
-                // String sessionKey = content + session.getDay() + session.getStartTime();
-
                 String sessionKey = session.getType().equalsIgnoreCase("Lecture")
                         ? session.getTypeGroup()                                      // one per group
                         : session.getDay() + "|" + session.getStartTime() + "|" + session.getTypeGroup();
@@ -224,8 +222,6 @@ public class TimetableSheetWriter {
     public void addFitnessScore(Workbook workbook, double score) {
         Sheet sheet = workbook.getSheetAt(0);
         Row row = sheet.createRow(sheet.getLastRowNum() + 2);
-        row.createCell(0).setCellValue("Timetable Fitness Score:");
-
         Cell scoreCell = row.createCell(1);
         scoreCell.setCellValue(score + "%");
 
@@ -233,19 +229,6 @@ public class TimetableSheetWriter {
         scoreStyle.setFillForegroundColor((score < 80.0 ? IndexedColors.RED : IndexedColors.BRIGHT_GREEN).getIndex());
         scoreStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         scoreCell.setCellStyle(scoreStyle);
-    }
-
-    private boolean isMerged(Sheet sheet, int row, int start, int end) {
-        // Avoid overlapping merged regions
-        for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
-            CellRangeAddress region = sheet.getMergedRegion(i);
-            if (region.getFirstRow() == row && region.getLastRow() == row) {
-                if (!(end < region.getFirstColumn() || start > region.getLastColumn())) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {

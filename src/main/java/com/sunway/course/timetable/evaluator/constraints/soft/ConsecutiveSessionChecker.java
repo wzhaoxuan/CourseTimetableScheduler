@@ -30,7 +30,7 @@ public class ConsecutiveSessionChecker implements ConstraintChecker {
 
     @Override
     public double getWeight() {
-        return 700.0; // Tune weight as needed
+        return 500.0; // Tune weight as needed
     }
 
     /**
